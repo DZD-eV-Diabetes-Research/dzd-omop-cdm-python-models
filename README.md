@@ -7,9 +7,9 @@ Author/Maintainer: Tim Bleimehl
 Status: Proof of Concept successfull. Working towards a Beta Version  
   
 This projects consists of two parts:
-  
-## OMOP Classes code generator
-The first one is the code generator that generates Python data classes based on the OMOP CDM. It support different 4 styles of dataclasses:  
+
+## OMOP Python classes code generator
+The first one is the code generator that generates Python data classes based on the OMOP CDM. It support 4 different styles of Python data classes:  
   
 * `tables` (only generates `Table` objects, for those who don't want to use the ORM)
 * `declarative` (the default; generates classes inheriting from `declarative_base()`
