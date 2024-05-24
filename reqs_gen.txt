@@ -1,0 +1,4 @@
+pg8000
+sqlmodel
+pydantic-settings
+sqlacodegen
