@@ -1,4 +1,4 @@
 pg8000
 sqlmodel
 pydantic-settings
-sqlacodegen
+sqlacodegen==3.0.0rc5

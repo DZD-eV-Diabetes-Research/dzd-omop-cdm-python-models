@@ -38,6 +38,14 @@ class Config(BaseSettings):
     def get_sql_url(self):
         return f"postgresql+pg8000://{self.POSTGRESQL_USER}:{self.POSTGRESQL_PASSWORD}@{self.POSTGRESQL_HOST}/{self.POSTGRESQL_DATABASE}"
 
+    SQLACODEGEN_GENERATOR: Literal[
+        "tables", "declarative", "dataclasses", "sqlmodels"
+    ] = Field(
+        default="declarative",
+        description="The class style that should be genrated. https://github.com/agronholm/sqlacodegen SQLModel is blocked atm due to https://github.com/agronholm/sqlacodegen/pull/306 (sqlcodegen 3.0.0rc5. Should be fixed in next release.)",
+    )
+    DATAMODEL_OUTPUT_DIR: Path = Field(default="./OMOPModel")
+
     OMOP_SQL_SCRIPT_SCHEMA_PLACEHOLDER_STRING: str = Field(
         default="@cdmDatabaseSchema",
         description="All official OMOP SQL script, contain a placeholder string, which needs to be replaced with the actual database schema name. Usually you wont ever need to changes this setting.",

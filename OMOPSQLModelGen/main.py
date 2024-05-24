@@ -1,6 +1,7 @@
 import sys, os
 from pathlib import Path, PurePath
 from config import Config
+import subprocess
 
 # At this module as a register python module. This will make dev-imports in other files easier.
 if __name__ == "__main__":
@@ -26,5 +27,17 @@ db = ReferencePostgresHandler(
     db_port=config.POSTGRESQL_PORT,
 )
 db.create_omop_schema(omop_schema_source=omopcdm_5_3, wipe_clean_before=True)
-print(f"sqlacodegen --generator sqlmodel {config.get_sql_url()}")
+db.enrich_omop_schema_metadata(omop_schema_source=omopcdm_5_3)
+
+cmd = [
+    "bash",
+    "-c",
+    f"sqlacodegen --generator {config.SQLACODEGEN_GENERATOR} {config.get_sql_url()}",
+]
+output = Path(PurePath(config.DATAMODEL_OUTPUT_DIR, f"{omopcdm_5_3.version_name}.py"))
+config.DATAMODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+with open(output, "w") as out:
+    return_code = subprocess.call(cmd, stdout=out)
+    print("return_code", return_code)
+
 # sqlacodegen --generator sqlmodel postgresql://ps:ps@localhost/ps
