@@ -54,5 +54,8 @@ The reason for that is the OMOP CDM does not define a primary key for some table
 > The SQLAlchemy ORM, in order to map to a particular table, needs there to be at least one column denoted as a primary key column; multiple-column, i.e. composite, primary keys are of course entirely feasible as well.
 - https://docs.sqlalchemy.org/en/14/faq/ormconfiguration.html#how-do-i-map-a-table-that-has-no-primary-key
 
-Also see: https://github.com/agronholm/sqlacodegen/issues/235
+Also see: 
+https://github.com/OHDSI/CommonDataModel/issues/494#issuecomment-2133446980 
+
+https://github.com/agronholm/sqlacodegen/issues/235
 
