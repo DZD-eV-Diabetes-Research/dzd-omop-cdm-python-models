@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import (
     BaseModel,
     Field,
@@ -74,3 +75,46 @@ omopcdm_5_3 = OMOPSchemaSource(
         )
     ),
 )
+
+
+omopcdm_5_4 = OMOPSchemaSource(
+    version_name="OMOP_CDM_5.4",
+    sql_constraints_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_constraints.sql",
+        )
+    ),
+    sql_ddl_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_ddl.sql",
+        )
+    ),
+    sql_indices_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_indices.sql",
+        )
+    ),
+    sql_primary_keys_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_primary_keys.sql",
+        )
+    ),
+    csv_table_desc_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/csv/OMOP_CDMv5.4_Table_Level.csv",
+        )
+    ),
+    csv_field_desc_file_path=Path(
+        PurePath(
+            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
+            "inst/csv/OMOP_CDMv5.4_Field_Level.csv",
+        )
+    ),
+)
+
+SOURCES: List[OMOPSchemaSource] = omopcdm_5_3,omopcdm_5_4

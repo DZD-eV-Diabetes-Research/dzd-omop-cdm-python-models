@@ -1,0 +1,3 @@
+from sqlacodegen import generators
+
+generators.DeclarativeGenerator
