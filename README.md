@@ -52,7 +52,7 @@ That unfortunatly produces some inconsistencies in the OMOP CMD Python object re
 The reason for that is the OMOP CDM does not define a primary key for some tables (e.g. `CDM_SOURCE`). At the same time sqlalchemy ORM module, which lets tables be represent as python classes, does not support classes without primary keys.  
 
 > The SQLAlchemy ORM, in order to map to a particular table, needs there to be at least one column denoted as a primary key column; multiple-column, i.e. composite, primary keys are of course entirely feasible as well.
-- https://docs.sqlalchemy.org/en/14/faq/ormconfiguration.html#how-do-i-map-a-table-that-has-no-primary-key
+  - https://docs.sqlalchemy.org/en/14/faq/ormconfiguration.html#how-do-i-map-a-table-that-has-no-primary-key
 
 Also see: 
 https://github.com/OHDSI/CommonDataModel/issues/494#issuecomment-2133446980 
