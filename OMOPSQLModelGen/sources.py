@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Type
 from pydantic import (
     BaseModel,
     Field,
@@ -33,6 +33,14 @@ class OMOPSchemaSource(BaseModel):
     )
     csv_field_desc_file_path: Path = Field(
         description="The path to the CSV file in the OMOP release archive (As defined in the config var 'OMOP_CDM_RELEASE_FILE') which contains a description of all fields."
+    )
+    pre_generation_sql_script_dir: Optional[Path] = Field(
+        default=None,
+        description="If given this sql script will be run against the database, before we generate the models",
+    )
+    post_generation_python_class: Optional[Type] = Field(
+        default=None,
+        description="If given this python class will be instanciated and the method `run`will be called. this will happen after model generation.",
     )
 
 
@@ -74,6 +82,7 @@ omopcdm_5_3 = OMOPSchemaSource(
             "inst/csv/OMOP_CDMv5.3_Field_Level.csv",
         )
     ),
+    pre_generation_sql_script_dir="OMOPSQLModelGen/pre_gen_sql/5.x/add_missing_primary_keys.sql",
 )
 
 
@@ -115,6 +124,7 @@ omopcdm_5_4 = OMOPSchemaSource(
             "inst/csv/OMOP_CDMv5.4_Field_Level.csv",
         )
     ),
+    pre_generation_sql_script_dir="OMOPSQLModelGen/pre_gen_sql/5.x/add_missing_primary_keys.sql",
 )
 
-SOURCES: List[OMOPSchemaSource] = omopcdm_5_3,omopcdm_5_4
+SOURCES: List[OMOPSchemaSource] = omopcdm_5_3, omopcdm_5_4
