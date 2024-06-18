@@ -59,7 +59,7 @@ class ReferencePostgresHandler:
         finally:
             con.close()
 
-    def run_sql_script_file(self, file_path: Path, schema_replace_str: str = None):
+    def run_sql_script_file(self, file_path: Path):
         with self.db_con() as db_con:
             with open(file_path) as sql_script:
                 db_con.run(
@@ -105,9 +105,16 @@ class ReferencePostgresHandler:
         sql_statements: List[str] = []
         for table_name in all_table_names:
             table_name: str = table_name.upper()
-            table_comment = f"""DESC: {table_metadata[table_name]["tableDescription"]} \nUSER GUIDANCE: {table_metadata[table_name]["userGuidance"]} \nETLCONVENTIONS: {table_metadata[table_name]["etlConventions"]}""".replace(
-                "'", '"'
-            )
+            table_comment = ""
+            if table_metadata[table_name]["tableDescription"]:
+                table_comment += (
+                    f"""DESC: {table_metadata[table_name]["tableDescription"]}"""
+                )
+            if table_metadata[table_name]["userGuidance"]:
+                table_comment += f""" | USER GUIDANCE: {table_metadata[table_name]["userGuidance"]}"""
+            if table_metadata[table_name]["etlConventions"]:
+                table_comment += f""" | ETL CONVENTIONS: {table_metadata[table_name]["etlConventions"]}"""
+            table_comment = table_comment.replace("'", '"')
             create_table_comment_statement = (
                 f"COMMENT ON TABLE {self.db_schema}.{table_name} IS '{table_comment}';"
             )
@@ -120,9 +127,17 @@ class ReferencePostgresHandler:
                 print("table", table_name)
                 field_metadata = field_metadata_for_table[field_name]
                 print("field_metadata", field_metadata)
-                field_comment = f"""USER GUIDANCE: {field_metadata["userGuidance"]} \nETLCONVENTIONS: {field_metadata["etlConventions"]}""".replace(
-                    "'", '"'
-                )
+                field_comment = ""
+                if field_metadata["userGuidance"]:
+                    field_comment += (
+                        f"""USER GUIDANCE: {field_metadata["userGuidance"]}"""
+                    )
+                if field_metadata["etlConventions"]:
+                    field_comment += (
+                        f""" | ETLCONVENTIONS: {field_metadata["etlConventions"]}"""
+                    )
+
+                field_comment = field_comment.replace("'", '"')
                 add_field_comment_sql_statement = f"COMMENT ON COLUMN {self.db_schema}.{table_name}.{field_name} IS '{field_comment}';"
                 sql_statements.append(add_field_comment_sql_statement)
         with self.db_con() as db:

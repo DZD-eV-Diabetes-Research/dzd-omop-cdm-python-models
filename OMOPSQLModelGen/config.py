@@ -20,7 +20,7 @@ class Config(BaseSettings):
     LOG_LEVEL: Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"] = Field(
         default="INFO"
     )
-    OMOP_CDM_RELEASE_FILE: AnyHttpUrl = Field(
+    OMOP_CDM_RELEASE_SOURCE_FILE_URL: AnyHttpUrl = Field(
         description="Link to the source code archive (zip) of a github release. This will be the base data for the OMOP SQLModel Python Package that is gona be generated. See https://github.com/OHDSI/CommonDataModel/releases for all releases. Provide the link to the 'Source Code (Zip) file'",
         default="https://github.com/OHDSI/CommonDataModel/archive/refs/tags/v5.4.1.zip",
     )
@@ -38,8 +38,8 @@ class Config(BaseSettings):
     def get_sql_url(self):
         return f"postgresql+pg8000://{self.POSTGRESQL_USER}:{self.POSTGRESQL_PASSWORD}@{self.POSTGRESQL_HOST}/{self.POSTGRESQL_DATABASE}"
 
-    SQLACODEGEN_GENERATORS: List[Literal[
-        "tables", "declarative", "dataclasses", "sqlmodels"]
+    SQLACODEGEN_GENERATORS: List[
+        Literal["tables", "declarative", "dataclasses", "sqlmodels"]
     ] = Field(
         default=["tables", "declarative", "dataclasses"],
         description="The data class styles that should be generated. https://github.com/agronholm/sqlacodegen `SQLModel` is blocked atm due to https://github.com/agronholm/sqlacodegen/issues/302 (sqlcodegen 3.0.0rc5. Should be fixed in next release.)",
@@ -49,7 +49,7 @@ class Config(BaseSettings):
     OMOP_SQL_SCRIPT_SCHEMA_PLACEHOLDER_STRING: str = Field(
         default="@cdmDatabaseSchema",
         description="All official OMOP SQL script, contain a placeholder string, which needs to be replaced with the actual database schema name. Usually you wont ever need to changes this setting.",
-    )   
+    )
 
     ###### CONFIG END ######
     # class Config is a pydantic-settings pre-defined config class to control the behaviour of our settings model

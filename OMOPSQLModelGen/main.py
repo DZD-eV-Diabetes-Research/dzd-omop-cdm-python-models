@@ -15,9 +15,11 @@ if __name__ == "__main__":
 
 from OMOPSQLModelGen.reference_database_handler import ReferencePostgresHandler
 from OMOPSQLModelGen.sources import SOURCES
+from OMOPSQLModelGen.omop_cdm_release_downloader import OMOPCDMReleaseDownloader
+from OMOPSQLModelGen.config import Config
 
-from config import Config
 config = Config()
+OMOPCDMReleaseDownloader().download()
 for OMOP_source in SOURCES:
     print("config.POSTGRESQL_DATABASE", config.POSTGRESQL_DATABASE)
     db = ReferencePostgresHandler(
@@ -29,15 +31,24 @@ for OMOP_source in SOURCES:
     )
     db.create_omop_schema(omop_schema_source=OMOP_source, wipe_clean_before=True)
     db.enrich_omop_schema_metadata(omop_schema_source=OMOP_source)
+    db.run_sql_script_file(OMOP_source.pre_generation_sql_script_dir)
+
     for data_class_style in config.SQLACODEGEN_GENERATORS:
-        sqlqcodegan_cmd = f"""sqlacodegen --generator {data_class_style} {config.get_sql_url()}"""
+        sqlqcodegan_cmd = (
+            f"""sqlacodegen --generator {data_class_style} {config.get_sql_url()}"""
+        )
         print(f"RUN: {sqlqcodegan_cmd}")
         cmd = [
             "bash",
             "-c",
             sqlqcodegan_cmd,
         ]
-        output = Path(PurePath(config.DATAMODEL_OUTPUT_DIR, f"{OMOP_source.version_name}_{data_class_style}.py"))
+        output = Path(
+            PurePath(
+                config.DATAMODEL_OUTPUT_DIR,
+                f"{OMOP_source.version_name}_{data_class_style}.py",
+            )
+        )
         if not output:
             print(f"Something went wrong with {sqlqcodegan_cmd}")
             continue
