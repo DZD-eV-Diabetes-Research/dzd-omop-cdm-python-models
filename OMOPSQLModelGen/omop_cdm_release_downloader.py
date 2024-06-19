@@ -6,6 +6,7 @@ import requests
 from typing import Any
 from pathlib import Path
 from OMOPSQLModelGen.config import Config
+import shutil
 
 config = Config()
 
@@ -17,13 +18,20 @@ class OMOPCDMReleaseDownloader:
             target_extraction_dir=config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
         )
 
-    def download(self):
+    def download(self, force_redownload: bool):
+
+        if not self.downloader.target_is_empty() and not force_redownload:
+            print(
+                f"Skip download of OMOP Repository as it seems to be existing in {self.downloader.target_extraction_dir}"
+            )
+            return
         print(
             "Download OMOP Repository ('https://github.com/OHDSI/CommonDataModel') release from ",
             self.downloader.url,
             "to",
             self.downloader.target_extraction_dir,
         )
+        self.downloader.clean_target()
         self.downloader.download_and_extract(keep_source_zip=True)
 
 
@@ -39,6 +47,17 @@ class ZipDownloader:
         self.target_extraction_dir.mkdir(parents=True, exist_ok=True)
         self.download_target_path: Path = download_target_path
 
+    def target_is_empty(self):
+        if not self.target_extraction_dir.is_dir():
+            return True
+        if not any(self.target_extraction_dir.iterdir()):
+            return True
+        return False
+
+    def clean_target(self):
+        if not self.target_is_empty():
+            shutil.rmtree(self.target_extraction_dir)
+
     def download_zip(self) -> None:
         response: requests.Response = requests.get(self.url)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -46,6 +65,7 @@ class ZipDownloader:
             file.write(response.content)
 
     def extract_zip(self) -> None:
+        self.target_extraction_dir.mkdir(exist_ok=True, parents=True)
         with zipfile.ZipFile(self.download_target_path, "r") as zip_ref:
             zip_ref.extractall(self.target_extraction_dir)
 

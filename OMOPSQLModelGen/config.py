@@ -28,6 +28,10 @@ class Config(BaseSettings):
         default=Path("./downloads/CommonDataModel-5.4.1"),
         descricption="The file from OMOP_CDM_RELEASE_FILE will be downloaded and extracted into this dir.",
     )
+    FORCE_REDOWNLOAD_OMOP_CDM_RELEASE: bool = Field(
+        default=False,
+        description="Set to true to overwrite `OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR` if not empty. Otherwise we skip download and assume local OMOP to be healthy.",
+    )
     POSTGRESQL_HOST: str = Field(default="localhost")
     POSTGRESQL_USER: str = Field(default="omop")
     POSTGRESQL_DATABASE: str = Field(default="omop")
@@ -41,7 +45,7 @@ class Config(BaseSettings):
     SQLACODEGEN_GENERATORS: List[
         Literal["tables", "declarative", "dataclasses", "sqlmodels"]
     ] = Field(
-        default=["tables", "declarative", "dataclasses"],
+        default=["tables", "declarative", "dataclasses", "sqlmodels"],
         description="The data class styles that should be generated. https://github.com/agronholm/sqlacodegen `SQLModel` is blocked atm due to https://github.com/agronholm/sqlacodegen/issues/302 (sqlcodegen 3.0.0rc5. Should be fixed in next release.)",
     )
     DATAMODEL_OUTPUT_DIR: Path = Field(default="./OMOPModel")

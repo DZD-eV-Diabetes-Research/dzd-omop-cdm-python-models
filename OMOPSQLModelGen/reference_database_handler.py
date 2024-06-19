@@ -124,9 +124,9 @@ class ReferencePostgresHandler:
                 all_col_names = [tbl[0] for tbl in db.run(all_column_names_query)]
             field_metadata_for_table = all_field_metadata[table_name]
             for field_name in all_col_names:
-                print("table", table_name)
+                # print("table", table_name)
                 field_metadata = field_metadata_for_table[field_name]
-                print("field_metadata", field_metadata)
+                # print("field_metadata", field_metadata)
                 field_comment = ""
                 if field_metadata["userGuidance"]:
                     field_comment += (

@@ -1,0 +1,114 @@
+def create_table_test():
+    # OMOP CDM Source Version name: OMOP_CDM_5.3
+    from typing import List, Optional
+
+    from sqlalchemy import (
+        Date,
+        DateTime,
+        ForeignKeyConstraint,
+        Index,
+        Integer,
+        Numeric,
+        PrimaryKeyConstraint,
+        String,
+        Text,
+        create_engine,
+    )
+    from sqlalchemy.orm import (
+        DeclarativeBase,
+        Mapped,
+        mapped_column,
+        relationship,
+        Session,
+    )
+    import datetime
+    import decimal
+
+    class Base(DeclarativeBase):
+        pass
+
+    class CdmSource(Base):
+        __tablename__ = "cdm_source"
+        __table_args__ = (
+            {
+                "comment": "DESC: The CDM_SOURCE table contains detail about the source "
+                "database and the process used to transform the data into the OMOP "
+                "Common Data Model."
+            },
+        )
+        __mapper_args__ = {
+            "primary_key": ["cdm_source_name", "cdm_source_abbreviation"]
+        }
+
+        cdm_source_name: Mapped[str] = mapped_column(
+            String(255),
+            comment="USER GUIDANCE: The name of the CDM instance.",
+        )
+        cdm_source_abbreviation: Mapped[str] = mapped_column(
+            String(25),
+            comment="USER GUIDANCE: The abbreviation of the CDM instance.",
+        )
+        cdm_holder: Mapped[Optional[str]] = mapped_column(
+            String(255), comment="USER GUIDANCE: The holder of the CDM instance."
+        )
+
+    # Create a SQLite database and a table
+    engine = create_engine("sqlite:///cdm_source.db", echo=True)
+    Base.metadata.create_all(engine)
+
+    # Insert a row into the cdm_source table
+    new_source = CdmSource(
+        cdm_source_name="OMOP CDM",
+        cdm_source_abbreviation="OMOP",
+        cdm_holder="OHDSI",
+        source_description="The Observational Medical Outcomes Partnership Common Data Model",
+        source_documentation_reference="http://www.ohdsi.org",
+        cdm_etl_reference="http://www.ohdsi.org/web/wiki/doku.php?id=documentation:cdm:etl",
+        source_release_date=datetime.date(2020, 1, 1),
+        cdm_release_date=datetime.date(2020, 6, 1),
+        cdm_version="5.3",
+        vocabulary_version="202004",
+    )
+
+    # Open a session and add the new source
+    with Session(engine) as session:
+        session.add(new_source)
+        session.commit()
+
+
+def test_line_extract_info():
+    import re
+
+    def extract_primary_key_info(line):
+        # Regular expression to match non-named parameters within PrimaryKeyConstraint
+        non_named_params_pattern = r"PrimaryKeyConstraint\(([^)]*)\)"
+        non_named_params_match = re.search(non_named_params_pattern, line)
+
+        cols = []
+        if non_named_params_match:
+            params_str = non_named_params_match.group(1)
+            # Remove any named parameters (e.g., name='value')
+            params_str = re.sub(r"name=['\"].*?['\"]", "", params_str)
+            # Split the parameters string by commas and strip whitespace and quotes
+            cols = [
+                param.strip().strip("'\"")
+                for param in params_str.split(",")
+                if param.strip()
+            ]
+
+        # Regular expression to match the name parameter
+        name_pattern = r"name=['\"]tmp_pk_candiate_key_(.*?)['\"]"
+        name_match = re.search(name_pattern, line)
+
+        table = ""
+        if name_match:
+            table = name_match.group(1)
+
+        return {"cols": cols, "table": table}
+
+    input_line = "PrimaryKeyConstraint('cdm_source_name', 'cdm_source_abbreviation', name='tmp_pk_candiate_key_cdm_source'),"
+    result = extract_primary_key_info(input_line)
+    print(result)
+
+
+test_line_extract_info()
