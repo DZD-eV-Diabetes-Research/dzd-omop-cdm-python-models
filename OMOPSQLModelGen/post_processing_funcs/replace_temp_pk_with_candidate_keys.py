@@ -129,7 +129,9 @@ def replace_temp_pks_with_candidate_keys(
                 new_file_content += tranform_cache.mapper_line + "\n"
                 tranform_cache.mapper_line = None
                 continue
+            pk_cols_continue = False
             for pk_col in tranform_cache.pk_cols:
+
                 if pk_col in line:
                     new_file_content += line.replace("primary_key=True, ", "") + "\n"
                     tranform_cache.transformed_pk_cols.append(pk_col)
@@ -138,7 +140,10 @@ def replace_temp_pks_with_candidate_keys(
                     ):
                         # we are done whith this class transofrmation
                         tranform_cache = None
-                    continue
+                    pk_cols_continue = True
+                    break
+            if pk_cols_continue:
+                continue
 
         new_file_content += line + "\n"
 
