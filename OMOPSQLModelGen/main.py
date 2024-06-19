@@ -16,10 +16,13 @@ if __name__ == "__main__":
 from OMOPSQLModelGen.reference_database_handler import ReferencePostgresHandler
 from OMOPSQLModelGen.sources import SOURCES
 from OMOPSQLModelGen.omop_cdm_release_downloader import OMOPCDMReleaseDownloader
+from OMOPSQLModelGen.pre_generation_processes import run_pre_sql_scripts
 from OMOPSQLModelGen.config import Config
 
 config = Config()
-OMOPCDMReleaseDownloader().download()
+OMOPCDMReleaseDownloader().download(
+    force_redownload=config.FORCE_REDOWNLOAD_OMOP_CDM_RELEASE
+)
 for OMOP_source in SOURCES:
     print("config.POSTGRESQL_DATABASE", config.POSTGRESQL_DATABASE)
     db = ReferencePostgresHandler(
@@ -31,7 +34,8 @@ for OMOP_source in SOURCES:
     )
     db.create_omop_schema(omop_schema_source=OMOP_source, wipe_clean_before=True)
     db.enrich_omop_schema_metadata(omop_schema_source=OMOP_source)
-    db.run_sql_script_file(OMOP_source.pre_generation_sql_script_dir)
+    # pre sql scripts
+    run_pre_sql_scripts(db, OMOP_source)
 
     for data_class_style in config.SQLACODEGEN_GENERATORS:
         sqlqcodegan_cmd = (
@@ -56,5 +60,12 @@ for OMOP_source in SOURCES:
         with open(output, "w") as out:
             return_code = subprocess.call(cmd, stdout=out)
             print("return_code", return_code)
+        if OMOP_source.post_generation_python_functions:
+            for post_processing_func in OMOP_source.post_generation_python_functions:
+
+                print(
+                    f"Run post processing function '{post_processing_func.__name__}' on file '{output.absolute()}'"
+                )
+                post_processing_func(output, OMOP_source, data_class_style)
 
     # sqlacodegen --generator sqlmodel postgresql://ps:ps@localhost/ps

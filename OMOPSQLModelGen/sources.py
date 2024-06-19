@@ -1,4 +1,5 @@
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Callable, NoReturn, Literal
+from typing_extensions import Self
 from pydantic import (
     BaseModel,
     Field,
@@ -12,6 +13,12 @@ from pathlib import Path, PurePath
 from config import Config
 
 config = Config()
+from OMOPSQLModelGen.post_processing_funcs.rename_table_vars import (
+    rename_table_variable_names,
+)
+from OMOPSQLModelGen.post_processing_funcs.replace_temp_pk_with_candidate_keys import (
+    replace_temp_pks_with_candidate_keys,
+)
 
 
 class OMOPSchemaSource(BaseModel):
@@ -34,13 +41,24 @@ class OMOPSchemaSource(BaseModel):
     csv_field_desc_file_path: Path = Field(
         description="The path to the CSV file in the OMOP release archive (As defined in the config var 'OMOP_CDM_RELEASE_FILE') which contains a description of all fields."
     )
-    pre_generation_sql_script_dir: Optional[Path] = Field(
+    pre_generation_sql_script_dirs: Optional[List[Path]] = Field(
         default=None,
-        description="If given this sql script will be run against the database, before we generate the models",
+        description="If given any sql script in the given directories will be run against the OMOP refernce database. this will happen before we generate the python models.",
     )
-    post_generation_python_class: Optional[Type] = Field(
+    post_generation_python_functions: Optional[
+        List[
+            Callable[
+                [
+                    Path,
+                    Self,
+                    Literal["tables", "declarative", "dataclasses", "sqlmodels"],
+                ],
+                NoReturn,
+            ]
+        ]
+    ] = Field(
         default=None,
-        description="If given this python class will be instanciated and the method `run`will be called. this will happen after model generation.",
+        description="If given these python functions will be called  after the each flavor of python model were generated. The function will be called wit This can be used for rework on the generated code.",
     )
 
 
@@ -82,7 +100,14 @@ omopcdm_5_3 = OMOPSchemaSource(
             "inst/csv/OMOP_CDMv5.3_Field_Level.csv",
         )
     ),
-    pre_generation_sql_script_dir="OMOPSQLModelGen/pre_gen_sql/5.x/add_missing_primary_keys.sql",
+    pre_generation_sql_script_dirs=[
+        "OMOPSQLModelGen/pre_gen_sql/5.x/",
+        "OMOPSQLModelGen/pre_gen_sql/5.3/",
+    ],
+    post_generation_python_functions=[
+        rename_table_variable_names,
+        replace_temp_pks_with_candidate_keys,
+    ],
 )
 
 
@@ -124,7 +149,10 @@ omopcdm_5_4 = OMOPSchemaSource(
             "inst/csv/OMOP_CDMv5.4_Field_Level.csv",
         )
     ),
-    pre_generation_sql_script_dir="OMOPSQLModelGen/pre_gen_sql/5.x/add_missing_primary_keys.sql",
+    pre_generation_sql_script_dirs=[
+        "OMOPSQLModelGen/pre_gen_sql/5.x/",
+        "OMOPSQLModelGen/pre_gen_sql/5.4/",
+    ],
 )
 
 SOURCES: List[OMOPSchemaSource] = omopcdm_5_3, omopcdm_5_4
