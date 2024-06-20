@@ -1,18 +1,19 @@
-# DZD - OMOP CDM Python Data Classes Representation
-A Python data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)
+# DZD - OMOP CDM Python ORM/Data Classes Representation
+A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)
 
 Author/Maintainer: Tim Bleimehl  
 Status: Proof of Concept successfull. Working towards a Beta Version  
 
 
-- [DZD - OMOP CDM Python Data Classes Representation](#dzd---omop-cdm-python-data-classes-representation)
+- [DZD - OMOP CDM Python ORM/Data Classes Representation](#dzd---omop-cdm-python-ormdata-classes-representation)
 - [Kudos](#kudos)
-- [What in the package?](#what-in-the-package)
+- [Whats in the package?](#whats-in-the-package)
   - [OMOP Python classes code generator](#omop-python-classes-code-generator)
-  - [OMOP Python Data Classes modules](#omop-python-data-classes-modules)
-  - [Data classes flavors](#data-classes-flavors)
-  - [FAQ](#faq)
-    - [Why are not all tables created as classes?](#why-are-not-all-tables-created-as-classes)
+  - [OMOP Python ORM/Data Classes modules](#omop-python-ormdata-classes-modules)
+  - [What are ORM/Data classes? And why should i use them?](#what-are-ormdata-classes-and-why-should-i-use-them)
+- [Data classes flavors](#data-classes-flavors)
+- [how to install DZD OMOP Models](#how-to-install-dzd-omop-models)
+- [How to use this DZD OMOP Models](#how-to-use-this-dzd-omop-models)
 
 
 
@@ -22,7 +23,7 @@ Status: Proof of Concept successfull. Working towards a Beta Version
 * Thanks to the great communitiy at https://www.ohdsi.org/data-standardization/ and https://github.com/OHDSI/CommonDataModel for the OMOP data model
 * Thanks to the thousands of layers (we can not list here) of software dev shoulders we stand on as python devs ❤️ 
 
-# What in the package?
+# Whats in the package?
 
 This projects consists of two parts:
 
@@ -32,49 +33,44 @@ Usually you wont need to interact with this part of the project, if you just wan
 
 If you are interested have a look at the dedicated [README](README_codegen.md)
 
-## OMOP Python Data Classes modules
-This is the output of of the OMOP Classes code generator.
+## OMOP Python ORM/Data Classes modules
 
-## Data classes flavors
-Thanks to sqlacodegen, this project can provide 4 different styles of Python data classes:
-
-* `tables` only generates `Table` objects, for those who don't want to use the ORM
-* `declarative` the default; generates classes inheriting from `declarative_base()`
-* `dataclasses` generates dataclass-based models; Python v1.4+ only
-* `sqlmodels` (Chef's recommendation 😘🤌 ) - generates model classes for [SQLModel](https://sqlmodel.tiangolo.com/) which are based on the great [Pydantic](https://docs.pydantic.dev) lib
+This is propably the interesting stuff for you! We provide the OMOP CDM as [sqlalchemy](https://www.sqlalchemy.org/) ORM and sqlmodel classes.
 
 
+## What are ORM/Data classes? And why should i use them?
 
-## FAQ
+Oh boy! Have you even lived before? Lets bring you on board!
 
-### Why are not all tables created as classes? 
+A data class in Python, particularly within the context of Object-Relational Mapping (ORM), is a class designed to represent and manipulate data from a database. These classes define the structure and types of the data they manage. In ORM frameworks like SQLAlchemy and SQLModel, data classes map class attributes to database columns, enabling seamless CRUD operations through Python objects. They facilitate database schema creation, querying, and data validation while abstracting the complexity of raw SQL queries.
 
-in the `declarative`, `dataclasses` and `sqlmodels` generator all Objects should be generated as classes.  
-e.g.
+That's sounds fancy but lets at the real life impact ORM Classes can have for you:
 
-```python
-class Concept(Base):
-     __tablename__ = 'concept'
-    ...
-```
+* **Easy Database Use**: Instead of developing complex SQL queries, you can use simple Python code to interact with your database. This makes it much easier to add, remove, or change data.
+* **Clear and Organized Code**: Using Data classes help you keep your code neat and organized. Each class represents a table, making it easy to see what data you have and how it’s structured.
+* **Better Tools Support**: Many coding tools and editors can help you write and debug your code better when you use data classes. This includes features like suggestions and error checking, making coding easier and more fun.
+* **Data Validation**: Because ORM classes specify the datamodel, you can not enter wrong datatypes. You can immediate feedback where and what was entered on a wrong location (Or when required data is missing.)
+* **Integration with Data Analysis Libraries**: Python has powerful libraries for data analysis (like pandas and NumPy) that integrate well with ORMs. This allows you to easily query the OMOP CDM database and directly use the results for analysis.
 
-But in some cases they are declared as a `sqlalchemy.Table`-instance.  
-e.g.:
-```python
-t_cdm_source = Table(
-    'cdm_source', Base.metadata,
-    ...
-```
+There are many more great and subtil advantages, but lets keep it short here. In summary, using ORM classes simplifies database management, makes your code more understandable, speeds up development, ensures data quality, and provides better tool support. 
 
-That unfortunatly produces some inconsistencies in the OMOP CMD Python object representation.
-The reason for that is the OMOP CDM does not define a primary key for some tables (e.g. `CDM_SOURCE`). At the same time sqlalchemy ORM module, which lets tables be represent as python classes, does not support classes without primary keys.  
 
-> The SQLAlchemy ORM, in order to map to a particular table, needs there to be at least one column denoted as a primary key column; multiple-column, i.e. composite, primary keys are of course entirely feasible as well.
 
-  \- https://docs.sqlalchemy.org/en/14/faq/ormconfiguration.html#how-do-i-map-a-table-that-has-no-primary-key
+# Data classes flavors
 
-Also see: 
-https://github.com/OHDSI/CommonDataModel/issues/494#issuecomment-2133446980 
+There are different styles of data model represantation possible. This module covers four popular of them. They are all based on (or directly integrated in) https://www.sqlalchemy.org/ 
+sqlalchemy is the most common way to inetract with relational databases in python. Lets have an overview how the different styles are named, have a short explanation what they are and where you can find the respective omop representation:
 
-https://github.com/agronholm/sqlacodegen/issues/235
+* `tables` ([OMOP CDM 5.3](OMOPModel/OMOP_CDM_5.3_tables.py), [OMOP CDM 5.4](OMOPModel/OMOP_CDM_5.4_tables.py)): only basic `Table` objects that represant the OMOP CDM. No real ORM functionality. if you dont have a specific reason to use these, ignore it.
+* `declarative` ([OMOP CDM 5.3](OMOPModel/OMOP_CDM_5.3_declarative.py), [OMOP CDM 5.4](OMOPModel/OMOP_CDM_5.4_declarative.py)): the default way to declare table based data classes in sqlalchemy; generates classes inheriting from `declarative_base()`. See https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models for more details behind the scenes. if you are an old sqlalchemy veteran, you may want to have a look at these.
+* `dataclasses` ([OMOP CDM 5.3](OMOPModel/OMOP_CDM_5.3_dataclasses.py), [OMOP CDM 5.4](OMOPModel/OMOP_CDM_5.4_dataclasses.py)): The more modern (2.0) approach of sqlalchemy representation of ORM/data classes. https://docs.sqlalchemy.org/en/20/orm/dataclasses.html 
+* `sqlmodels` ([OMOP CDM 5.3](OMOPModel/OMOP_CDM_5.3_sqlmodels.py), [OMOP CDM 5.4](OMOPModel/OMOP_CDM_5.4_sqlmodels.py)): (Chef's recommendation 😘🤌 ) - [sqlmodel](https://sqlmodel.tiangolo.com/) is the kid on the block. Its a project by the [Pydantic](https://docs.pydantic.dev/latest/) community. It unites sqlalchemy and Pydantic. Two of the most beatiful and useful python module out there. My personal favorite!
+
+# how to install DZD OMOP Models
+
+todo
+
+# How to use this DZD OMOP Models
+
+todo
 
