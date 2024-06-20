@@ -1,29 +1,47 @@
 # DZD - OMOP CDM Python Data Classes Representation
-A Python data class representation of the Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)
-  
-This project is build upon sqlacodegen ❤️ Big thanks for the hard work of the community at https://github.com/agronholm/sqlacodegen
-  
+A Python data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)
+
 Author/Maintainer: Tim Bleimehl  
 Status: Proof of Concept successfull. Working towards a Beta Version  
-  
-This projects consists of two parts:
 
+
+- [DZD - OMOP CDM Python Data Classes Representation](#dzd---omop-cdm-python-data-classes-representation)
+- [Kudos](#kudos)
+- [What in the package?](#what-in-the-package)
+  - [OMOP Python classes code generator](#omop-python-classes-code-generator)
+  - [OMOP Python Data Classes modules](#omop-python-data-classes-modules)
+  - [Data classes flavors](#data-classes-flavors)
+  - [FAQ](#faq)
+    - [Why are not all tables created as classes?](#why-are-not-all-tables-created-as-classes)
+
+
+
+# Kudos
+
+* This project uses sqlacodegen for the data class generation ❤️ Thanks for the great work of the community at https://github.com/agronholm/sqlacodegen
+* Thanks to the great communitiy at https://www.ohdsi.org/data-standardization/ and https://github.com/OHDSI/CommonDataModel for the OMOP data model
+* Thanks to the thousands of layers (we can not list here) of software dev shoulders we stand on as python devs ❤️ 
+
+# What in the package?
+
+This projects consists of two parts:
 
 ## OMOP Python classes code generator
 The first one is the code generator that generates Python data classes based on the OMOP CDM.
-Usealy you wont need to interact with this part of the project, if you just want to work with the OMOP Dataclasses.
+Usually you wont need to interact with this part of the project, if you just want to work with the OMOP data classes.  
+
+If you are interested have a look at the dedicated [README](README_codegen.md)
 
 ## OMOP Python Data Classes modules
 This is the output of of the OMOP Classes code generator.
 
-
 ## Data classes flavors
 Thanks to sqlacodegen, this project can provide 4 different styles of Python data classes:
 
-* `tables` (only generates `Table` objects, for those who don't want to use the ORM)
-* `declarative` (the default; generates classes inheriting from `declarative_base()`
-* `dataclasses` (generates dataclass-based models; Python v1.4+ only)
-* `sqlmodels` (generates model classes for [SQLModel](https://sqlmodel.tiangolo.com/) which are based on the great [Pydantic](https://docs.pydantic.dev) lib)
+* `tables` only generates `Table` objects, for those who don't want to use the ORM
+* `declarative` the default; generates classes inheriting from `declarative_base()`
+* `dataclasses` generates dataclass-based models; Python v1.4+ only
+* `sqlmodels` (Chef's recommendation 😘🤌 ) - generates model classes for [SQLModel](https://sqlmodel.tiangolo.com/) which are based on the great [Pydantic](https://docs.pydantic.dev) lib
 
 
 
