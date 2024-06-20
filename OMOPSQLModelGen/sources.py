@@ -19,6 +19,9 @@ from OMOPSQLModelGen.post_processing_funcs.rename_table_vars import (
 from OMOPSQLModelGen.post_processing_funcs.replace_temp_pk_with_candidate_keys import (
     replace_temp_pks_with_candidate_keys,
 )
+from OMOPSQLModelGen.post_processing_funcs.fix_sql_model import (
+    fix_sql_model,
+)
 
 
 class OMOPSchemaSource(BaseModel):
@@ -107,6 +110,7 @@ omopcdm_5_3 = OMOPSchemaSource(
     post_generation_python_functions=[
         rename_table_variable_names,
         replace_temp_pks_with_candidate_keys,
+        fix_sql_model,
     ],
 )
 
@@ -152,6 +156,11 @@ omopcdm_5_4 = OMOPSchemaSource(
     pre_generation_sql_script_dirs=[
         "OMOPSQLModelGen/pre_gen_sql/5.x/",
         "OMOPSQLModelGen/pre_gen_sql/5.4/",
+    ],
+    post_generation_python_functions=[
+        rename_table_variable_names,
+        replace_temp_pks_with_candidate_keys,
+        fix_sql_model,
     ],
 )
 
