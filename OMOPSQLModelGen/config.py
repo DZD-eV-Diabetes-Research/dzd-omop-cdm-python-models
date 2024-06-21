@@ -48,7 +48,7 @@ class Config(BaseSettings):
         default=["tables", "declarative", "dataclasses", "sqlmodels"],
         description="The data class styles that should be generated. https://github.com/agronholm/sqlacodegen `SQLModel` is blocked atm due to https://github.com/agronholm/sqlacodegen/issues/302 (sqlcodegen 3.0.0rc5. Should be fixed in next release.)",
     )
-    DATAMODEL_OUTPUT_DIR: Path = Field(default="./OMOPModel")
+    DATAMODEL_OUTPUT_DIR: Path = Field(default="./DZDOMOPModel/OMOPModel")
 
     OMOP_SQL_SCRIPT_SCHEMA_PLACEHOLDER_STRING: str = Field(
         default="@cdmDatabaseSchema",
