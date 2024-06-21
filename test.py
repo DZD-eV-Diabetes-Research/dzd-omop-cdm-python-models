@@ -112,3 +112,10 @@ def test_line_extract_info():
 
 
 test_line_extract_info()
+
+
+def first_test():
+    from OMOPModel import OMOP_5_3_sqlmodels as omop
+
+    person = omop.Person(year_of_birth=1985)
+    person.care_site = omop.CareSite(care_site_name="St. Local")
