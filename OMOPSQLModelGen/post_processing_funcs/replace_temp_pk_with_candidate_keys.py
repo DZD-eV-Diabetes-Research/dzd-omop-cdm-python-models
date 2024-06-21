@@ -131,8 +131,10 @@ def replace_temp_pks_with_candidate_keys(
                 continue
             pk_cols_continue = False
             for pk_col in tranform_cache.pk_cols:
-                if pk_col in line:
+                if line.strip().startswith(pk_col):
+                    line = line.replace("primary_key=True, ", "")
                     new_file_content += line.replace("primary_key=True", "") + "\n"
+
                     tranform_cache.transformed_pk_cols.append(pk_col)
                     if len(tranform_cache.transformed_pk_cols) == len(
                         tranform_cache.pk_cols

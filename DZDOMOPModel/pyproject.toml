@@ -10,14 +10,16 @@ root = "../"
 [project]
 name = "dzdomop"
 authors = [{ name = "Tim Bleimehl", email = "bleimehl@helmholtz-munich.de" }]
-description = "A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)"
+description = "A Python ORM/data classes representation of the OMOP Common Data Model in different flavors powered by sqlacodegen"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 keywords = ["DZD", "OMOP"]
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = ["sqlmodel", "sqlalchemy"]
 dynamic = ["version"]

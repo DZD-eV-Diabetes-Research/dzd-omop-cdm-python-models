@@ -1,4 +1,3 @@
-# OMOP CDM Source Version name: OMOP_5_3
 from typing import List, Optional
 
 from sqlalchemy import Date, DateTime, ForeignKeyConstraint, Index, Integer, Numeric, PrimaryKeyConstraint, String, Text
@@ -18,8 +17,8 @@ class CdmSource(Base):
                 'Common Data Model.'}
     )
     __mapper_args__ = {"primary_key": ['cdm_source_name', 'cdm_source_abbreviation']}
-    cdm_source_name: Mapped[str] = mapped_column(String(255), , comment='USER GUIDANCE: The name of the CDM instance.')
-    cdm_source_abbreviation: Mapped[str] = mapped_column(String(25), , comment='USER GUIDANCE: The abbreviation of the CDM instance.')
+    cdm_source_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: The name of the CDM instance.')
+    cdm_source_abbreviation: Mapped[str] = mapped_column(String(25), comment='USER GUIDANCE: The abbreviation of the CDM instance.')
     cdm_holder: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: The holder of the CDM instance.')
     source_description: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: The description of the CDM instance.')
     source_documentation_reference: Mapped[Optional[str]] = mapped_column(String(255))
@@ -370,10 +369,10 @@ class CohortDefinition(Base):
                 'to instantiate the cohort within the OMOP Common Data Model.'}
     )
     __mapper_args__ = {"primary_key": ['cohort_definition_id', 'definition_type_concept_id', 'subject_concept_id']}
-    cohort_definition_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
+    cohort_definition_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
     cohort_definition_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: A short description of the cohort')
-    definition_type_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
-    subject_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
+    definition_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
+    subject_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
     cohort_definition_description: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: A complete description of the cohort.')
     cohort_definition_syntax: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: Syntax or code to operationalize the Cohort Definition.')
     cohort_initiation_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: A date to indicate when the Cohort was initiated in the COHORT table.')
@@ -407,10 +406,10 @@ class ConceptAncestor(Base):
                 'CONCEPT_RELATIONSHIP and RELATIONSHIP tables.'}
     )
     __mapper_args__ = {"primary_key": ['ancestor_concept_id', 'descendant_concept_id', 'min_levels_of_separation', 'max_levels_of_separation']}
-    ancestor_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
-    descendant_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
-    min_levels_of_separation: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
-    max_levels_of_separation: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    ancestor_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
+    descendant_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
+    min_levels_of_separation: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    max_levels_of_separation: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
 
     ancestor_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[ancestor_concept_id], back_populates='concept_ancestor')
     descendant_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[descendant_concept_id], back_populates='concept_ancestor_')
@@ -428,7 +427,7 @@ class ConceptSynonym(Base):
     __mapper_args__ = {"primary_key": ['concept_id', 'concept_synonym_name', 'language_concept_id']}
     concept_id: Mapped[int] = mapped_column(Integer, )
     concept_synonym_name: Mapped[str] = mapped_column(String(1000), )
-    language_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    language_concept_id: Mapped[int] = mapped_column(Integer, )
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id], back_populates='concept_synonym')
     language_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[language_concept_id], back_populates='concept_synonym_')
@@ -577,9 +576,9 @@ class DrugStrength(Base):
                 'is supplemental information to support standardized analysis of '
                 'drug utilization.'}
     )
-
-    drug_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
-    ingredient_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
+    __mapper_args__ = {"primary_key": ['drug_concept_id', 'ingredient_concept_id']}
+    drug_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
+    ingredient_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
     valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the Concept was first\nrecorded. The default value is\n1-Jan-1970.')
     valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when then Concept became invalid.')
     amount_value: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment='USER GUIDANCE: The numeric value or the amount of active ingredient contained within the drug product.')
@@ -631,9 +630,9 @@ class FactRelationship(Base):
     __mapper_args__ = {"primary_key": ['domain_concept_id_1', 'fact_id_1', 'domain_concept_id_2', 'fact_id_2', 'relationship_concept_id']}
     domain_concept_id_1: Mapped[int] = mapped_column(Integer, )
     fact_id_1: Mapped[int] = mapped_column(Integer, )
-    domain_concept_id_2: Mapped[int] = mapped_column(Integer, primary_key=True)
-    fact_id_2: Mapped[int] = mapped_column(Integer, primary_key=True)
-    relationship_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    domain_concept_id_2: Mapped[int] = mapped_column(Integer, )
+    fact_id_2: Mapped[int] = mapped_column(Integer, )
+    relationship_concept_id: Mapped[int] = mapped_column(Integer, )
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_1], back_populates='fact_relationship')
     concept_: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_2], back_populates='fact_relationship_')
@@ -653,7 +652,7 @@ class Metadata(Base):
     __mapper_args__ = {"primary_key": ['metadata_concept_id', 'metadata_type_concept_id', 'name']}
     metadata_concept_id: Mapped[int] = mapped_column(Integer, )
     metadata_type_concept_id: Mapped[int] = mapped_column(Integer, )
-    name: Mapped[str] = mapped_column(String(250), primary_key=True)
+    name: Mapped[str] = mapped_column(String(250), )
     value_as_string: Mapped[Optional[str]] = mapped_column(String(250))
     value_as_concept_id: Mapped[Optional[int]] = mapped_column(Integer)
     metadata_date: Mapped[Optional[datetime.date]] = mapped_column(Date)
@@ -740,13 +739,13 @@ class SourceToConceptMap(Base):
                 'published to the OMOP community.'}
     )
     __mapper_args__ = {"primary_key": ['source_code', 'source_concept_id', 'source_vocabulary_id', 'target_concept_id', 'target_vocabulary_id', 'valid_start_date', 'valid_end_date']}
-    source_code: Mapped[str] = mapped_column(String(50), , comment='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
-    source_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
-    source_vocabulary_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
-    target_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
-    target_vocabulary_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: The Vocabulary of the target Concept.')
-    valid_start_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
-    valid_end_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
+    source_code: Mapped[str] = mapped_column(String(50), comment='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
+    source_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
+    source_vocabulary_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
+    target_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
+    target_vocabulary_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: The Vocabulary of the target Concept.')
+    valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
+    valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
     source_code_description: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: An optional description for the\nsource code. This is included as a\nconvenience to compare the\ndescription of the source code to\nthe name of the concept.')
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the mapping instance was invalidated. Possible values are D (deleted), U (replaced with an update) or NULL when valid_end_date has the default value.')
 
@@ -772,9 +771,9 @@ class ConceptRelationship(Base):
     __mapper_args__ = {"primary_key": ['concept_id_1', 'concept_id_2', 'relationship_id', 'valid_start_date', 'valid_end_date']}
     concept_id_1: Mapped[int] = mapped_column(Integer, )
     concept_id_2: Mapped[int] = mapped_column(Integer, )
-    relationship_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
-    valid_start_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the relationship is first recorded.')
-    valid_end_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the relationship is invalidated.')
+    relationship_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
+    valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the relationship is first recorded.')
+    valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the relationship is invalidated.')
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the relationship was invalidated. Possible values are "D" (deleted), "U" (updated) or NULL. ')
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1], back_populates='concept_relationship')
@@ -907,7 +906,7 @@ class Person(Base):
     observation: Mapped[List['Observation']] = relationship('Observation', back_populates='person')
 
 
-class Death(Person):
+class Death(Base):
     __tablename__ = 'death'
     __table_args__ = (
         ForeignKeyConstraint(['cause_concept_id'], ['concept.concept_id'], name='fpk_death_cause_concept_id'),
@@ -921,8 +920,8 @@ class Death(Person):
                 'Condition in an administrative claim, status of enrollment into a '
                 'health plan, or explicit record in EHR data.'}
     )
-
-    person_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    __mapper_args__ = {"primary_key": ['person_id']}
+    person_id: Mapped[int] = mapped_column(Integer, )
     death_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date the person was deceased. | ETLCONVENTIONS: If the precise date include day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day.')
     death_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If not available set time to midnight (00:00:00)')
     death_type_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the provenance of the death record, i.e., where it came from. It is possible that an administrative claims database would source death information from a government file so do not assume the Death Type is the same as the Visit Type, etc. | ETLCONVENTIONS: Use the type concept that be reflects the source of the death record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')

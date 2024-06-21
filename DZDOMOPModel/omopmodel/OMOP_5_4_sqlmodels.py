@@ -1,4 +1,3 @@
-# OMOP CDM Source Version name: OMOP_5_4
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
@@ -286,12 +285,12 @@ class CdmSource(SQLModel, table=True):
     )
     __mapper_args__ = {"primary_key": ['cdm_source_abbreviation', 'cdm_holder', 'cdm_version_concept_id', 'vocabulary_version']}
     cdm_source_name: str = Field(sa_column=Column('cdm_source_name', String(255)), description='USER GUIDANCE: The name of the CDM instance.')
-    cdm_source_abbreviation: str = Field(sa_column=Column('cdm_source_abbreviation', String(25), ), description='USER GUIDANCE: The abbreviation of the CDM instance.')
-    cdm_holder: str = Field(sa_column=Column('cdm_holder', String(255), ), description='USER GUIDANCE: The holder of the CDM instance.')
+    cdm_source_abbreviation: str = Field(sa_column=Column('cdm_source_abbreviation', String(25)), description='USER GUIDANCE: The abbreviation of the CDM instance.')
+    cdm_holder: str = Field(sa_column=Column('cdm_holder', String(255)), description='USER GUIDANCE: The holder of the CDM instance.')
     source_release_date: date = Field(sa_column=Column('source_release_date', Date), description='USER GUIDANCE: The release date of the source data.')
     cdm_release_date: date = Field(sa_column=Column('cdm_release_date', Date), description='USER GUIDANCE: The release data of the CDM instance.')
-    cdm_version_concept_id: int = Field(sa_column=Column('cdm_version_concept_id', Integer, ), description='USER GUIDANCE: The Concept Id representing the version of the CDM. | ETLCONVENTIONS: You can find all concepts that represent the CDM versions using the query: SELECT * FROM CONCEPT WHERE VOCABULARY_ID = "CDM" AND CONCEPT_CLASS = "CDM"')
-    vocabulary_version: str = Field(sa_column=Column('vocabulary_version', String(20), ), description=' | ETLCONVENTIONS: You can find the version of your Vocabulary using the query: SELECT vocabulary_version from vocabulary where vocabulary_id = "None"')
+    cdm_version_concept_id: int = Field(sa_column=Column('cdm_version_concept_id', Integer), description='USER GUIDANCE: The Concept Id representing the version of the CDM. | ETLCONVENTIONS: You can find all concepts that represent the CDM versions using the query: SELECT * FROM CONCEPT WHERE VOCABULARY_ID = "CDM" AND CONCEPT_CLASS = "CDM"')
+    vocabulary_version: str = Field(sa_column=Column('vocabulary_version', String(20)), description=' | ETLCONVENTIONS: You can find the version of your Vocabulary using the query: SELECT vocabulary_version from vocabulary where vocabulary_id = "None"')
     source_description: Optional[str] = Field(default=None, sa_column=Column('source_description', Text), description='USER GUIDANCE: The description of the CDM instance.')
     source_documentation_reference: Optional[str] = Field(default=None, sa_column=Column('source_documentation_reference', String(255)))
     cdm_etl_reference: Optional[str] = Field(default=None, sa_column=Column('cdm_etl_reference', String(255)), description=' | ETLCONVENTIONS: Put the link to the CDM version used.')
@@ -316,10 +315,10 @@ class CohortDefinition(SQLModel, table=True):
                 'to instantiate the cohort within the OMOP Common Data Model.'}
     )
     __mapper_args__ = {"primary_key": ['cohort_definition_id', 'definition_type_concept_id', 'subject_concept_id']}
-    cohort_definition_id: int = Field(sa_column=Column('cohort_definition_id', Integer, ), description='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
+    cohort_definition_id: int = Field(sa_column=Column('cohort_definition_id', Integer), description='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
     cohort_definition_name: str = Field(sa_column=Column('cohort_definition_name', String(255)), description='USER GUIDANCE: A short description of the cohort')
-    definition_type_concept_id: int = Field(sa_column=Column('definition_type_concept_id', Integer, ), description='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
-    subject_concept_id: int = Field(sa_column=Column('subject_concept_id', Integer, ), description='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
+    definition_type_concept_id: int = Field(sa_column=Column('definition_type_concept_id', Integer), description='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
+    subject_concept_id: int = Field(sa_column=Column('subject_concept_id', Integer), description='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
     cohort_definition_description: Optional[str] = Field(default=None, sa_column=Column('cohort_definition_description', Text), description='USER GUIDANCE: A complete description of the cohort.')
     cohort_definition_syntax: Optional[str] = Field(default=None, sa_column=Column('cohort_definition_syntax', Text), description='USER GUIDANCE: Syntax or code to operationalize the Cohort Definition.')
     cohort_initiation_date: Optional[date] = Field(default=None, sa_column=Column('cohort_initiation_date', Date), description='USER GUIDANCE: A date to indicate when the Cohort was initiated in the COHORT table.')
@@ -353,10 +352,10 @@ class ConceptAncestor(SQLModel, table=True):
                 'CONCEPT_RELATIONSHIP and RELATIONSHIP tables.'}
     )
     __mapper_args__ = {"primary_key": ['ancestor_concept_id', 'descendant_concept_id', 'min_levels_of_separation', 'max_levels_of_separation']}
-    ancestor_concept_id: int = Field(sa_column=Column('ancestor_concept_id', Integer, ), description='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
-    descendant_concept_id: int = Field(sa_column=Column('descendant_concept_id', Integer, ), description='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
-    min_levels_of_separation: int = Field(sa_column=Column('min_levels_of_separation', Integer, primary_key=True), description='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
-    max_levels_of_separation: int = Field(sa_column=Column('max_levels_of_separation', Integer, primary_key=True), description='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    ancestor_concept_id: int = Field(sa_column=Column('ancestor_concept_id', Integer), description='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
+    descendant_concept_id: int = Field(sa_column=Column('descendant_concept_id', Integer), description='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
+    min_levels_of_separation: int = Field(sa_column=Column('min_levels_of_separation', Integer), description='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    max_levels_of_separation: int = Field(sa_column=Column('max_levels_of_separation', Integer), description='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
 
     ancestor_concept: Optional['Concept'] = Relationship(back_populates='concept_ancestor')
     descendant_concept: Optional['Concept'] = Relationship(back_populates='concept_ancestor_')
@@ -374,7 +373,7 @@ class ConceptSynonym(SQLModel, table=True):
     __mapper_args__ = {"primary_key": ['concept_id', 'concept_synonym_name', 'language_concept_id']}
     concept_id: int = Field(sa_column=Column('concept_id', Integer, ))
     concept_synonym_name: str = Field(sa_column=Column('concept_synonym_name', String(1000), ))
-    language_concept_id: int = Field(sa_column=Column('language_concept_id', Integer, primary_key=True))
+    language_concept_id: int = Field(sa_column=Column('language_concept_id', Integer, ))
 
     concept: Optional['Concept'] = Relationship(back_populates='concept_synonym')
     language_concept: Optional['Concept'] = Relationship(back_populates='concept_synonym_')
@@ -469,9 +468,9 @@ class DrugStrength(SQLModel, table=True):
                 'is supplemental information to support standardized analysis of '
                 'drug utilization.'}
     )
-
-    drug_concept_id: int = Field(sa_column=Column('drug_concept_id', Integer, primary_key=True), description='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
-    ingredient_concept_id: int = Field(sa_column=Column('ingredient_concept_id', Integer, primary_key=True), description='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
+    __mapper_args__ = {"primary_key": ['drug_concept_id', 'ingredient_concept_id']}
+    drug_concept_id: int = Field(sa_column=Column('drug_concept_id', Integer), description='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
+    ingredient_concept_id: int = Field(sa_column=Column('ingredient_concept_id', Integer), description='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
     valid_start_date: date = Field(sa_column=Column('valid_start_date', Date), description='USER GUIDANCE: The date when the Concept was first\nrecorded. The default value is\n1-Jan-1970.')
     valid_end_date: date = Field(sa_column=Column('valid_end_date', Date), description='USER GUIDANCE: The date when then Concept became invalid.')
     amount_value: Optional[Decimal] = Field(default=None, sa_column=Column('amount_value', Numeric), description='USER GUIDANCE: The numeric value or the amount of active ingredient contained within the drug product.')
@@ -523,9 +522,9 @@ class FactRelationship(SQLModel, table=True):
     __mapper_args__ = {"primary_key": ['domain_concept_id_1', 'fact_id_1', 'domain_concept_id_2', 'fact_id_2', 'relationship_concept_id']}
     domain_concept_id_1: int = Field(sa_column=Column('domain_concept_id_1', Integer, ))
     fact_id_1: int = Field(sa_column=Column('fact_id_1', Integer, ))
-    domain_concept_id_2: int = Field(sa_column=Column('domain_concept_id_2', Integer, primary_key=True))
-    fact_id_2: int = Field(sa_column=Column('fact_id_2', Integer, primary_key=True))
-    relationship_concept_id: int = Field(sa_column=Column('relationship_concept_id', Integer, primary_key=True))
+    domain_concept_id_2: int = Field(sa_column=Column('domain_concept_id_2', Integer, ))
+    fact_id_2: int = Field(sa_column=Column('fact_id_2', Integer, ))
+    relationship_concept_id: int = Field(sa_column=Column('relationship_concept_id', Integer, ))
 
     concept: Optional['Concept'] = Relationship(back_populates='fact_relationship')
     concept_: Optional['Concept'] = Relationship(back_populates='fact_relationship_')
@@ -672,13 +671,13 @@ class SourceToConceptMap(SQLModel, table=True):
                 'published to the OMOP community.'}
     )
     __mapper_args__ = {"primary_key": ['source_code', 'source_concept_id', 'source_vocabulary_id', 'target_concept_id', 'target_vocabulary_id', 'valid_start_date', 'valid_end_date']}
-    source_code: str = Field(sa_column=Column('source_code', String(50), ), description='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
-    source_concept_id: int = Field(sa_column=Column('source_concept_id', Integer, ), description='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
-    source_vocabulary_id: str = Field(sa_column=Column('source_vocabulary_id', String(20), primary_key=True), description='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
-    target_concept_id: int = Field(sa_column=Column('target_concept_id', Integer, primary_key=True), description='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
-    target_vocabulary_id: str = Field(sa_column=Column('target_vocabulary_id', String(20), primary_key=True), description='USER GUIDANCE: The Vocabulary of the target Concept.')
-    valid_start_date: date = Field(sa_column=Column('valid_start_date', Date, primary_key=True), description='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
-    valid_end_date: date = Field(sa_column=Column('valid_end_date', Date, primary_key=True), description='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
+    source_code: str = Field(sa_column=Column('source_code', String(50)), description='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
+    source_concept_id: int = Field(sa_column=Column('source_concept_id', Integer), description='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
+    source_vocabulary_id: str = Field(sa_column=Column('source_vocabulary_id', String(20)), description='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
+    target_concept_id: int = Field(sa_column=Column('target_concept_id', Integer), description='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
+    target_vocabulary_id: str = Field(sa_column=Column('target_vocabulary_id', String(20)), description='USER GUIDANCE: The Vocabulary of the target Concept.')
+    valid_start_date: date = Field(sa_column=Column('valid_start_date', Date), description='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
+    valid_end_date: date = Field(sa_column=Column('valid_end_date', Date), description='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
     source_code_description: Optional[str] = Field(default=None, sa_column=Column('source_code_description', String(255)), description='USER GUIDANCE: An optional description for the\nsource code. This is included as a\nconvenience to compare the\ndescription of the source code to\nthe name of the concept.')
     invalid_reason: Optional[str] = Field(default=None, sa_column=Column('invalid_reason', String(1)), description='USER GUIDANCE: Reason the mapping instance was invalidated. Possible values are D (deleted), U (replaced with an update) or NULL when valid_end_date has the default value.')
 
@@ -745,9 +744,9 @@ class ConceptRelationship(SQLModel, table=True):
     __mapper_args__ = {"primary_key": ['concept_id_1', 'concept_id_2', 'relationship_id', 'valid_start_date', 'valid_end_date']}
     concept_id_1: int = Field(sa_column=Column('concept_id_1', Integer, ))
     concept_id_2: int = Field(sa_column=Column('concept_id_2', Integer, ))
-    relationship_id: str = Field(sa_column=Column('relationship_id', String(20), primary_key=True), description='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
-    valid_start_date: date = Field(sa_column=Column('valid_start_date', Date, primary_key=True), description='USER GUIDANCE: The date when the relationship is first recorded.')
-    valid_end_date: date = Field(sa_column=Column('valid_end_date', Date, primary_key=True), description='USER GUIDANCE: The date when the relationship is invalidated.')
+    relationship_id: str = Field(sa_column=Column('relationship_id', String(20)), description='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
+    valid_start_date: date = Field(sa_column=Column('valid_start_date', Date), description='USER GUIDANCE: The date when the relationship is first recorded.')
+    valid_end_date: date = Field(sa_column=Column('valid_end_date', Date), description='USER GUIDANCE: The date when the relationship is invalidated.')
     invalid_reason: Optional[str] = Field(default=None, sa_column=Column('invalid_reason', String(1)), description='USER GUIDANCE: Reason the relationship was invalidated. Possible values are "D" (deleted), "U" (updated) or NULL. ')
 
     concept: Optional['Concept'] = Relationship(back_populates='concept_relationship')
@@ -936,7 +935,7 @@ class ConditionEra(SQLModel, table=True):
     person: Optional['Person'] = Relationship(back_populates='condition_era')
 
 
-class Death(Person, table=True):
+class Death(SQLModel, table=True):
     __table_args__ = (
         ForeignKeyConstraint(['cause_concept_id'], ['concept.concept_id'], name='fpk_death_cause_concept_id'),
         ForeignKeyConstraint(['cause_source_concept_id'], ['concept.concept_id'], name='fpk_death_cause_source_concept_id'),
@@ -949,8 +948,8 @@ class Death(Person, table=True):
                 'Condition in an administrative claim, status of enrollment into a '
                 'health plan, or explicit record in EHR data.'}
     )
-
-    person_id: int = Field(sa_column=Column('person_id', Integer, primary_key=True))
+    __mapper_args__ = {"primary_key": ['person_id']}
+    person_id: int = Field(sa_column=Column('person_id', Integer, ))
     death_date: date = Field(sa_column=Column('death_date', Date), description='USER GUIDANCE: The date the person was deceased. | ETLCONVENTIONS: If the precise date include day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day.')
     death_datetime: Optional[datetime] = Field(default=None, sa_column=Column('death_datetime', DateTime), description=' | ETLCONVENTIONS: If not available set time to midnight (00:00:00)')
     death_type_concept_id: Optional[int] = Field(default=None, sa_column=Column('death_type_concept_id', Integer), description='USER GUIDANCE: This is the provenance of the death record, i.e., where it came from. It is possible that an administrative claims database would source death information from a government file so do not assume the Death Type is the same as the Visit Type, etc. | ETLCONVENTIONS: Use the type concept that be reflects the source of the death record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
@@ -1409,9 +1408,9 @@ class EpisodeEvent(SQLModel, table=True):
                 'the EPISODE_EVENT table is not populated.'}
     )
     __mapper_args__ = {"primary_key": ['episode_id', 'event_id', 'episode_event_field_concept_id']}
-    episode_id: int = Field(sa_column=Column('episode_id', Integer, ), description='USER GUIDANCE: Use this field to link the EPISODE_EVENT record to its EPISODE. | ETLCONVENTIONS: Put the EPISODE_ID that subsumes the EPISODE_EVENT record here.')
-    event_id: int = Field(sa_column=Column('event_id', Integer, ), description='USER GUIDANCE: This field is the primary key of the linked record in the database. For example, if the Episode Event is a Condition Occurrence, then the CONDITION_OCCURRENCE_ID of the linked record goes in this field.  | ETLCONVENTIONS: Put the primary key of the linked record here. ')
-    episode_event_field_concept_id: int = Field(sa_column=Column('episode_event_field_concept_id', Integer, ), description='USER GUIDANCE: This field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the EVENT_ID came from. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?vocabulary=CDM&conceptClass=Field&page=1&pageSize=15&query=)')
+    episode_id: int = Field(sa_column=Column('episode_id', Integer), description='USER GUIDANCE: Use this field to link the EPISODE_EVENT record to its EPISODE. | ETLCONVENTIONS: Put the EPISODE_ID that subsumes the EPISODE_EVENT record here.')
+    event_id: int = Field(sa_column=Column('event_id', Integer), description='USER GUIDANCE: This field is the primary key of the linked record in the database. For example, if the Episode Event is a Condition Occurrence, then the CONDITION_OCCURRENCE_ID of the linked record goes in this field.  | ETLCONVENTIONS: Put the primary key of the linked record here. ')
+    episode_event_field_concept_id: int = Field(sa_column=Column('episode_event_field_concept_id', Integer), description='USER GUIDANCE: This field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the EVENT_ID came from. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?vocabulary=CDM&conceptClass=Field&page=1&pageSize=15&query=)')
 
     episode_event_field_concept: Optional['Concept'] = Relationship(back_populates='episode_event')
     episode: Optional['Episode'] = Relationship(back_populates='episode_event')

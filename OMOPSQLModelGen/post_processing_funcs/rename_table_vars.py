@@ -10,8 +10,9 @@ def rename_table_variable_names(
     omop_source_desc: "OMOPSchemaSource",
     generator_style: Literal["tables", "declarative", "dataclasses", "sqlmodels"],
 ):
-    if generator_style == "tables":
-        current_file_content = None
+    if generator_style != "tables":
+        return
+    current_file_content = None
 
     with open(model_file, "r") as f:
         current_file_content = f.read()

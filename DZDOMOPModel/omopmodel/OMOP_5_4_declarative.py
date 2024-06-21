@@ -1,4 +1,3 @@
-# OMOP CDM Source Version name: OMOP_5_3
 from typing import List, Optional
 
 from sqlalchemy import Date, DateTime, ForeignKeyConstraint, Index, Integer, Numeric, PrimaryKeyConstraint, String, Text
@@ -10,24 +9,37 @@ class Base(DeclarativeBase):
     pass
 
 
-class CdmSource(Base):
-    __tablename__ = 'cdm_source'
+class Cohort(Base):
+    __tablename__ = 'cohort'
     __table_args__ = (
-        {'comment': 'DESC: The CDM_SOURCE table contains detail about the source '
-                'database and the process used to transform the data into the OMOP '
-                'Common Data Model.'}
+        {'comment': 'DESC: The COHORT table contains records of subjects that satisfy '
+                'a given set of criteria for a duration of time. The definition of '
+                'the cohort is contained within the COHORT_DEFINITION table. It is '
+                'listed as part of the RESULTS schema because it is a table that '
+                'users of the database as well as tools such as ATLAS need to be '
+                'able to write to. The CDM and Vocabulary tables are all read-only '
+                'so it is suggested that the COHORT and COHORT_DEFINTION tables '
+                'are kept in a separate schema to alleviate confusion. | ETL '
+                'CONVENTIONS: Cohorts typically include patients diagnosed with a '
+                'specific condition, patients exposed to a particular drug, but '
+                'can also be Providers who have performed a specific Procedure. '
+                'Cohort records must have a Start Date and an End Date, but the '
+                'End Date may be set to Start Date or could have an applied censor '
+                'date using the Observation Period Start Date. Cohort records must '
+                'contain a Subject Id, which can refer to the Person, Provider, '
+                'Visit record or Care Site though they are most often Person Ids. '
+                'The Cohort Definition will define the type of subject through the '
+                'subject concept id. A subject can belong (or not belong) to a '
+                'cohort at any moment in time. A subject can only have one record '
+                'in the cohort table for any moment of time, i.e. it is not '
+                'possible for a person to contain multiple records indicating '
+                'cohort membership that are overlapping in time'}
     )
-    __mapper_args__ = {"primary_key": ['cdm_source_name', 'cdm_source_abbreviation']}
-    cdm_source_name: Mapped[str] = mapped_column(String(255), , comment='USER GUIDANCE: The name of the CDM instance.')
-    cdm_source_abbreviation: Mapped[str] = mapped_column(String(25), , comment='USER GUIDANCE: The abbreviation of the CDM instance.')
-    cdm_holder: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: The holder of the CDM instance.')
-    source_description: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: The description of the CDM instance.')
-    source_documentation_reference: Mapped[Optional[str]] = mapped_column(String(255))
-    cdm_etl_reference: Mapped[Optional[str]] = mapped_column(String(255), comment=' | ETLCONVENTIONS: Put the link to the CDM version used.')
-    source_release_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: The release date of the source data.')
-    cdm_release_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: The release data of the CDM instance.')
-    cdm_version: Mapped[Optional[str]] = mapped_column(String(10))
-    vocabulary_version: Mapped[Optional[str]] = mapped_column(String(20))
+    __mapper_args__ = {"primary_key": ['cohort_definition_id', 'subject_id', 'cohort_start_date', 'cohort_end_date']}
+    cohort_definition_id: Mapped[int] = mapped_column(Integer, )
+    subject_id: Mapped[int] = mapped_column(Integer, )
+    cohort_start_date: Mapped[datetime.date] = mapped_column(Date, )
+    cohort_end_date: Mapped[datetime.date] = mapped_column(Date, )
 
 
 class Concept(Base):
@@ -84,15 +96,13 @@ class Concept(Base):
     concept_class_: Mapped[List['ConceptClass']] = relationship('ConceptClass', foreign_keys='[ConceptClass.concept_class_concept_id]', back_populates='concept_class_concept')
     domain_: Mapped[List['Domain']] = relationship('Domain', foreign_keys='[Domain.domain_concept_id]', back_populates='domain_concept')
     vocabulary_: Mapped[List['Vocabulary']] = relationship('Vocabulary', foreign_keys='[Vocabulary.vocabulary_concept_id]', back_populates='vocabulary_concept')
-    attribute_definition: Mapped[List['AttributeDefinition']] = relationship('AttributeDefinition', back_populates='attribute_type_concept')
-    care_site: Mapped[List['CareSite']] = relationship('CareSite', back_populates='place_of_service_concept')
+    cdm_source: Mapped[List['CdmSource']] = relationship('CdmSource', back_populates='cdm_version_concept')
     cohort_definition: Mapped[List['CohortDefinition']] = relationship('CohortDefinition', foreign_keys='[CohortDefinition.definition_type_concept_id]', back_populates='definition_type_concept')
     cohort_definition_: Mapped[List['CohortDefinition']] = relationship('CohortDefinition', foreign_keys='[CohortDefinition.subject_concept_id]', back_populates='subject_concept')
     concept_ancestor: Mapped[List['ConceptAncestor']] = relationship('ConceptAncestor', foreign_keys='[ConceptAncestor.ancestor_concept_id]', back_populates='ancestor_concept')
     concept_ancestor_: Mapped[List['ConceptAncestor']] = relationship('ConceptAncestor', foreign_keys='[ConceptAncestor.descendant_concept_id]', back_populates='descendant_concept')
     concept_synonym: Mapped[List['ConceptSynonym']] = relationship('ConceptSynonym', foreign_keys='[ConceptSynonym.concept_id]', back_populates='concept')
     concept_synonym_: Mapped[List['ConceptSynonym']] = relationship('ConceptSynonym', foreign_keys='[ConceptSynonym.language_concept_id]', back_populates='language_concept')
-    condition_era: Mapped[List['ConditionEra']] = relationship('ConditionEra', back_populates='condition_concept')
     cost: Mapped[List['Cost']] = relationship('Cost', foreign_keys='[Cost.cost_type_concept_id]', back_populates='cost_type_concept')
     cost_: Mapped[List['Cost']] = relationship('Cost', foreign_keys='[Cost.currency_concept_id]', back_populates='currency_concept')
     cost1: Mapped[List['Cost']] = relationship('Cost', foreign_keys='[Cost.drg_concept_id]', back_populates='drg_concept')
@@ -105,6 +115,7 @@ class Concept(Base):
     fact_relationship: Mapped[List['FactRelationship']] = relationship('FactRelationship', foreign_keys='[FactRelationship.domain_concept_id_1]', back_populates='concept')
     fact_relationship_: Mapped[List['FactRelationship']] = relationship('FactRelationship', foreign_keys='[FactRelationship.domain_concept_id_2]', back_populates='concept_')
     fact_relationship1: Mapped[List['FactRelationship']] = relationship('FactRelationship', foreign_keys='[FactRelationship.relationship_concept_id]', back_populates='relationship_concept')
+    location: Mapped[List['Location']] = relationship('Location', back_populates='country_concept')
     metadata_: Mapped[List['Metadata']] = relationship('Metadata', foreign_keys='[Metadata.metadata_concept_id]', back_populates='metadata_concept')
     metadata__: Mapped[List['Metadata']] = relationship('Metadata', foreign_keys='[Metadata.metadata_type_concept_id]', back_populates='metadata_type_concept')
     metadata_1: Mapped[List['Metadata']] = relationship('Metadata', foreign_keys='[Metadata.value_as_concept_id]', back_populates='value_as_concept')
@@ -114,6 +125,7 @@ class Concept(Base):
     relationship_: Mapped[List['Relationship']] = relationship('Relationship', back_populates='relationship_concept')
     source_to_concept_map: Mapped[List['SourceToConceptMap']] = relationship('SourceToConceptMap', foreign_keys='[SourceToConceptMap.source_concept_id]', back_populates='source_concept')
     source_to_concept_map_: Mapped[List['SourceToConceptMap']] = relationship('SourceToConceptMap', foreign_keys='[SourceToConceptMap.target_concept_id]', back_populates='target_concept')
+    care_site: Mapped[List['CareSite']] = relationship('CareSite', back_populates='place_of_service_concept')
     concept_relationship: Mapped[List['ConceptRelationship']] = relationship('ConceptRelationship', foreign_keys='[ConceptRelationship.concept_id_1]', back_populates='concept')
     concept_relationship_: Mapped[List['ConceptRelationship']] = relationship('ConceptRelationship', foreign_keys='[ConceptRelationship.concept_id_2]', back_populates='concept_')
     provider: Mapped[List['Provider']] = relationship('Provider', foreign_keys='[Provider.gender_concept_id]', back_populates='gender_concept')
@@ -126,12 +138,17 @@ class Concept(Base):
     person2: Mapped[List['Person']] = relationship('Person', foreign_keys='[Person.gender_source_concept_id]', back_populates='gender_source_concept')
     person3: Mapped[List['Person']] = relationship('Person', foreign_keys='[Person.race_concept_id]', back_populates='race_concept')
     person4: Mapped[List['Person']] = relationship('Person', foreign_keys='[Person.race_source_concept_id]', back_populates='race_source_concept')
+    condition_era: Mapped[List['ConditionEra']] = relationship('ConditionEra', back_populates='condition_concept')
     death: Mapped[List['Death']] = relationship('Death', foreign_keys='[Death.cause_concept_id]', back_populates='cause_concept')
     death_: Mapped[List['Death']] = relationship('Death', foreign_keys='[Death.cause_source_concept_id]', back_populates='cause_source_concept')
     death1: Mapped[List['Death']] = relationship('Death', foreign_keys='[Death.death_type_concept_id]', back_populates='death_type_concept')
     dose_era: Mapped[List['DoseEra']] = relationship('DoseEra', foreign_keys='[DoseEra.drug_concept_id]', back_populates='drug_concept')
     dose_era_: Mapped[List['DoseEra']] = relationship('DoseEra', foreign_keys='[DoseEra.unit_concept_id]', back_populates='unit_concept')
     drug_era: Mapped[List['DrugEra']] = relationship('DrugEra', back_populates='drug_concept')
+    episode: Mapped[List['Episode']] = relationship('Episode', foreign_keys='[Episode.episode_concept_id]', back_populates='episode_concept')
+    episode_: Mapped[List['Episode']] = relationship('Episode', foreign_keys='[Episode.episode_object_concept_id]', back_populates='episode_object_concept')
+    episode1: Mapped[List['Episode']] = relationship('Episode', foreign_keys='[Episode.episode_source_concept_id]', back_populates='episode_source_concept')
+    episode2: Mapped[List['Episode']] = relationship('Episode', foreign_keys='[Episode.episode_type_concept_id]', back_populates='episode_type_concept')
     observation_period: Mapped[List['ObservationPeriod']] = relationship('ObservationPeriod', back_populates='period_type_concept')
     payer_plan_period: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', foreign_keys='[PayerPlanPeriod.payer_concept_id]', back_populates='payer_concept')
     payer_plan_period_: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', foreign_keys='[PayerPlanPeriod.payer_source_concept_id]', back_populates='payer_source_concept')
@@ -141,21 +158,19 @@ class Concept(Base):
     payer_plan_period4: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', foreign_keys='[PayerPlanPeriod.sponsor_source_concept_id]', back_populates='sponsor_source_concept')
     payer_plan_period5: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', foreign_keys='[PayerPlanPeriod.stop_reason_concept_id]', back_populates='stop_reason_concept')
     payer_plan_period6: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', foreign_keys='[PayerPlanPeriod.stop_reason_source_concept_id]', back_populates='stop_reason_source_concept')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.modifier_concept_id]', back_populates='modifier_concept')
-    procedure_occurrence_: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.procedure_concept_id]', back_populates='procedure_concept')
-    procedure_occurrence1: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.procedure_type_concept_id]', back_populates='procedure_type_concept')
     specimen: Mapped[List['Specimen']] = relationship('Specimen', foreign_keys='[Specimen.anatomic_site_concept_id]', back_populates='anatomic_site_concept')
     specimen_: Mapped[List['Specimen']] = relationship('Specimen', foreign_keys='[Specimen.disease_status_concept_id]', back_populates='disease_status_concept')
     specimen1: Mapped[List['Specimen']] = relationship('Specimen', foreign_keys='[Specimen.specimen_concept_id]', back_populates='specimen_concept')
     specimen2: Mapped[List['Specimen']] = relationship('Specimen', foreign_keys='[Specimen.specimen_type_concept_id]', back_populates='specimen_type_concept')
     specimen3: Mapped[List['Specimen']] = relationship('Specimen', foreign_keys='[Specimen.unit_concept_id]', back_populates='unit_concept')
-    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.admitting_source_concept_id]', back_populates='admitting_source_concept')
-    visit_occurrence_: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.discharge_to_concept_id]', back_populates='discharge_to_concept')
+    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.admitted_from_concept_id]', back_populates='admitted_from_concept')
+    visit_occurrence_: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.discharged_to_concept_id]', back_populates='discharged_to_concept')
     visit_occurrence1: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.visit_concept_id]', back_populates='visit_concept')
     visit_occurrence2: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.visit_source_concept_id]', back_populates='visit_source_concept')
     visit_occurrence3: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', foreign_keys='[VisitOccurrence.visit_type_concept_id]', back_populates='visit_type_concept')
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.admitting_source_concept_id]', back_populates='admitting_source_concept')
-    visit_detail_: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.discharge_to_concept_id]', back_populates='discharge_to_concept')
+    episode_event: Mapped[List['EpisodeEvent']] = relationship('EpisodeEvent', back_populates='episode_event_field_concept')
+    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.admitted_from_concept_id]', back_populates='admitted_from_concept')
+    visit_detail_: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.discharged_to_concept_id]', back_populates='discharged_to_concept')
     visit_detail1: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.visit_detail_concept_id]', back_populates='visit_detail_concept')
     visit_detail2: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.visit_detail_source_concept_id]', back_populates='visit_detail_source_concept')
     visit_detail3: Mapped[List['VisitDetail']] = relationship('VisitDetail', foreign_keys='[VisitDetail.visit_detail_type_concept_id]', back_populates='visit_detail_type_concept')
@@ -166,26 +181,36 @@ class Concept(Base):
     device_exposure: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', foreign_keys='[DeviceExposure.device_concept_id]', back_populates='device_concept')
     device_exposure_: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', foreign_keys='[DeviceExposure.device_source_concept_id]', back_populates='device_source_concept')
     device_exposure1: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', foreign_keys='[DeviceExposure.device_type_concept_id]', back_populates='device_type_concept')
+    device_exposure2: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', foreign_keys='[DeviceExposure.unit_concept_id]', back_populates='unit_concept')
+    device_exposure3: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', foreign_keys='[DeviceExposure.unit_source_concept_id]', back_populates='unit_source_concept')
     drug_exposure: Mapped[List['DrugExposure']] = relationship('DrugExposure', foreign_keys='[DrugExposure.drug_concept_id]', back_populates='drug_concept')
     drug_exposure_: Mapped[List['DrugExposure']] = relationship('DrugExposure', foreign_keys='[DrugExposure.drug_source_concept_id]', back_populates='drug_source_concept')
     drug_exposure1: Mapped[List['DrugExposure']] = relationship('DrugExposure', foreign_keys='[DrugExposure.drug_type_concept_id]', back_populates='drug_type_concept')
     drug_exposure2: Mapped[List['DrugExposure']] = relationship('DrugExposure', foreign_keys='[DrugExposure.route_concept_id]', back_populates='route_concept')
-    measurement: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_concept_id]', back_populates='measurement_concept')
-    measurement_: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_source_concept_id]', back_populates='measurement_source_concept')
-    measurement1: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_type_concept_id]', back_populates='measurement_type_concept')
-    measurement2: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.operator_concept_id]', back_populates='operator_concept')
-    measurement3: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.unit_concept_id]', back_populates='unit_concept')
-    measurement4: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.value_as_concept_id]', back_populates='value_as_concept')
+    measurement: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.meas_event_field_concept_id]', back_populates='meas_event_field_concept')
+    measurement_: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_concept_id]', back_populates='measurement_concept')
+    measurement1: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_source_concept_id]', back_populates='measurement_source_concept')
+    measurement2: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.measurement_type_concept_id]', back_populates='measurement_type_concept')
+    measurement3: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.operator_concept_id]', back_populates='operator_concept')
+    measurement4: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.unit_concept_id]', back_populates='unit_concept')
+    measurement5: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.unit_source_concept_id]', back_populates='unit_source_concept')
+    measurement6: Mapped[List['Measurement']] = relationship('Measurement', foreign_keys='[Measurement.value_as_concept_id]', back_populates='value_as_concept')
     note: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.encoding_concept_id]', back_populates='encoding_concept')
     note_: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.language_concept_id]', back_populates='language_concept')
     note1: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.note_class_concept_id]', back_populates='note_class_concept')
-    note2: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.note_type_concept_id]', back_populates='note_type_concept')
-    observation: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_concept_id]', back_populates='observation_concept')
-    observation_: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_source_concept_id]', back_populates='observation_source_concept')
-    observation1: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_type_concept_id]', back_populates='observation_type_concept')
-    observation2: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.qualifier_concept_id]', back_populates='qualifier_concept')
-    observation3: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.unit_concept_id]', back_populates='unit_concept')
-    observation4: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.value_as_concept_id]', back_populates='value_as_concept')
+    note2: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.note_event_field_concept_id]', back_populates='note_event_field_concept')
+    note3: Mapped[List['Note']] = relationship('Note', foreign_keys='[Note.note_type_concept_id]', back_populates='note_type_concept')
+    observation: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.obs_event_field_concept_id]', back_populates='obs_event_field_concept')
+    observation_: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_concept_id]', back_populates='observation_concept')
+    observation1: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_source_concept_id]', back_populates='observation_source_concept')
+    observation2: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.observation_type_concept_id]', back_populates='observation_type_concept')
+    observation3: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.qualifier_concept_id]', back_populates='qualifier_concept')
+    observation4: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.unit_concept_id]', back_populates='unit_concept')
+    observation5: Mapped[List['Observation']] = relationship('Observation', foreign_keys='[Observation.value_as_concept_id]', back_populates='value_as_concept')
+    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.modifier_concept_id]', back_populates='modifier_concept')
+    procedure_occurrence_: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.procedure_concept_id]', back_populates='procedure_concept')
+    procedure_occurrence1: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.procedure_source_concept_id]', back_populates='procedure_source_concept')
+    procedure_occurrence2: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', foreign_keys='[ProcedureOccurrence.procedure_type_concept_id]', back_populates='procedure_type_concept')
 
 
 class ConceptClass(Base):
@@ -234,34 +259,6 @@ class Domain(Base):
     cost: Mapped[List['Cost']] = relationship('Cost', back_populates='cost_domain')
 
 
-class Location(Base):
-    __tablename__ = 'location'
-    __table_args__ = (
-        PrimaryKeyConstraint('location_id', name='xpk_location'),
-        Index('idx_location_id_1', 'location_id'),
-        {'comment': 'DESC: The LOCATION table represents a generic way to capture '
-                'physical location or address information of Persons and Care '
-                'Sites. | ETL CONVENTIONS: Each address or Location is unique and '
-                'is present only once in the table. Locations do not contain '
-                'names, such as the name of a hospital. In order to construct a '
-                'full address that can be used in the postal service, the address '
-                'information from the Location needs to be combined with '
-                'information from the Care Site.'}
-    )
-
-    location_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The unique key given to a unique Location. | ETLCONVENTIONS: Each instance of a Location in the source data should be assigned this unique key.')
-    address_1: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is the first line of the address.')
-    address_2: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is the second line of the address')
-    city: Mapped[Optional[str]] = mapped_column(String(50))
-    state: Mapped[Optional[str]] = mapped_column(String(2))
-    zip: Mapped[Optional[str]] = mapped_column(String(9), comment=' | ETLCONVENTIONS: Zip codes are handled as strings of up to 9 characters length. For US addresses, these represent either a 3-digit abbreviated Zip code as provided by many sources for patient protection reasons, the full 5-digit Zip or the 9-digit (ZIP + 4) codes. Unless for specific reasons analytical methods should expect and utilize only the first 3 digits. For international addresses, different rules apply.')
-    county: Mapped[Optional[str]] = mapped_column(String(20))
-    location_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: Put the verbatim value for the location here, as it shows up in the source. ')
-
-    care_site: Mapped[List['CareSite']] = relationship('CareSite', back_populates='location')
-    person: Mapped[List['Person']] = relationship('Person', back_populates='location')
-
-
 class Vocabulary(Base):
     __tablename__ = 'vocabulary'
     __table_args__ = (
@@ -277,8 +274,8 @@ class Vocabulary(Base):
 
     vocabulary_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: A unique identifier for each Vocabulary, such\nas ICD9CM, SNOMED, Visit.')
     vocabulary_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: The name describing the vocabulary, for\nexample, International Classification of\nDiseases, Ninth Revision, Clinical\nModification, Volume 1 and 2 (NCHS) etc.')
-    vocabulary_reference: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: External reference to documentation or\navailable download of the about the\nvocabulary.')
     vocabulary_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A Concept that represents the Vocabulary the VOCABULARY record belongs to.')
+    vocabulary_reference: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: External reference to documentation or\navailable download of the about the\nvocabulary.')
     vocabulary_version: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: Version of the Vocabulary as indicated in\nthe source.')
 
     concept: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.vocabulary_id]', back_populates='vocabulary')
@@ -286,72 +283,28 @@ class Vocabulary(Base):
     source_to_concept_map: Mapped[List['SourceToConceptMap']] = relationship('SourceToConceptMap', back_populates='target_vocabulary')
 
 
-class AttributeDefinition(Base):
-    __tablename__ = 'attribute_definition'
+class CdmSource(Base):
+    __tablename__ = 'cdm_source'
     __table_args__ = (
-        ForeignKeyConstraint(['attribute_type_concept_id'], ['concept.concept_id'], name='fpk_attribute_definition_attribute_type_concept_id'),
-        {'comment': 'DESC: The ATTRIBUTE_DEFINITION table contains records to define '
-                'each attribute\n'
-                'through an associated description and syntax. Attributes are '
-                'derived elements\n'
-                'that can be selected or calculated for a subject within a cohort. '
-                'The\n'
-                'ATTRIBUTE_DEFINITION table provides a standardized structure for\n'
-                'maintaining the rules governing the calculation of covariates for '
-                'a subject in a\n'
-                'cohort, and can store operational programming code to instantiate '
-                'the\n'
-                'attributes for a given cohort within the OMOP Common Data Model.'}
+        ForeignKeyConstraint(['cdm_version_concept_id'], ['concept.concept_id'], name='fpk_cdm_source_cdm_version_concept_id'),
+        {'comment': 'DESC: The CDM_SOURCE table contains detail about the source '
+                'database and the process used to transform the data into the OMOP '
+                'Common Data Model.'}
     )
-    __mapper_args__ = {"primary_key": ['attribute_definition_id', 'attribute_type_concept_id']}
-    attribute_definition_id: Mapped[int] = mapped_column(Integer, )
-    attribute_name: Mapped[str] = mapped_column(String(255))
-    attribute_type_concept_id: Mapped[int] = mapped_column(Integer, )
-    attribute_description: Mapped[Optional[str]] = mapped_column(Text)
-    attribute_syntax: Mapped[Optional[str]] = mapped_column(Text)
+    __mapper_args__ = {"primary_key": ['cdm_source_abbreviation', 'cdm_holder', 'cdm_version_concept_id', 'vocabulary_version']}
+    cdm_source_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: The name of the CDM instance.')
+    cdm_source_abbreviation: Mapped[str] = mapped_column(String(25), comment='USER GUIDANCE: The abbreviation of the CDM instance.')
+    cdm_holder: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: The holder of the CDM instance.')
+    source_release_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The release date of the source data.')
+    cdm_release_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The release data of the CDM instance.')
+    cdm_version_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id representing the version of the CDM. | ETLCONVENTIONS: You can find all concepts that represent the CDM versions using the query: SELECT * FROM CONCEPT WHERE VOCABULARY_ID = "CDM" AND CONCEPT_CLASS = "CDM"')
+    vocabulary_version: Mapped[str] = mapped_column(String(20), comment=' | ETLCONVENTIONS: You can find the version of your Vocabulary using the query: SELECT vocabulary_version from vocabulary where vocabulary_id = "None"')
+    source_description: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: The description of the CDM instance.')
+    source_documentation_reference: Mapped[Optional[str]] = mapped_column(String(255))
+    cdm_etl_reference: Mapped[Optional[str]] = mapped_column(String(255), comment=' | ETLCONVENTIONS: Put the link to the CDM version used.')
+    cdm_version: Mapped[Optional[str]] = mapped_column(String(10))
 
-    attribute_type_concept: Mapped['Concept'] = relationship('Concept', back_populates='attribute_definition')
-
-
-class CareSite(Base):
-    __tablename__ = 'care_site'
-    __table_args__ = (
-        ForeignKeyConstraint(['location_id'], ['location.location_id'], name='fpk_care_site_location_id'),
-        ForeignKeyConstraint(['place_of_service_concept_id'], ['concept.concept_id'], name='fpk_care_site_place_of_service_concept_id'),
-        PrimaryKeyConstraint('care_site_id', name='xpk_care_site'),
-        Index('idx_care_site_id_1', 'care_site_id'),
-        {'comment': 'DESC: The CARE_SITE table contains a list of uniquely identified '
-                'institutional (physical or organizational) units where healthcare '
-                'delivery is practiced (offices, wards, hospitals, clinics, etc.). '
-                '| ETL CONVENTIONS: Care site is a unique combination of '
-                'location_id and place_of_service_source_value. Care site does not '
-                'take into account the provider (human) information such a '
-                'specialty. Many source data do not make a distinction between '
-                'individual and institutional providers. The CARE_SITE table '
-                'contains the institutional providers. If the source, instead of '
-                'uniquely identifying individual Care Sites, only provides limited '
-                'information such as Place of Service, generic or "pooled" Care '
-                'Site records are listed in the CARE_SITE table. There can be '
-                'hierarchical and business relationships between Care Sites. For '
-                'example, wards can belong to clinics or departments, which can in '
-                'turn belong to hospitals, which in turn can belong to hospital '
-                'systems, which in turn can belong to HMOs.The relationships '
-                'between Care Sites are defined in the FACT_RELATIONSHIP table.'}
-    )
-
-    care_site_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment=' | ETLCONVENTIONS: Assign an id to each unique combination of location_id and place_of_service_source_value')
-    care_site_name: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: The name of the care_site as it appears in the source data')
-    place_of_service_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is a high-level way of characterizing a Care Site. Typically, however, Care Sites can provide care in multiple settings (inpatient, outpatient, etc.) and this granularity should be reflected in the visit. | ETLCONVENTIONS: Choose the concept in the visit domain that best represents the setting in which healthcare is provided in the Care Site. If most visits in a Care Site are Inpatient, then the place_of_service_concept_id should represent Inpatient. If information is present about a unique Care Site (e.g. Pharmacy) then a Care Site record should be created. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=2&pageSize=15&query=).')
-    location_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The location_id from the LOCATION table representing the physical location of the care_site.')
-    care_site_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: The identifier of the care_site as it appears in the source data. This could be an identifier separate from the name of the care_site.')
-    place_of_service_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: Put the place of service of the care_site as it appears in the source data.')
-
-    location: Mapped['Location'] = relationship('Location', back_populates='care_site')
-    place_of_service_concept: Mapped['Concept'] = relationship('Concept', back_populates='care_site')
-    provider: Mapped[List['Provider']] = relationship('Provider', back_populates='care_site')
-    person: Mapped[List['Person']] = relationship('Person', back_populates='care_site')
-    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='care_site')
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='care_site')
+    cdm_version_concept: Mapped['Concept'] = relationship('Concept', back_populates='cdm_source')
 
 
 class CohortDefinition(Base):
@@ -370,10 +323,10 @@ class CohortDefinition(Base):
                 'to instantiate the cohort within the OMOP Common Data Model.'}
     )
     __mapper_args__ = {"primary_key": ['cohort_definition_id', 'definition_type_concept_id', 'subject_concept_id']}
-    cohort_definition_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
+    cohort_definition_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This is the identifier given to the cohort, usually by the ATLAS application')
     cohort_definition_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: A short description of the cohort')
-    definition_type_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
-    subject_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
+    definition_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Type defining what kind of Cohort Definition the record represents and how the syntax may be executed.')
+    subject_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field contains a Concept that represents the domain of the subjects that are members of the cohort (e.g., Person, Provider, Visit).')
     cohort_definition_description: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: A complete description of the cohort.')
     cohort_definition_syntax: Mapped[Optional[str]] = mapped_column(Text, comment='USER GUIDANCE: Syntax or code to operationalize the Cohort Definition.')
     cohort_initiation_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: A date to indicate when the Cohort was initiated in the COHORT table.')
@@ -407,10 +360,10 @@ class ConceptAncestor(Base):
                 'CONCEPT_RELATIONSHIP and RELATIONSHIP tables.'}
     )
     __mapper_args__ = {"primary_key": ['ancestor_concept_id', 'descendant_concept_id', 'min_levels_of_separation', 'max_levels_of_separation']}
-    ancestor_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
-    descendant_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
-    min_levels_of_separation: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
-    max_levels_of_separation: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    ancestor_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id for the higher-level concept\nthat forms the ancestor in the relationship.')
+    descendant_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id for the lower-level concept\nthat forms the descendant in the\nrelationship.')
+    min_levels_of_separation: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The minimum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
+    max_levels_of_separation: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The maximum separation in number of\nlevels of hierarchy between ancestor and\ndescendant concepts. This is an attribute\nthat is used to simplify hierarchic analysis.')
 
     ancestor_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[ancestor_concept_id], back_populates='concept_ancestor')
     descendant_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[descendant_concept_id], back_populates='concept_ancestor_')
@@ -428,63 +381,10 @@ class ConceptSynonym(Base):
     __mapper_args__ = {"primary_key": ['concept_id', 'concept_synonym_name', 'language_concept_id']}
     concept_id: Mapped[int] = mapped_column(Integer, )
     concept_synonym_name: Mapped[str] = mapped_column(String(1000), )
-    language_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    language_concept_id: Mapped[int] = mapped_column(Integer, )
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id], back_populates='concept_synonym')
     language_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[language_concept_id], back_populates='concept_synonym_')
-
-
-class ConditionEra(Base):
-    __tablename__ = 'condition_era'
-    __table_args__ = (
-        ForeignKeyConstraint(['condition_concept_id'], ['concept.concept_id'], name='fpk_condition_era_condition_concept_id'),
-        PrimaryKeyConstraint('condition_era_id', name='xpk_condition_era'),
-        Index('idx_condition_era_concept_id_1', 'condition_concept_id'),
-        Index('idx_condition_era_person_id_1', 'person_id'),
-        {'comment': 'DESC: A Condition Era is defined as a span of time when the '
-                'Person is assumed to have a given condition. Similar to Drug '
-                'Eras, Condition Eras are chronological periods of Condition '
-                'Occurrence. Combining individual Condition Occurrences into a '
-                'single Condition Era serves two purposes:\n'
-                '\n'
-                '- It allows aggregation of chronic conditions that require '
-                'frequent ongoing care, instead of treating each Condition '
-                'Occurrence as an independent event.\n'
-                '- It allows aggregation of multiple, closely timed doctor visits '
-                'for the same Condition to avoid double-counting the Condition '
-                'Occurrences.\n'
-                'For example, consider a Person who visits her Primary Care '
-                'Physician (PCP) and who is referred to a specialist. At a later '
-                'time, the Person visits the specialist, who confirms the PCP"s '
-                'original diagnosis and provides the appropriate treatment to '
-                'resolve the condition. These two independent doctor visits should '
-                'be aggregated into one Condition Era. | ETL CONVENTIONS: Each '
-                'Condition Era corresponds to one or many Condition Occurrence '
-                'records that form a continuous interval.\n'
-                'The condition_concept_id field contains Concepts that are '
-                'identical to those of the CONDITION_OCCURRENCE table records that '
-                'make up the Condition Era. In contrast to Drug Eras, Condition '
-                'Eras are not aggregated to contain Conditions of different '
-                'hierarchical layers. The SQl Script for generating CONDITION_ERA '
-                'records can be found '
-                '[here](https://ohdsi.github.io/CommonDataModel/sqlScripts.html#condition_eras)\n'
-                'The Condition Era Start Date is the start date of the first '
-                'Condition Occurrence.\n'
-                'The Condition Era End Date is the end date of the last Condition '
-                'Occurrence. Condition Eras are built with a Persistence Window of '
-                '30 days, meaning, if no occurrence of the same '
-                'condition_concept_id happens within 30 days of any one '
-                'occurrence, it will be considered the condition_era_end_date.'}
-    )
-
-    condition_era_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    person_id: Mapped[int] = mapped_column(Integer)
-    condition_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id representing the Condition.')
-    condition_era_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The start date for the Condition Era\nconstructed from the individual\ninstances of Condition Occurrences.\nIt is the start date of the very first\nchronologically recorded instance of\nthe condition with at least 31 days since any prior record of the same Condition. ')
-    condition_era_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The end date for the Condition Era\nconstructed from the individual\ninstances of Condition Occurrences.\nIt is the end date of the final\ncontinuously recorded instance of the\nCondition.')
-    condition_occurrence_count: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The number of individual Condition\nOccurrences used to construct the\ncondition era.')
-
-    condition_concept: Mapped['Concept'] = relationship('Concept', back_populates='condition_era')
 
 
 class Cost(Base):
@@ -577,9 +477,9 @@ class DrugStrength(Base):
                 'is supplemental information to support standardized analysis of '
                 'drug utilization.'}
     )
-
-    drug_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
-    ingredient_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
+    __mapper_args__ = {"primary_key": ['drug_concept_id', 'ingredient_concept_id']}
+    drug_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product.')
+    ingredient_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept representing the active ingredient contained within the drug product. | ETLCONVENTIONS: Combination Drugs will have more than one record in this table, one for each active Ingredient.')
     valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the Concept was first\nrecorded. The default value is\n1-Jan-1970.')
     valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when then Concept became invalid.')
     amount_value: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment='USER GUIDANCE: The numeric value or the amount of active ingredient contained within the drug product.')
@@ -631,13 +531,52 @@ class FactRelationship(Base):
     __mapper_args__ = {"primary_key": ['domain_concept_id_1', 'fact_id_1', 'domain_concept_id_2', 'fact_id_2', 'relationship_concept_id']}
     domain_concept_id_1: Mapped[int] = mapped_column(Integer, )
     fact_id_1: Mapped[int] = mapped_column(Integer, )
-    domain_concept_id_2: Mapped[int] = mapped_column(Integer, primary_key=True)
-    fact_id_2: Mapped[int] = mapped_column(Integer, primary_key=True)
-    relationship_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    domain_concept_id_2: Mapped[int] = mapped_column(Integer, )
+    fact_id_2: Mapped[int] = mapped_column(Integer, )
+    relationship_concept_id: Mapped[int] = mapped_column(Integer, )
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_1], back_populates='fact_relationship')
     concept_: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_2], back_populates='fact_relationship_')
     relationship_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[relationship_concept_id], back_populates='fact_relationship1')
+
+
+class Location(Base):
+    __tablename__ = 'location'
+    __table_args__ = (
+        ForeignKeyConstraint(['country_concept_id'], ['concept.concept_id'], name='fpk_location_country_concept_id'),
+        PrimaryKeyConstraint('location_id', name='xpk_location'),
+        Index('idx_location_id_1', 'location_id'),
+        {'comment': 'DESC: The LOCATION table represents a generic way to capture '
+                'physical location or address information of Persons and Care '
+                'Sites. | USER GUIDANCE: The current iteration of the LOCATION '
+                'table is US centric. Until a major release to correct this, '
+                'certain fields can be used to represent different international '
+                'values. <br><br> - STATE can also be used for province or '
+                'district<br>- ZIP is also the postal code or postcode <br>- '
+                'COUNTY can also be used to represent region | ETL CONVENTIONS: '
+                'Each address or Location is unique and is present only once in '
+                'the table. Locations do not contain names, such as the name of a '
+                'hospital. In order to construct a full address that can be used '
+                'in the postal service, the address information from the Location '
+                'needs to be combined with information from the Care Site.'}
+    )
+
+    location_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The unique key given to a unique Location. | ETLCONVENTIONS: Each instance of a Location in the source data should be assigned this unique key.')
+    address_1: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is the first line of the address.')
+    address_2: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is the second line of the address')
+    city: Mapped[Optional[str]] = mapped_column(String(50))
+    state: Mapped[Optional[str]] = mapped_column(String(2))
+    zip: Mapped[Optional[str]] = mapped_column(String(9), comment=' | ETLCONVENTIONS: Zip codes are handled as strings of up to 9 characters length. For US addresses, these represent either a 3-digit abbreviated Zip code as provided by many sources for patient protection reasons, the full 5-digit Zip or the 9-digit (ZIP + 4) codes. Unless for specific reasons analytical methods should expect and utilize only the first 3 digits. For international addresses, different rules apply.')
+    county: Mapped[Optional[str]] = mapped_column(String(20))
+    location_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: Put the verbatim value for the location here, as it shows up in the source. ')
+    country_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id representing the country. Values should conform to the [Geography](https://athena.ohdsi.org/search-terms/terms?domain=Geography&standardConcept=Standard&page=1&pageSize=15&query=&boosts) domain. ')
+    country_source_value: Mapped[Optional[str]] = mapped_column(String(80), comment='USER GUIDANCE: The name of the country.')
+    latitude: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment=' | ETLCONVENTIONS: Must be between -90 and 90.')
+    longitude: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment=' | ETLCONVENTIONS: Must be between -180 and 180.')
+
+    country_concept: Mapped['Concept'] = relationship('Concept', back_populates='location')
+    care_site: Mapped[List['CareSite']] = relationship('CareSite', back_populates='location')
+    person: Mapped[List['Person']] = relationship('Person', back_populates='location')
 
 
 class Metadata(Base):
@@ -646,16 +585,19 @@ class Metadata(Base):
         ForeignKeyConstraint(['metadata_concept_id'], ['concept.concept_id'], name='fpk_metadata_metadata_concept_id'),
         ForeignKeyConstraint(['metadata_type_concept_id'], ['concept.concept_id'], name='fpk_metadata_metadata_type_concept_id'),
         ForeignKeyConstraint(['value_as_concept_id'], ['concept.concept_id'], name='fpk_metadata_value_as_concept_id'),
+        PrimaryKeyConstraint('metadata_id', name='xpk_metadata'),
         Index('idx_metadata_concept_id_1', 'metadata_concept_id'),
         {'comment': 'DESC: The METADATA table contains metadata information about a '
                 'dataset that has been transformed to the OMOP Common Data Model.'}
     )
-    __mapper_args__ = {"primary_key": ['metadata_concept_id', 'metadata_type_concept_id', 'name']}
-    metadata_concept_id: Mapped[int] = mapped_column(Integer, )
-    metadata_type_concept_id: Mapped[int] = mapped_column(Integer, )
-    name: Mapped[str] = mapped_column(String(250), primary_key=True)
+
+    metadata_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The unique key given to a Metadata record. | ETLCONVENTIONS: Attribute value is auto-generated')
+    metadata_concept_id: Mapped[int] = mapped_column(Integer)
+    metadata_type_concept_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(250))
     value_as_string: Mapped[Optional[str]] = mapped_column(String(250))
     value_as_concept_id: Mapped[Optional[int]] = mapped_column(Integer)
+    value_as_number: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment='USER GUIDANCE: This is the numerical value of the result of the Metadata, if applicable and available. It is not expected that all Metadata will have numeric results, rather, this field is here to house values should they exist. ')
     metadata_date: Mapped[Optional[datetime.date]] = mapped_column(Date)
     metadata_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
 
@@ -740,19 +682,60 @@ class SourceToConceptMap(Base):
                 'published to the OMOP community.'}
     )
     __mapper_args__ = {"primary_key": ['source_code', 'source_concept_id', 'source_vocabulary_id', 'target_concept_id', 'target_vocabulary_id', 'valid_start_date', 'valid_end_date']}
-    source_code: Mapped[str] = mapped_column(String(50), , comment='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
-    source_concept_id: Mapped[int] = mapped_column(Integer, , comment='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
-    source_vocabulary_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
-    target_concept_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
-    target_vocabulary_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: The Vocabulary of the target Concept.')
-    valid_start_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
-    valid_end_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
+    source_code: Mapped[str] = mapped_column(String(50), comment='USER GUIDANCE: The source code being translated\ninto a Standard Concept.')
+    source_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A foreign key to the Source\nConcept that is being translated\ninto a Standard Concept. | ETLCONVENTIONS: This is either 0 or should be a number above 2 billion, which are the Concepts reserved for site-specific codes and mappings. ')
+    source_vocabulary_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: A foreign key to the\nVOCABULARY table defining the\nvocabulary of the source code that\nis being translated to a Standard\nConcept.')
+    target_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The target Concept\nto which the source code is being\nmapped.')
+    target_vocabulary_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: The Vocabulary of the target Concept.')
+    valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the mapping\ninstance was first recorded.')
+    valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the mapping\ninstance became invalid because it\nwas deleted or superseded\n(updated) by a new relationship.\nDefault value is 31-Dec-2099.')
     source_code_description: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: An optional description for the\nsource code. This is included as a\nconvenience to compare the\ndescription of the source code to\nthe name of the concept.')
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the mapping instance was invalidated. Possible values are D (deleted), U (replaced with an update) or NULL when valid_end_date has the default value.')
 
     source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[source_concept_id], back_populates='source_to_concept_map')
     target_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[target_concept_id], back_populates='source_to_concept_map_')
     target_vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', back_populates='source_to_concept_map')
+
+
+class CareSite(Base):
+    __tablename__ = 'care_site'
+    __table_args__ = (
+        ForeignKeyConstraint(['location_id'], ['location.location_id'], name='fpk_care_site_location_id'),
+        ForeignKeyConstraint(['place_of_service_concept_id'], ['concept.concept_id'], name='fpk_care_site_place_of_service_concept_id'),
+        PrimaryKeyConstraint('care_site_id', name='xpk_care_site'),
+        Index('idx_care_site_id_1', 'care_site_id'),
+        {'comment': 'DESC: The CARE_SITE table contains a list of uniquely identified '
+                'institutional (physical or organizational) units where healthcare '
+                'delivery is practiced (offices, wards, hospitals, clinics, etc.). '
+                '| ETL CONVENTIONS: Care site is a unique combination of '
+                'location_id and place_of_service_source_value. Care site does not '
+                'take into account the provider (human) information such a '
+                'specialty. Many source data do not make a distinction between '
+                'individual and institutional providers. The CARE_SITE table '
+                'contains the institutional providers. If the source, instead of '
+                'uniquely identifying individual Care Sites, only provides limited '
+                'information such as Place of Service, generic or "pooled" Care '
+                'Site records are listed in the CARE_SITE table. There can be '
+                'hierarchical and business relationships between Care Sites. For '
+                'example, wards can belong to clinics or departments, which can in '
+                'turn belong to hospitals, which in turn can belong to hospital '
+                'systems, which in turn can belong to HMOs.The relationships '
+                'between Care Sites are defined in the FACT_RELATIONSHIP table.'}
+    )
+
+    care_site_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment=' | ETLCONVENTIONS: Assign an ID to each combination of a location and nature of the site - the latter could be the Place of Service, name or another characteristic in your source data.')
+    care_site_name: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: The name of the care_site as it appears in the source data')
+    place_of_service_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is a high-level way of characterizing a Care Site. Typically, however, Care Sites can provide care in multiple settings (inpatient, outpatient, etc.) and this granularity should be reflected in the visit. | ETLCONVENTIONS: Choose the concept in the visit domain that best represents the setting in which healthcare is provided in the Care Site. If most visits in a Care Site are Inpatient, then the place_of_service_concept_id should represent Inpatient. If information is present about a unique Care Site (e.g. Pharmacy) then a Care Site record should be created. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=2&pageSize=15&query=).')
+    location_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The location_id from the LOCATION table representing the physical location of the care_site.')
+    care_site_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: The identifier of the care_site as it appears in the source data. This could be an identifier separate from the name of the care_site.')
+    place_of_service_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: Put the place of service of the care_site as it appears in the source data.')
+
+    location: Mapped['Location'] = relationship('Location', back_populates='care_site')
+    place_of_service_concept: Mapped['Concept'] = relationship('Concept', back_populates='care_site')
+    provider: Mapped[List['Provider']] = relationship('Provider', back_populates='care_site')
+    person: Mapped[List['Person']] = relationship('Person', back_populates='care_site')
+    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='care_site')
+    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='care_site')
 
 
 class ConceptRelationship(Base):
@@ -772,9 +755,9 @@ class ConceptRelationship(Base):
     __mapper_args__ = {"primary_key": ['concept_id_1', 'concept_id_2', 'relationship_id', 'valid_start_date', 'valid_end_date']}
     concept_id_1: Mapped[int] = mapped_column(Integer, )
     concept_id_2: Mapped[int] = mapped_column(Integer, )
-    relationship_id: Mapped[str] = mapped_column(String(20), primary_key=True, comment='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
-    valid_start_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the relationship is first recorded.')
-    valid_end_date: Mapped[datetime.date] = mapped_column(Date, primary_key=True, comment='USER GUIDANCE: The date when the relationship is invalidated.')
+    relationship_id: Mapped[str] = mapped_column(String(20), comment='USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. Please see the [Vocabulary Conventions](https://ohdsi.github.io/CommonDataModel/dataModelConventions.html#concept_relationships). for more information. ')
+    valid_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the relationship is first recorded.')
+    valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the relationship is invalidated.')
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the relationship was invalidated. Possible values are "D" (deleted), "U" (updated) or NULL. ')
 
     concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1], back_populates='concept_relationship')
@@ -832,6 +815,7 @@ class Provider(Base):
     measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='provider')
     note: Mapped[List['Note']] = relationship('Note', back_populates='provider')
     observation: Mapped[List['Observation']] = relationship('Observation', back_populates='provider')
+    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='provider')
 
 
 class Person(Base):
@@ -891,11 +875,12 @@ class Person(Base):
     provider: Mapped['Provider'] = relationship('Provider', back_populates='person')
     race_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[race_concept_id], back_populates='person3')
     race_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[race_source_concept_id], back_populates='person4')
+    condition_era: Mapped[List['ConditionEra']] = relationship('ConditionEra', back_populates='person')
     dose_era: Mapped[List['DoseEra']] = relationship('DoseEra', back_populates='person')
     drug_era: Mapped[List['DrugEra']] = relationship('DrugEra', back_populates='person')
+    episode: Mapped[List['Episode']] = relationship('Episode', back_populates='person')
     observation_period: Mapped[List['ObservationPeriod']] = relationship('ObservationPeriod', back_populates='person')
     payer_plan_period: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', back_populates='person')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='person')
     specimen: Mapped[List['Specimen']] = relationship('Specimen', back_populates='person')
     visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='person')
     visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='person')
@@ -905,9 +890,65 @@ class Person(Base):
     measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='person')
     note: Mapped[List['Note']] = relationship('Note', back_populates='person')
     observation: Mapped[List['Observation']] = relationship('Observation', back_populates='person')
+    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='person')
 
 
-class Death(Person):
+class ConditionEra(Base):
+    __tablename__ = 'condition_era'
+    __table_args__ = (
+        ForeignKeyConstraint(['condition_concept_id'], ['concept.concept_id'], name='fpk_condition_era_condition_concept_id'),
+        ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_condition_era_person_id'),
+        PrimaryKeyConstraint('condition_era_id', name='xpk_condition_era'),
+        Index('idx_condition_era_concept_id_1', 'condition_concept_id'),
+        Index('idx_condition_era_person_id_1', 'person_id'),
+        {'comment': 'DESC: A Condition Era is defined as a span of time when the '
+                'Person is assumed to have a given condition. Similar to Drug '
+                'Eras, Condition Eras are chronological periods of Condition '
+                'Occurrence. Combining individual Condition Occurrences into a '
+                'single Condition Era serves two purposes:\n'
+                '\n'
+                '- It allows aggregation of chronic conditions that require '
+                'frequent ongoing care, instead of treating each Condition '
+                'Occurrence as an independent event.\n'
+                '- It allows aggregation of multiple, closely timed doctor visits '
+                'for the same Condition to avoid double-counting the Condition '
+                'Occurrences.\n'
+                'For example, consider a Person who visits her Primary Care '
+                'Physician (PCP) and who is referred to a specialist. At a later '
+                'time, the Person visits the specialist, who confirms the PCP"s '
+                'original diagnosis and provides the appropriate treatment to '
+                'resolve the condition. These two independent doctor visits should '
+                'be aggregated into one Condition Era. | ETL CONVENTIONS: Each '
+                'Condition Era corresponds to one or many Condition Occurrence '
+                'records that form a continuous interval.\n'
+                'The condition_concept_id field contains Concepts that are '
+                'identical to those of the CONDITION_OCCURRENCE table records that '
+                'make up the Condition Era. In contrast to Drug Eras, Condition '
+                'Eras are not aggregated to contain Conditions of different '
+                'hierarchical layers. The SQl Script for generating CONDITION_ERA '
+                'records can be found '
+                '[here](https://ohdsi.github.io/CommonDataModel/sqlScripts.html#condition_eras)\n'
+                'The Condition Era Start Date is the start date of the first '
+                'Condition Occurrence.\n'
+                'The Condition Era End Date is the end date of the last Condition '
+                'Occurrence. Condition Eras are built with a Persistence Window of '
+                '30 days, meaning, if no occurrence of the same '
+                'condition_concept_id happens within 30 days of any one '
+                'occurrence, it will be considered the condition_era_end_date.'}
+    )
+
+    condition_era_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    person_id: Mapped[int] = mapped_column(Integer)
+    condition_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Concept Id representing the Condition.')
+    condition_era_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The start date for the Condition Era\nconstructed from the individual\ninstances of Condition Occurrences.\nIt is the start date of the very first\nchronologically recorded instance of\nthe condition with at least 31 days since any prior record of the same Condition. ')
+    condition_era_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The end date for the Condition Era\nconstructed from the individual\ninstances of Condition Occurrences.\nIt is the end date of the final\ncontinuously recorded instance of the\nCondition.')
+    condition_occurrence_count: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The number of individual Condition\nOccurrences used to construct the\ncondition era.')
+
+    condition_concept: Mapped['Concept'] = relationship('Concept', back_populates='condition_era')
+    person: Mapped['Person'] = relationship('Person', back_populates='condition_era')
+
+
+class Death(Base):
     __tablename__ = 'death'
     __table_args__ = (
         ForeignKeyConstraint(['cause_concept_id'], ['concept.concept_id'], name='fpk_death_cause_concept_id'),
@@ -921,11 +962,11 @@ class Death(Person):
                 'Condition in an administrative claim, status of enrollment into a '
                 'health plan, or explicit record in EHR data.'}
     )
-
-    person_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    __mapper_args__ = {"primary_key": ['person_id']}
+    person_id: Mapped[int] = mapped_column(Integer, )
     death_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date the person was deceased. | ETLCONVENTIONS: If the precise date include day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day.')
     death_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If not available set time to midnight (00:00:00)')
-    death_type_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the provenance of the death record, i.e., where it came from. It is possible that an administrative claims database would source death information from a government file so do not assume the Death Type is the same as the Visit Type, etc. | ETLCONVENTIONS: Use the type concept that be reflects the source of the death record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    death_type_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the provenance of the death record, i.e., where it came from. It is possible that an administrative claims database would source death information from a government file so do not assume the Death Type is the same as the Visit Type, etc. | ETLCONVENTIONS: Use the type concept that be reflects the source of the death record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     cause_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the Standard Concept representing the Person"s cause of death, if available. | ETLCONVENTIONS: There is no specified domain for this concept, just choose the Standard Concept Id that best represents the person"s cause of death.')
     cause_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: If available, put the source code representing the cause of death here. ')
     cause_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment=' | ETLCONVENTIONS: If the cause of death was coded using a Vocabulary present in the OMOP Vocabularies put the CONCEPT_ID representing the cause of death here.')
@@ -999,6 +1040,54 @@ class DrugEra(Base):
     person: Mapped['Person'] = relationship('Person', back_populates='drug_era')
 
 
+class Episode(Base):
+    __tablename__ = 'episode'
+    __table_args__ = (
+        ForeignKeyConstraint(['episode_concept_id'], ['concept.concept_id'], name='fpk_episode_episode_concept_id'),
+        ForeignKeyConstraint(['episode_object_concept_id'], ['concept.concept_id'], name='fpk_episode_episode_object_concept_id'),
+        ForeignKeyConstraint(['episode_source_concept_id'], ['concept.concept_id'], name='fpk_episode_episode_source_concept_id'),
+        ForeignKeyConstraint(['episode_type_concept_id'], ['concept.concept_id'], name='fpk_episode_episode_type_concept_id'),
+        ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_episode_person_id'),
+        PrimaryKeyConstraint('episode_id', name='xpk_episode'),
+        {'comment': 'DESC: The EPISODE table aggregates lower-level clinical events '
+                '(VISIT_OCCURRENCE, DRUG_EXPOSURE, PROCEDURE_OCCURRENCE, '
+                'DEVICE_EXPOSURE) into a higher-level abstraction representing '
+                'clinically and analytically relevant disease phases,outcomes and '
+                'treatments. The EPISODE_EVENT table connects qualifying clinical '
+                'events (VISIT_OCCURRENCE, DRUG_EXPOSURE, PROCEDURE_OCCURRENCE, '
+                'DEVICE_EXPOSURE) to the appropriate EPISODE entry. For example '
+                'cancers including their development over time, their treatment, '
+                'and final resolution.  | USER GUIDANCE: Valid Episode Concepts '
+                'belong to the "Episode" domain. For cancer episodes please see '
+                '[article], for non-cancer episodes please see [article]. If your '
+                'source data does not have all episodes that are relevant to the '
+                'therapeutic area, write only those you can easily derive from the '
+                'data. It is understood that that table is not currently expected '
+                'to be comprehensive. '}
+    )
+
+    episode_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: A unique identifier for each Episode.')
+    person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the PERSON for whom the episode is recorded.')
+    episode_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The EPISODE_CONCEPT_ID represents the kind abstraction related to the disease phase, outcome or treatment. | ETLCONVENTIONS: Choose a concept in the Episode domain that best represents the ongoing disease phase, outcome, or treatment. Please see [article] for cancers and [article] for non-cancers describing how these are defined. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Episode&page=1&pageSize=15&query=)')
+    episode_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the Episode beings.  | ETLCONVENTIONS: Please see [article] for how to define an Episode start date.')
+    episode_object_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A Standard Concept representing the disease phase, outcome, or other abstraction of which the episode consists.  For example, if the EPISODE_CONCEPT_ID is [treatment regimen](https://athena.ohdsi.org/search-terms/terms/32531) then the EPISODE_OBJECT_CONCEPT_ID should contain the chemotherapy regimen concept, like [Afatinib monotherapy](https://athena.ohdsi.org/search-terms/terms/35804392).  | ETLCONVENTIONS: Episode entries from the "Disease Episode" concept class should have an episode_object_concept_id that comes from the Condition domain.  Episode entries from the "Treatment Episode" concept class should have an episode_object_concept_id that scome from the "Procedure" domain or "Regimen" concept class.')
+    episode_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Episode record, as in whether the episode was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the EPISODE_TYPE_CONCEPT_ID that best represents the provenance of the record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
+    episode_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='USER GUIDANCE: The date and time when the Episode begins.')
+    episode_end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: The date when the instance of the Episode is considered to have ended. | ETLCONVENTIONS: Please see [article] for how to define an Episode end date.')
+    episode_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='USER GUIDANCE: The date when the instance of the Episode is considered to have ended.')
+    episode_parent_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the Episode that subsumes the given Episode record. This is used in the case that an Episode are nested into each other. | ETLCONVENTIONS: If there are multiple nested levels to how Episodes are represented, the EPISODE_PARENT_ID can be used to record this relationship. ')
+    episode_number: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: For sequences of episodes, this is used to indicate the order the episodes occurred. For example, lines of treatment could be indicated here.  | ETLCONVENTIONS: Please see [article] for the details of how to count episodes.')
+    episode_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: The source code for the Episdoe as it appears in the source data. This code is mapped to a Standard Condition Concept in the Standardized Vocabularies and the original code is stored here for reference.')
+    episode_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: A foreign key to a Episode Concept that refers to the code used in the source. | ETLCONVENTIONS: Given that the Episodes are user-defined it is unlikely that there will be a Source Concept available. If that is the case then set this field to zero. ')
+
+    episode_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_concept_id], back_populates='episode')
+    episode_object_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_object_concept_id], back_populates='episode_')
+    episode_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_source_concept_id], back_populates='episode1')
+    episode_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_type_concept_id], back_populates='episode2')
+    person: Mapped['Person'] = relationship('Person', back_populates='episode')
+    episode_event: Mapped[List['EpisodeEvent']] = relationship('EpisodeEvent', back_populates='episode')
+
+
 class ObservationPeriod(Base):
     __tablename__ = 'observation_period'
     __table_args__ = (
@@ -1053,7 +1142,7 @@ class ObservationPeriod(Base):
     person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The Person ID of the PERSON record for which the Observation Period is recorded.')
     observation_period_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the start date of the Observation Period. | ETLCONVENTIONS: It is often the case that the idea of Observation Periods does not exist in source data. In those cases, the observation_period_start_date can be inferred as the earliest Event date available for the Person. In insurance claim data, the Observation Period can be considered as the time period the Person is enrolled with a payer. If a Person switches plans but stays with the same payer, and therefore capturing of data continues, that change would be captured in [PAYER_PLAN_PERIOD](https://ohdsi.github.io/CommonDataModel/cdm531.html#payer_plan_period).')
     observation_period_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the end date of the period for which we can assume that all events for a Person are recorded. | ETLCONVENTIONS: It is often the case that the idea of Observation Periods does not exist in source data. In those cases, the observation_period_end_date can be inferred as the last Event date available for the Person. In insurance claim data, the Observation Period can be considered as the time period the Person is enrolled with a payer.')
-    period_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Observation Period as in whether the period was determined from an insurance enrollment file, EHR healthcare encounters, or other sources. | ETLCONVENTIONS: Choose the observation_period_type_concept_id that best represents how the period was determined. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    period_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Observation Period as in whether the period was determined from an insurance enrollment file, EHR healthcare encounters, or other sources. | ETLCONVENTIONS: Choose the observation_period_type_concept_id that best represents how the period was determined. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
 
     period_type_concept: Mapped['Concept'] = relationship('Concept', back_populates='observation_period')
     person: Mapped['Person'] = relationship('Person', back_populates='observation_period')
@@ -1123,63 +1212,6 @@ class PayerPlanPeriod(Base):
     stop_reason_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[stop_reason_source_concept_id], back_populates='payer_plan_period6')
 
 
-class ProcedureOccurrence(Base):
-    __tablename__ = 'procedure_occurrence'
-    __table_args__ = (
-        ForeignKeyConstraint(['modifier_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_modifier_concept_id'),
-        ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_procedure_occurrence_person_id'),
-        ForeignKeyConstraint(['procedure_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_procedure_concept_id'),
-        ForeignKeyConstraint(['procedure_type_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_procedure_type_concept_id'),
-        PrimaryKeyConstraint('procedure_occurrence_id', name='xpk_procedure_occurrence'),
-        Index('idx_procedure_concept_id_1', 'procedure_concept_id'),
-        Index('idx_procedure_person_id_1', 'person_id'),
-        Index('idx_procedure_visit_id_1', 'visit_occurrence_id'),
-        {'comment': 'DESC: This table contains records of activities or processes '
-                'ordered by, or carried out by, a healthcare provider on the '
-                'patient with a diagnostic or therapeutic purpose. | USER '
-                'GUIDANCE: Lab tests are not a procedure, if something is observed '
-                'with an expected resulting amount and unit then it should be a '
-                'measurement. Phlebotomy is a procedure but so trivial that it '
-                'tends to be rarely captured. It can be assumed that there is a '
-                'phlebotomy procedure associated with many lab tests, therefore it '
-                'is unnecessary to add them as separate procedures. If the user '
-                'finds the same procedure over concurrent days, it is assumed '
-                'those records are part of a procedure lasting more than a day. '
-                'This logic is in lieu of the procedure_end_date, which will be '
-                'added in a future version of the CDM. | ETL CONVENTIONS: If a '
-                'procedure lasts more than 24 hours, then it should be recorded as '
-                'a separate record for each day the procedure occurred, this logic '
-                'is in lieu of the PROCEDURE_END_DATE, which will be added in a '
-                'future version of the CDM. When dealing with duplicate records, '
-                'the ETL must determine whether to sum them up into one record or '
-                'keep them separate. Things to consider are: - Same Procedure - '
-                'Same PROCEDURE_DATETIME - Same Visit Occurrence or Visit Detail - '
-                'Same Provider - Same Modifier for Procedures. Source codes and '
-                'source text fields mapped to Standard Concepts of the Procedure '
-                'Domain have to be recorded here.'}
-    )
-
-    procedure_occurrence_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The unique key given to a procedure record for a person. Refer to the ETL for how duplicate procedures during the same visit were handled. | ETLCONVENTIONS: Each instance of a procedure occurrence in the source data should be assigned this unique key. In some cases, a person can have multiple records of the same procedure within the same visit. It is valid to keep these duplicates and assign them individual, unique, PROCEDURE_OCCURRENCE_IDs, though it is up to the ETL how they should be handled.')
-    person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the PERSON for whom the procedure is recorded. This may be a system generated code.')
-    procedure_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PROCEDURE_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source value which represents a procedure | ETLCONVENTIONS: The CONCEPT_ID that the PROCEDURE_SOURCE_VALUE maps to. Only records whose source values map to standard concepts with a domain of "Procedure" should go in this table. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Procedure&standardConcept=Standard&page=1&pageSize=15&query=).')
-    procedure_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the date the procedure occurred. | ETLCONVENTIONS: If a procedure lasts more than a day, then it should be recorded as a separate record for each day the procedure occurred, this logic is in lieu of the procedure_end_date, which will be added in a future version of the CDM.')
-    procedure_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Procedure record, as in whether the procedure was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the PROCEDURE_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. If a procedure is recorded as an EHR encounter, the PROCEDURE_TYPE_CONCEPT would be "EHR encounter record". [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
-    procedure_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: This is not required, though it is in v6. If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
-    modifier_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The modifiers are intended to give additional information about the procedure but as of now the vocabulary is under review. | ETLCONVENTIONS: It is up to the ETL to choose how to map modifiers if they exist in source data. These concepts are typically distinguished by "Modifier" concept classes (e.g., "CPT4 Modifier" as part of the "CPT4" vocabulary). If there is more than one modifier on a record, one should be chosen that pertains to the procedure rather than provider. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?conceptClass=CPT4+Modifier&conceptClass=HCPCS+Modifier&vocabulary=CPT4&vocabulary=HCPCS&standardConcept=Standard&page=1&pageSize=15&query=).')
-    quantity: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the quantity value is omitted, a single procedure is assumed. | ETLCONVENTIONS: If a Procedure has a quantity of "0" in the source, this should default to "1" in the ETL. If there is a record in the source it can be assumed the exposure occurred at least once')
-    provider_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The provider associated with the procedure record, e.g. the provider who performed the Procedure. | ETLCONVENTIONS: The ETL may need to make a choice as to which PROVIDER_ID to put here. Based on what is available this may or may not be different than the provider associated with the overall VISIT_OCCURRENCE record, for example the admitting vs attending physician on an EHR record.')
-    visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The visit during which the procedure occurred. | ETLCONVENTIONS: Depending on the structure of the source data, this may have to be determined based on dates. If a PROCEDURE_DATE occurs within the start and end date of a Visit it is a valid ETL choice to choose the VISIT_OCCURRENCE_ID from the Visit that subsumes it, even if not explicitly stated in the data. While not required, an attempt should be made to locate the VISIT_OCCURRENCE_ID of the PROCEDURE_OCCURRENCE record.')
-    visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The VISIT_DETAIL record during which the Procedure occurred. For example, if the Person was in the ICU at the time of the Procedure the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit. | ETLCONVENTIONS: Same rules apply as for the VISIT_OCCURRENCE_ID.')
-    procedure_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the procedure that occurred. For example, this could be an CPT4 or OPCS4 code. | ETLCONVENTIONS: Use this value to look up the source concept id and then map the source concept id to a standard concept id.')
-    procedure_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the procedure source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Procedure necessary for a given analytic use case. Consider using PROCEDURE_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the PROCEDURE_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
-    modifier_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: The original modifier code from the source is stored here for reference.')
-
-    modifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[modifier_concept_id], back_populates='procedure_occurrence')
-    person: Mapped['Person'] = relationship('Person', back_populates='procedure_occurrence')
-    procedure_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_concept_id], back_populates='procedure_occurrence_')
-    procedure_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_type_concept_id], back_populates='procedure_occurrence1')
-
-
 class Specimen(Base):
     __tablename__ = 'specimen'
     __table_args__ = (
@@ -1202,7 +1234,7 @@ class Specimen(Base):
     specimen_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: Unique identifier for each specimen.')
     person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The person from whom the specimen is collected.')
     specimen_concept_id: Mapped[int] = mapped_column(Integer, comment=' | ETLCONVENTIONS: The standard CONCEPT_ID that the SPECIMEN_SOURCE_VALUE maps to in the specimen domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Specimen&standardConcept=Standard&page=1&pageSize=15&query=)')
-    specimen_type_concept_id: Mapped[int] = mapped_column(Integer, comment=' | ETLCONVENTIONS: Put the source of the specimen record, as in an EHR system. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=).')
+    specimen_type_concept_id: Mapped[int] = mapped_column(Integer, comment=' | ETLCONVENTIONS: Put the source of the specimen record, as in an EHR system. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     specimen_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date the specimen was collected.')
     specimen_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     quantity: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment='USER GUIDANCE: The amount of specimen collected from the person.')
@@ -1226,9 +1258,9 @@ class Specimen(Base):
 class VisitOccurrence(Base):
     __tablename__ = 'visit_occurrence'
     __table_args__ = (
-        ForeignKeyConstraint(['admitting_source_concept_id'], ['concept.concept_id'], name='fpk_visit_occurrence_admitting_source_concept_id'),
+        ForeignKeyConstraint(['admitted_from_concept_id'], ['concept.concept_id'], name='fpk_visit_occurrence_admitted_from_concept_id'),
         ForeignKeyConstraint(['care_site_id'], ['care_site.care_site_id'], name='fpk_visit_occurrence_care_site_id'),
-        ForeignKeyConstraint(['discharge_to_concept_id'], ['concept.concept_id'], name='fpk_visit_occurrence_discharge_to_concept_id'),
+        ForeignKeyConstraint(['discharged_to_concept_id'], ['concept.concept_id'], name='fpk_visit_occurrence_discharged_to_concept_id'),
         ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_visit_occurrence_person_id'),
         ForeignKeyConstraint(['preceding_visit_occurrence_id'], ['visit_occurrence.visit_occurrence_id'], name='fpk_visit_occurrence_preceding_visit_occurrence_id'),
         ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_visit_occurrence_provider_id'),
@@ -1341,23 +1373,23 @@ class VisitOccurrence(Base):
     person_id: Mapped[int] = mapped_column(Integer)
     visit_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field contains a concept id representing the kind of visit, like inpatient or outpatient. All concepts in this field should be standard and belong to the Visit domain. | ETLCONVENTIONS: Populate this field based on the kind of visit that took place for the person. For example this could be "Inpatient Visit", "Outpatient Visit", "Ambulatory Visit", etc. This table will contain standard concepts in the Visit domain. These concepts are arranged in a hierarchical structure to facilitate cohort definitions by rolling up to generally familiar Visits adopted in most healthcare systems worldwide. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
     visit_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: For inpatient visits, the start date is typically the admission date. For outpatient visits the start date and end date will be the same. | ETLCONVENTIONS: When populating VISIT_START_DATE, you should think about the patient experience to make decisions on how to define visits. In the case of an inpatient visit this should be the date the patient was admitted to the hospital or institution. In all other cases this should be the date of the patient-provider interaction.')
-    visit_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: For inpatient visits the end date is typically the discharge date. | ETLCONVENTIONS: Visit end dates are mandatory. If end dates are not provided in the source there are three ways in which to derive them:\n- Outpatient Visit: visit_end_datetime = visit_start_datetime\n- Emergency Room Visit: visit_end_datetime = visit_start_datetime\n- Inpatient Visit: Usually there is information about discharge. If not, you should be able to derive the end date from the sudden decline of activity or from the absence of inpatient procedures/drugs.\n- Non-hospital institution Visits: Particularly for claims data, if end dates are not provided assume the visit is for the duration of month that it occurs.\nFor Inpatient Visits ongoing at the date of ETL, put date of processing the data into visit_end_datetime and visit_type_concept_id with 32220 "Still patient" to identify the visit as incomplete.\n- All other Visits: visit_end_datetime = visit_start_datetime. If this is a one-day visit the end date should match the start date.')
-    visit_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to understand the provenance of the visit record, or where the record comes from. | ETLCONVENTIONS: Populate this field based on the provenance of the visit record, as in whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    visit_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: For inpatient visits the end date is typically the discharge date.  If a Person is still an inpatient in the hospital at the time of the data extract and does not have a visit_end_date, then set the visit_end_date to the date of the data pull. | ETLCONVENTIONS: Visit end dates are mandatory. If end dates are not provided in the source there are three ways in which to derive them:\n- Outpatient Visit: visit_end_datetime = visit_start_datetime\n- Emergency Room Visit: visit_end_datetime = visit_start_datetime\n- Inpatient Visit: Usually there is information about discharge. If not, you should be able to derive the end date from the sudden decline of activity or from the absence of inpatient procedures/drugs.\n- Non-hospital institution Visits: Particularly for claims data, if end dates are not provided assume the visit is for the duration of month that it occurs.\nFor Inpatient Visits ongoing at the date of ETL, put date of processing the data into visit_end_datetime and visit_type_concept_id with 32220 "Still patient" to identify the visit as incomplete.\n- All other Visits: visit_end_datetime = visit_start_datetime. If this is a one-day visit the end date should match the start date.')
+    visit_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to understand the provenance of the visit record, or where the record comes from. | ETLCONVENTIONS: Populate this field based on the provenance of the visit record, as in whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     visit_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If no time is given for the start date of a visit, set it to midnight (00:00:0000).')
-    visit_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If no time is given for the end date of a visit, set it to midnight (00:00:0000).')
+    visit_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='USER GUIDANCE: If a Person is still an inpatient in the hospital at the time of the data extract and does not have a visit_end_datetime, then set the visit_end_datetime to the datetime of the data pull. | ETLCONVENTIONS: If no time is given for the end date of a visit, set it to midnight (00:00:0000).')
     provider_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: There will only be one provider per visit record and the ETL document should clearly state how they were chosen (attending, admitting, etc.). If there are multiple providers associated with a visit in the source, this can be reflected in the event tables (CONDITION_OCCURRENCE, PROCEDURE_OCCURRENCE, etc.) or in the VISIT_DETAIL table. | ETLCONVENTIONS: If there are multiple providers associated with a visit, you will need to choose which one to put here. The additional providers can be stored in the [VISIT_DETAIL](https://ohdsi.github.io/CommonDataModel/cdm531.html#visit_detail) table.')
     care_site_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This field provides information about the Care Site where the Visit took place. | ETLCONVENTIONS: There should only be one Care Site associated with a Visit.')
     visit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the kind of visit that took place (inpatient, outpatient, emergency, etc.) | ETLCONVENTIONS: If there is information about the kind of visit in the source data that value should be stored here. If a visit is an amalgamation of visits from the source then use a hierarchy to choose the visit source value, such as IP -> ER-> OP. This should line up with the logic chosen to determine how visits are created.')
     visit_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment=' | ETLCONVENTIONS: If the visit source value is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
-    admitting_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example. | ETLCONVENTIONS: If available, map the admitted_from_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
-    admitting_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was admitted from. Typically this applies only to visits that have a length of stay, like inpatient visits or long-term care visits.')
-    discharge_to_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was discharged to after a visit. This concept is part of the visit domain and can indicate if a patient was discharged to home or sent to a long-term care facility, for example. | ETLCONVENTIONS: If available, map the discharge_to_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
-    discharge_to_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was discharged to after a visit, as in they went home or were moved to long-term care. Typically this applies only to visits that have a length of stay of a day or more.')
+    admitted_from_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example. | ETLCONVENTIONS: If available, map the admitted_from_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=). If a person was admitted from home, set this to 0.')
+    admitted_from_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was admitted from. Typically this applies only to visits that have a length of stay, like inpatient visits or long-term care visits.')
+    discharged_to_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was discharged to after a visit. This concept is part of the visit domain and can indicate if a patient was transferred to another hospital or sent to a long-term care facility, for example.  It is assumed that a person is discharged to home therefore there is not a standard concept id for "home".  Use concept id = 0 when a person is discharged to home. | ETLCONVENTIONS: If available, map the discharged_to_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
+    discharged_to_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was discharged to after a visit, as in they went home or were moved to long-term care. Typically this applies only to visits that have a length of stay of a day or more.')
     preceding_visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit that occurred for the person prior to the given visit. There could be a few days or a few years in between. | ETLCONVENTIONS: This field can be used to link a visit immediately preceding the current visit. Note this is not symmetrical, and there is no such thing as a "following_visit_id".')
 
-    admitting_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitting_source_concept_id], back_populates='visit_occurrence')
+    admitted_from_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitted_from_concept_id], back_populates='visit_occurrence')
     care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_occurrence')
-    discharge_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharge_to_concept_id], back_populates='visit_occurrence_')
+    discharged_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharged_to_concept_id], back_populates='visit_occurrence_')
     person: Mapped['Person'] = relationship('Person', back_populates='visit_occurrence')
     preceding_visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', remote_side=[visit_occurrence_id], back_populates='preceding_visit_occurrence_reverse')
     preceding_visit_occurrence_reverse: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', remote_side=[preceding_visit_occurrence_id], back_populates='preceding_visit_occurrence')
@@ -1372,19 +1404,45 @@ class VisitOccurrence(Base):
     measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_occurrence')
     note: Mapped[List['Note']] = relationship('Note', back_populates='visit_occurrence')
     observation: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_occurrence')
+    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_occurrence')
+
+
+class EpisodeEvent(Base):
+    __tablename__ = 'episode_event'
+    __table_args__ = (
+        ForeignKeyConstraint(['episode_event_field_concept_id'], ['concept.concept_id'], name='fpk_episode_event_episode_event_field_concept_id'),
+        ForeignKeyConstraint(['episode_id'], ['episode.episode_id'], name='fpk_episode_event_episode_id'),
+        {'comment': 'DESC: The EPISODE_EVENT table connects qualifying clinical events '
+                '(such as CONDITION_OCCURRENCE, DRUG_EXPOSURE, '
+                'PROCEDURE_OCCURRENCE, MEASUREMENT) to the appropriate EPISODE '
+                'entry. For example, linking the precise location of the '
+                'metastasis (cancer modifier in MEASUREMENT) to the disease '
+                'episode.  | USER GUIDANCE: This connecting table is used instead '
+                'of the FACT_RELATIONSHIP table for linking low-level events to '
+                'abstracted Episodes. | ETL CONVENTIONS: Some episodes may not '
+                'have links to any underlying clinical events. For such episodes, '
+                'the EPISODE_EVENT table is not populated.'}
+    )
+    __mapper_args__ = {"primary_key": ['episode_id', 'event_id', 'episode_event_field_concept_id']}
+    episode_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to link the EPISODE_EVENT record to its EPISODE. | ETLCONVENTIONS: Put the EPISODE_ID that subsumes the EPISODE_EVENT record here.')
+    event_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field is the primary key of the linked record in the database. For example, if the Episode Event is a Condition Occurrence, then the CONDITION_OCCURRENCE_ID of the linked record goes in this field.  | ETLCONVENTIONS: Put the primary key of the linked record here. ')
+    episode_event_field_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the EVENT_ID came from. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?vocabulary=CDM&conceptClass=Field&page=1&pageSize=15&query=)')
+
+    episode_event_field_concept: Mapped['Concept'] = relationship('Concept', back_populates='episode_event')
+    episode: Mapped['Episode'] = relationship('Episode', back_populates='episode_event')
 
 
 class VisitDetail(Base):
     __tablename__ = 'visit_detail'
     __table_args__ = (
-        ForeignKeyConstraint(['admitting_source_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_admitting_source_concept_id'),
+        ForeignKeyConstraint(['admitted_from_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_admitted_from_concept_id'),
         ForeignKeyConstraint(['care_site_id'], ['care_site.care_site_id'], name='fpk_visit_detail_care_site_id'),
-        ForeignKeyConstraint(['discharge_to_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_discharge_to_concept_id'),
+        ForeignKeyConstraint(['discharged_to_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_discharged_to_concept_id'),
+        ForeignKeyConstraint(['parent_visit_detail_id'], ['visit_detail.visit_detail_id'], name='fpk_visit_detail_parent_visit_detail_id'),
         ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_visit_detail_person_id'),
         ForeignKeyConstraint(['preceding_visit_detail_id'], ['visit_detail.visit_detail_id'], name='fpk_visit_detail_preceding_visit_detail_id'),
         ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_visit_detail_provider_id'),
         ForeignKeyConstraint(['visit_detail_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_visit_detail_concept_id'),
-        ForeignKeyConstraint(['visit_detail_parent_id'], ['visit_detail.visit_detail_id'], name='fpk_visit_detail_visit_detail_parent_id'),
         ForeignKeyConstraint(['visit_detail_source_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_visit_detail_source_concept_id'),
         ForeignKeyConstraint(['visit_detail_type_concept_id'], ['concept.concept_id'], name='fpk_visit_detail_visit_detail_type_concept_id'),
         ForeignKeyConstraint(['visit_occurrence_id'], ['visit_occurrence.visit_occurrence_id'], name='fpk_visit_detail_visit_occurrence_id'),
@@ -1433,32 +1491,32 @@ class VisitDetail(Base):
     person_id: Mapped[int] = mapped_column(Integer)
     visit_detail_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field contains a concept id representing the kind of visit detail, like inpatient or outpatient. All concepts in this field should be standard and belong to the Visit domain. | ETLCONVENTIONS: Populate this field based on the kind of visit that took place for the person. For example this could be "Inpatient Visit", "Outpatient Visit", "Ambulatory Visit", etc. This table will contain standard concepts in the Visit domain. These concepts are arranged in a hierarchical structure to facilitate cohort definitions by rolling up to generally familiar Visits adopted in most healthcare systems worldwide. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
     visit_detail_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: This is the date of the start of the encounter. This may or may not be equal to the date of the Visit the Visit Detail is associated with. | ETLCONVENTIONS: When populating VISIT_DETAIL_START_DATE, you should think about the patient experience to make decisions on how to define visits. Most likely this should be the date of the patient-provider interaction.')
-    visit_detail_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: This the end date of the patient-provider interaction. | ETLCONVENTIONS: Visit Detail end dates are mandatory. If end dates are not provided in the source there are three ways in which to derive them:<br>\n- Outpatient Visit Detail: visit_detail_end_datetime = visit_detail_start_datetime\n- Emergency Room Visit Detail: visit_detail_end_datetime = visit_detail_start_datetime\n- Inpatient Visit Detail: Usually there is information about discharge. If not, you should be able to derive the end date from the sudden decline of activity or from the absence of inpatient procedures/drugs.\n- Non-hospital institution Visit Details: Particularly for claims data, if end dates are not provided assume the visit is for the duration of month that it occurs.<br>\nFor Inpatient Visit Details ongoing at the date of ETL, put date of processing the data into visit_detai_end_datetime and visit_detail_type_concept_id with 32220 "Still patient" to identify the visit as incomplete.\nAll other Visits Details: visit_detail_end_datetime = visit_detail_start_datetime. ')
-    visit_detail_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to understand the provenance of the visit detail record, or where the record comes from. | ETLCONVENTIONS: Populate this field based on the provenance of the visit detail record, as in whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    visit_detail_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: This the end date of the patient-provider interaction.  If a Person is still an inpatient in the hospital at the time of the data extract and does not have a visit_end_date, then set the visit_end_date to the date of the data pull. | ETLCONVENTIONS: Visit Detail end dates are mandatory. If end dates are not provided in the source there are three ways in which to derive them:<br>\n- Outpatient Visit Detail: visit_detail_end_datetime = visit_detail_start_datetime\n- Emergency Room Visit Detail: visit_detail_end_datetime = visit_detail_start_datetime\n- Inpatient Visit Detail: Usually there is information about discharge. If not, you should be able to derive the end date from the sudden decline of activity or from the absence of inpatient procedures/drugs.\n- Non-hospital institution Visit Details: Particularly for claims data, if end dates are not provided assume the visit is for the duration of month that it occurs.<br>\nFor Inpatient Visit Details ongoing at the date of ETL, put date of processing the data into visit_detai_end_datetime and visit_detail_type_concept_id with 32220 "Still patient" to identify the visit as incomplete.\nAll other Visits Details: visit_detail_end_datetime = visit_detail_start_datetime. ')
+    visit_detail_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to understand the provenance of the visit detail record, or where the record comes from. | ETLCONVENTIONS: Populate this field based on the provenance of the visit detail record, as in whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     visit_occurrence_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to link the VISIT_DETAIL record to its VISIT_OCCURRENCE. | ETLCONVENTIONS: Put the VISIT_OCCURRENCE_ID that subsumes the VISIT_DETAIL record here.')
     visit_detail_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If no time is given for the start date of a visit, set it to midnight (00:00:0000).')
-    visit_detail_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If no time is given for the end date of a visit, set it to midnight (00:00:0000).')
+    visit_detail_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='USER GUIDANCE: If a Person is still an inpatient in the hospital at the time of the data extract and does not have a visit_end_datetime, then set the visit_end_datetime to the datetime of the data pull. | ETLCONVENTIONS: If no time is given for the end date of a visit, set it to midnight (00:00:0000).')
     provider_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: There will only be one provider per  **visit** record and the ETL document should clearly state how they were chosen (attending, admitting, etc.). This is a typical reason for leveraging the VISIT_DETAIL table as even though each VISIT_DETAIL record can only have one provider, there is no limit to the number of VISIT_DETAIL records that can be associated to a VISIT_OCCURRENCE record. | ETLCONVENTIONS: The additional providers associated to a Visit can be stored in this table where each VISIT_DETAIL record represents a different provider.')
     care_site_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This field provides information about the Care Site where the Visit Detail took place. | ETLCONVENTIONS: There should only be one Care Site associated with a Visit Detail.')
     visit_detail_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the kind of visit detail that took place (inpatient, outpatient, emergency, etc.) | ETLCONVENTIONS: If there is information about the kind of visit detail in the source data that value should be stored here. If a visit is an amalgamation of visits from the source then use a hierarchy to choose the VISIT_DETAIL_SOURCE_VALUE, such as IP -> ER-> OP. This should line up with the logic chosen to determine how visits are created.')
     visit_detail_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment=' | ETLCONVENTIONS: If the VISIT_DETAIL_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
-    admitting_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was admitted from. Typically this applies only to visits that have a length of stay, like inpatient visits or long-term care visits.')
-    admitting_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example. | ETLCONVENTIONS: If available, map the admitted_from_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
-    discharge_to_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was discharged to after a visit, as in they went home or were moved to long-term care. Typically this applies only to visits that have a length of stay of a day or more.')
-    discharge_to_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was discharged to after a visit detail record. This concept is part of the visit domain and can indicate if a patient was discharged to home or sent to a long-term care facility, for example. | ETLCONVENTIONS: If available, map the DISCHARGE_TO_SOURCE_VALUE to a Standard Concept in the Visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
+    admitted_from_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example. | ETLCONVENTIONS: If available, map the admitted_from_source_value to a standard concept in the visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=). If the person was admitted from home, set this to 0.')
+    admitted_from_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was admitted from. Typically this applies only to visits that have a length of stay, like inpatient visits or long-term care visits.')
+    discharged_to_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating where a person was discharged to after a visit, as in they went home or were moved to long-term care. Typically this applies only to visits that have a length of stay of a day or more.')
+    discharged_to_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to determine where the patient was discharged to after a visit. This concept is part of the visit domain and can indicate if a patient was transferred to another hospital or sent to a long-term care facility, for example.  It is assumed that a person is discharged to home therefore there is not a standard concept id for "home".  Use concept id = 0 when a person is discharged to home. | ETLCONVENTIONS: If available, map the DISCHARGE_TO_SOURCE_VALUE to a Standard Concept in the Visit domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=).')
     preceding_visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit detail that occurred for the person prior to the given visit detail record. There could be a few days or a few years in between. | ETLCONVENTIONS: The PRECEDING_VISIT_DETAIL_ID can be used to link a visit immediately preceding the current Visit Detail. Note this is not symmetrical, and there is no such thing as a "following_visit_id".')
-    visit_detail_parent_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit detail that subsumes the given visit detail record. This is used in the case that a visit detail record needs to be nested beyond the VISIT_OCCURRENCE/VISIT_DETAIL relationship. | ETLCONVENTIONS: If there are multiple nested levels to how Visits are represented in the source, the VISIT_DETAIL_PARENT_ID can be used to record this relationship. ')
+    parent_visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit detail that subsumes the given visit detail record. This is used in the case that a visit detail record needs to be nested beyond the VISIT_OCCURRENCE/VISIT_DETAIL relationship. | ETLCONVENTIONS: If there are multiple nested levels to how Visits are represented in the source, the VISIT_DETAIL_PARENT_ID can be used to record this relationship. ')
 
-    admitting_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitting_source_concept_id], back_populates='visit_detail')
+    admitted_from_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitted_from_concept_id], back_populates='visit_detail')
     care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_detail')
-    discharge_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharge_to_concept_id], back_populates='visit_detail_')
+    discharged_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharged_to_concept_id], back_populates='visit_detail_')
+    parent_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[parent_visit_detail_id], back_populates='parent_visit_detail_reverse')
+    parent_visit_detail_reverse: Mapped[List['VisitDetail']] = relationship('VisitDetail', remote_side=[parent_visit_detail_id], foreign_keys=[parent_visit_detail_id], back_populates='parent_visit_detail')
     person: Mapped['Person'] = relationship('Person', back_populates='visit_detail')
     preceding_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[preceding_visit_detail_id], back_populates='preceding_visit_detail_reverse')
     preceding_visit_detail_reverse: Mapped[List['VisitDetail']] = relationship('VisitDetail', remote_side=[preceding_visit_detail_id], foreign_keys=[preceding_visit_detail_id], back_populates='preceding_visit_detail')
     provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_detail')
     visit_detail_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_concept_id], back_populates='visit_detail1')
-    visit_detail_parent: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[visit_detail_parent_id], back_populates='visit_detail_parent_reverse')
-    visit_detail_parent_reverse: Mapped[List['VisitDetail']] = relationship('VisitDetail', remote_side=[visit_detail_parent_id], foreign_keys=[visit_detail_parent_id], back_populates='visit_detail_parent')
     visit_detail_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_source_concept_id], back_populates='visit_detail2')
     visit_detail_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_type_concept_id], back_populates='visit_detail3')
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='visit_detail')
@@ -1468,6 +1526,7 @@ class VisitDetail(Base):
     measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_detail')
     note: Mapped[List['Note']] = relationship('Note', back_populates='visit_detail')
     observation: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_detail')
+    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_detail')
 
 
 class ConditionOccurrence(Base):
@@ -1529,7 +1588,7 @@ class ConditionOccurrence(Base):
     person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the PERSON for whom the condition is recorded.')
     condition_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The CONDITION_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source value which represents a condition | ETLCONVENTIONS: The CONCEPT_ID that the CONDITION_SOURCE_VALUE maps to. Only records whose source values map to concepts with a domain of "Condition" should go in this table. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Condition&standardConcept=Standard&page=1&pageSize=15&query=).')
     condition_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the start date of the condition | ETLCONVENTIONS: Most often data sources do not have the idea of a start date for a condition. Rather, if a source only has one date associated with a condition record it is acceptable to use that date for both the CONDITION_START_DATE and the CONDITION_END_DATE.')
-    condition_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Condition record, as in whether the condition was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the CONDITION_TYPE_CONCEPT_ID that best represents the provenance of the record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    condition_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Condition record, as in whether the condition was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the CONDITION_TYPE_CONCEPT_ID that best represents the provenance of the record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     condition_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
     condition_end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the end date of the condition | ETLCONVENTIONS: Most often data sources do not have the idea of a start date for a condition. Rather, if a source only has one date associated with a condition record it is acceptable to use that date for both the CONDITION_START_DATE and the CONDITION_END_DATE.')
     condition_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
@@ -1560,6 +1619,8 @@ class DeviceExposure(Base):
         ForeignKeyConstraint(['device_type_concept_id'], ['concept.concept_id'], name='fpk_device_exposure_device_type_concept_id'),
         ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_device_exposure_person_id'),
         ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_device_exposure_provider_id'),
+        ForeignKeyConstraint(['unit_concept_id'], ['concept.concept_id'], name='fpk_device_exposure_unit_concept_id'),
+        ForeignKeyConstraint(['unit_source_concept_id'], ['concept.concept_id'], name='fpk_device_exposure_unit_source_concept_id'),
         ForeignKeyConstraint(['visit_detail_id'], ['visit_detail.visit_detail_id'], name='fpk_device_exposure_visit_detail_id'),
         ForeignKeyConstraint(['visit_occurrence_id'], ['visit_occurrence.visit_occurrence_id'], name='fpk_device_exposure_visit_occurrence_id'),
         PrimaryKeyConstraint('device_exposure_id', name='xpk_device_exposure'),
@@ -1586,23 +1647,29 @@ class DeviceExposure(Base):
     person_id: Mapped[int] = mapped_column(Integer)
     device_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The DEVICE_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source concept id which represents a foreign object or instrument the person was exposed to.  | ETLCONVENTIONS: The CONCEPT_ID that the DEVICE_SOURCE_VALUE maps to. ')
     device_exposure_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the start date of the device record. | ETLCONVENTIONS: Valid entries include a start date of a procedure to implant a device, the date of a prescription for a device, or the date of device administration. ')
-    device_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: You can use the TYPE_CONCEPT_ID to denote the provenance of the record, as in whether the record is from administrative claims or EHR.  | ETLCONVENTIONS: Choose the drug_type_concept_id that best represents the provenance of the record, for example whether it came from a record of a prescription written or physician administered drug. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    device_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: You can use the TYPE_CONCEPT_ID to denote the provenance of the record, as in whether the record is from administrative claims or EHR.  | ETLCONVENTIONS: Choose the drug_type_concept_id that best represents the provenance of the record, for example whether it came from a record of a prescription written or physician administered drug. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     device_exposure_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: This is not required, though it is in v6. If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
     device_exposure_end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: The DEVICE_EXPOSURE_END_DATE denotes the day the device exposure ended for the patient, if given. | ETLCONVENTIONS: Put the end date or discontinuation date as it appears from the source data or leave blank if unavailable.')
     device_exposure_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
-    unique_device_id: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is the Unique Device Identification number for devices regulated by the FDA, if given. | ETLCONVENTIONS: For medical devices that are regulated by the FDA, a Unique Device Identification (UDI) is provided if available in the data source and is recorded in the UNIQUE_DEVICE_ID field.')
+    unique_device_id: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: This is the Unique Device Identification (UDI-DI) number for devices regulated by the FDA, if given.  | ETLCONVENTIONS: For medical devices that are regulated by the FDA, a Unique Device Identification (UDI) is provided if available in the data source and is recorded in the UNIQUE_DEVICE_ID field.')
+    production_id: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: This is the Production Identifier (UDI-PI) portion of the Unique Device Identification.')
     quantity: Mapped[Optional[int]] = mapped_column(Integer)
     provider_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Provider associated with device record, e.g. the provider who wrote the prescription or the provider who implanted the device. | ETLCONVENTIONS: The ETL may need to make a choice as to which PROVIDER_ID to put here. Based on what is available this may or may not be different than the provider associated with the overall VISIT_OCCURRENCE record.')
     visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Visit during which the device was prescribed or given. | ETLCONVENTIONS: To populate this field device exposures must be explicitly initiated in the visit.')
     visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Visit Detail during which the device was prescribed or given. | ETLCONVENTIONS: To populate this field device exposures must be explicitly initiated in the visit detail record.')
     device_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the device exposure that occurred. For example, this could be an NDC or Gemscript code. | ETLCONVENTIONS: This code is mapped to a Standard Device Concept in the Standardized Vocabularies and the original code is stored here for reference.')
     device_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the device source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Device necessary for a given analytic use case. Consider using DEVICE_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the DEVICE_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
+    unit_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: UNIT_SOURCE_VALUES should be mapped to a Standard Concept in the Unit domain that best represents the unit as given in the source data.  | ETLCONVENTIONS: There is no standardization requirement for units associated with DEVICE_CONCEPT_IDs, however, it is the responsibility of the ETL to choose the most plausible unit. If there is no unit associated with a Device record, set to NULL.')
+    unit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the unit of the Device. For example, blood transfusions are considered devices and can be given in mL quantities.  | ETLCONVENTIONS: This code is mapped to a Standard Condition Concept in the Standardized Vocabularies and the original code is stored here for reference. Using the blood transfusion example, blood transfusion is represented by the DEVICE_CONCEPT_ID and the unit (mL) would be housed in the UNIT_SOURCE_VALUE and mapped to a standard concept in the unit domain. ')
+    unit_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the UNIT_SOURCE_VALUE and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Unit necessary for a given analytic use case. Consider using UNIT_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the UNIT_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here. ')
 
     device_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_concept_id], back_populates='device_exposure')
     device_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_source_concept_id], back_populates='device_exposure_')
     device_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_type_concept_id], back_populates='device_exposure1')
     person: Mapped['Person'] = relationship('Person', back_populates='device_exposure')
     provider: Mapped['Provider'] = relationship('Provider', back_populates='device_exposure')
+    unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id], back_populates='device_exposure2')
+    unit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_source_concept_id], back_populates='device_exposure3')
     visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='device_exposure')
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='device_exposure')
 
@@ -1658,7 +1725,7 @@ class DrugExposure(Base):
     drug_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The DRUG_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source concept id which represents a drug product or molecule otherwise introduced to the body. The drug concepts can have a varying degree of information about drug strength and dose. This information is relevant in the context of quantity and administration information in the subsequent fields plus strength information from the DRUG_STRENGTH table, provided as part of the standard vocabulary download. | ETLCONVENTIONS: The CONCEPT_ID that the DRUG_SOURCE_VALUE maps to. The concept id should be derived either from mapping from the source concept id or by picking the drug concept representing the most amount of detail you have. Records whose source values map to standard concepts with a domain of Drug should go in this table. When the Drug Source Value of the code cannot be translated into Standard Drug Concept IDs, a Drug exposure entry is stored with only the corresponding SOURCE_CONCEPT_ID and DRUG_SOURCE_VALUE and a DRUG_CONCEPT_ID of 0. The Drug Concept with the most detailed content of information is preferred during the mapping process. These are indicated in the CONCEPT_CLASS_ID field of the Concept and are recorded in the following order of precedence: "Branded Pack", "Clinical Pack", "Branded Drug", "Clinical Drug", "Branded Drug Component", "Clinical Drug Component", "Branded Drug Form", "Clinical Drug Form", and only if no other information is available "Ingredient". Note: If only the drug class is known, the DRUG_CONCEPT_ID field should contain 0. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Drug&standardConcept=Standard&page=1&pageSize=15&query=).')
     drug_exposure_start_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the start date of the drug record. | ETLCONVENTIONS: Valid entries include a start date of a prescription, the date a prescription was filled, or the date on which a Drug administration was recorded. It is a valid ETL choice to use the date the drug was ordered as the DRUG_EXPOSURE_START_DATE.')
     drug_exposure_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The DRUG_EXPOSURE_END_DATE denotes the day the drug exposure ended for the patient. | ETLCONVENTIONS: If this information is not explicitly available in the data, infer the end date using the following methods:<br><br> 1. Start first with duration or days supply using the calculation drug start date + days supply -1 day. 2. Use quantity divided by daily dose that you may obtain from the sig or a source field (or assumed daily dose of 1) for solid, indivisibile, drug products. If quantity represents ingredient amount, quantity divided by daily dose * concentration (from drug_strength) drug concept id tells you the dose form. 3. If it is an administration record, set drug end date equal to drug start date. If the record is a written prescription then set end date to start date + 29. If the record is a mail-order prescription set end date to start date + 89. The end date must be equal to or greater than the start date. Ibuprofen 20mg/mL oral solution concept tells us this is oral solution. Calculate duration as quantity (200 example) * daily dose (5mL) /concentration (20mg/mL) 200*5/20 = 50 days. [Examples by dose form](https://ohdsi.github.io/CommonDataModel/drug_dose.html)')
-    drug_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: You can use the TYPE_CONCEPT_ID to delineate between prescriptions written vs. prescriptions dispensed vs. medication history vs. patient-reported exposure, etc. | ETLCONVENTIONS: Choose the drug_type_concept_id that best represents the provenance of the record, for example whether it came from a record of a prescription written or physician administered drug. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    drug_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: You can use the TYPE_CONCEPT_ID to delineate between prescriptions written vs. prescriptions dispensed vs. medication history vs. patient-reported exposure, etc. | ETLCONVENTIONS: Choose the drug_type_concept_id that best represents the provenance of the record, for example whether it came from a record of a prescription written or physician administered drug. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     drug_exposure_start_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: This is not required, though it is in v6. If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
     drug_exposure_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: This is not required, though it is in v6. If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
     verbatim_end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: This is the end date of the drug exposure as it appears in the source data, if it is given | ETLCONVENTIONS: Put the end date or discontinuation date as it appears from the source data or leave blank if unavailable.')
@@ -1675,7 +1742,7 @@ class DrugExposure(Base):
     drug_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the drug exposure that occurred. For example, this could be an NDC or Gemscript code. | ETLCONVENTIONS: This code is mapped to a Standard Drug Concept in the Standardized Vocabularies and the original code is stored here for reference.')
     drug_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the drug source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Drug necessary for a given analytic use case. Consider using DRUG_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the DRUG_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
     route_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the drug route. | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating when and how a drug was given to a patient. This source value is mapped to a standard concept which is stored in the ROUTE_CONCEPT_ID field.')
-    dose_unit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the dose unit of the drug given. | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating the unit of dosage of drug given to the patient. This is an older column and will be deprecated in an upcoming version.')
+    dose_unit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the dose unit of the drug given. | ETLCONVENTIONS: This information may be called something different in the source data but the field is meant to contain a value indicating the unit of dosage of drug given to the patient. **This is an older column and will be deprecated in an upcoming version.**')
 
     drug_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_concept_id], back_populates='drug_exposure')
     drug_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_source_concept_id], back_populates='drug_exposure_')
@@ -1690,6 +1757,7 @@ class DrugExposure(Base):
 class Measurement(Base):
     __tablename__ = 'measurement'
     __table_args__ = (
+        ForeignKeyConstraint(['meas_event_field_concept_id'], ['concept.concept_id'], name='fpk_measurement_meas_event_field_concept_id'),
         ForeignKeyConstraint(['measurement_concept_id'], ['concept.concept_id'], name='fpk_measurement_measurement_concept_id'),
         ForeignKeyConstraint(['measurement_source_concept_id'], ['concept.concept_id'], name='fpk_measurement_measurement_source_concept_id'),
         ForeignKeyConstraint(['measurement_type_concept_id'], ['concept.concept_id'], name='fpk_measurement_measurement_type_concept_id'),
@@ -1697,6 +1765,7 @@ class Measurement(Base):
         ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_measurement_person_id'),
         ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_measurement_provider_id'),
         ForeignKeyConstraint(['unit_concept_id'], ['concept.concept_id'], name='fpk_measurement_unit_concept_id'),
+        ForeignKeyConstraint(['unit_source_concept_id'], ['concept.concept_id'], name='fpk_measurement_unit_source_concept_id'),
         ForeignKeyConstraint(['value_as_concept_id'], ['concept.concept_id'], name='fpk_measurement_value_as_concept_id'),
         ForeignKeyConstraint(['visit_detail_id'], ['visit_detail.visit_detail_id'], name='fpk_measurement_visit_detail_id'),
         ForeignKeyConstraint(['visit_occurrence_id'], ['visit_occurrence.visit_occurrence_id'], name='fpk_measurement_visit_occurrence_id'),
@@ -1753,7 +1822,7 @@ class Measurement(Base):
     person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the Person for whom the Measurement is recorded. This may be a system generated code.')
     measurement_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The MEASUREMENT_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. | ETLCONVENTIONS: The CONCEPT_ID that the MEASUREMENT_SOURCE_CONCEPT_ID maps to. Only records whose SOURCE_CONCEPT_IDs map to Standard Concepts with a domain of "Measurement" should go in this table.')
     measurement_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the date of the measurement. | ETLCONVENTIONS: If there are multiple dates in the source data associated with a record such as order_date, draw_date, and result_date, choose the one that is closest to the date the sample was drawn from the patient.')
-    measurement_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Measurement record, as in whether the measurement was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the MEASUREMENT_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    measurement_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Measurement record, as in whether the measurement was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the MEASUREMENT_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     measurement_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: This is not required, though it is in v6. If a source does not specify datetime the convention is to set the time to midnight (00:00:0000)')
     measurement_time: Mapped[Optional[str]] = mapped_column(String(10), comment=' | ETLCONVENTIONS: This is present for backwards compatibility and will be deprecated in an upcoming version.')
     operator_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The meaning of Concept [4172703](https://athena.ohdsi.org/search-terms/terms/4172703) for "=" is identical to omission of a OPERATOR_CONCEPT_ID value. Since the use of this field is rare, it"s important when devising analyses to not to forget testing for the content of this field for values different from =. | ETLCONVENTIONS: Operators are <, <=, =, >=, > and these concepts belong to the "Meas Value Operator" domain. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Meas+Value+Operator&standardConcept=Standard&page=1&pageSize=15&query=).')
@@ -1768,16 +1837,21 @@ class Measurement(Base):
     measurement_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the Measurement that occurred. For example, this could be an ICD10 or Read code. | ETLCONVENTIONS: This code is mapped to a Standard Measurement Concept in the Standardized Vocabularies and the original code is stored here for reference.')
     measurement_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the MEASUREMENT_SOURCE_VALUE and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Measurement necessary for a given analytic use case. Consider using MEASUREMENT_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the MEASUREMENT_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
     unit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the unit of the Measurement that occurred.  | ETLCONVENTIONS: This code is mapped to a Standard Condition Concept in the Standardized Vocabularies and the original code is stored here for reference.')
+    unit_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: "This is the concept representing the UNIT_SOURCE_VALUE and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Measurement necessary for a given analytic use case. Consider using UNIT_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network." | ETLCONVENTIONS: If the UNIT_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
     value_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim result value of the Measurement from the source data .  | ETLCONVENTIONS: If both a continuous and categorical result are given in the source data such that both VALUE_AS_NUMBER and VALUE_AS_CONCEPT_ID are both included, store the verbatim value that was mapped to VALUE_AS_CONCEPT_ID here.')
+    measurement_event_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Measurement record is related to another record in the database, this field is the primary key of the linked record.  | ETLCONVENTIONS: Put the primary key of the linked record, if applicable, here.')
+    meas_event_field_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Measurement record is related to another record in the database, this field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the MEASUREMENT_EVENT_ID came from.')
 
-    measurement_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_concept_id], back_populates='measurement')
-    measurement_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_source_concept_id], back_populates='measurement_')
-    measurement_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_type_concept_id], back_populates='measurement1')
-    operator_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[operator_concept_id], back_populates='measurement2')
+    meas_event_field_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[meas_event_field_concept_id], back_populates='measurement')
+    measurement_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_concept_id], back_populates='measurement_')
+    measurement_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_source_concept_id], back_populates='measurement1')
+    measurement_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_type_concept_id], back_populates='measurement2')
+    operator_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[operator_concept_id], back_populates='measurement3')
     person: Mapped['Person'] = relationship('Person', back_populates='measurement')
     provider: Mapped['Provider'] = relationship('Provider', back_populates='measurement')
-    unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id], back_populates='measurement3')
-    value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id], back_populates='measurement4')
+    unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id], back_populates='measurement4')
+    unit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_source_concept_id], back_populates='measurement5')
+    value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id], back_populates='measurement6')
     visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='measurement')
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='measurement')
 
@@ -1788,6 +1862,7 @@ class Note(Base):
         ForeignKeyConstraint(['encoding_concept_id'], ['concept.concept_id'], name='fpk_note_encoding_concept_id'),
         ForeignKeyConstraint(['language_concept_id'], ['concept.concept_id'], name='fpk_note_language_concept_id'),
         ForeignKeyConstraint(['note_class_concept_id'], ['concept.concept_id'], name='fpk_note_note_class_concept_id'),
+        ForeignKeyConstraint(['note_event_field_concept_id'], ['concept.concept_id'], name='fpk_note_note_event_field_concept_id'),
         ForeignKeyConstraint(['note_type_concept_id'], ['concept.concept_id'], name='fpk_note_note_type_concept_id'),
         ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_note_person_id'),
         ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_note_provider_id'),
@@ -1837,7 +1912,7 @@ class Note(Base):
     note_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: A unique identifier for each note.')
     person_id: Mapped[int] = mapped_column(Integer)
     note_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date the note was recorded.')
-    note_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The provenance of the note. Most likely this will be EHR.  | ETLCONVENTIONS: Put the source system of the note, as in EHR record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=).')
+    note_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The provenance of the note. Most likely this will be EHR.  | ETLCONVENTIONS: Put the source system of the note, as in EHR record. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     note_class_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A Standard Concept Id representing the HL7 LOINC\nDocument Type Vocabulary classification of the note. | ETLCONVENTIONS: Map the note classification to a Standard Concept. For more information see the ETL Conventions in the description of the NOTE table. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&conceptClass=Doc+Kind&conceptClass=Doc+Role&conceptClass=Doc+Setting&conceptClass=Doc+Subject+Matter&conceptClass=Doc+Type+of+Service&domain=Meas+Value&page=1&pageSize=15&query=). This Concept can alternatively be represented by concepts with the relationship "Kind of (LOINC)" to [706391](https://athena.ohdsi.org/search-terms/terms/706391) (Note).')
     note_text: Mapped[str] = mapped_column(Text, comment='USER GUIDANCE: The content of the note.')
     encoding_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This is the Concept representing the character encoding type.  | ETLCONVENTIONS: Put the Concept Id that represents the encoding character type here. Currently the only option is UTF-8 ([32678](https://athena.ohdsi.org/search-terms/terms/32678)). It the note is encoded in any other type, like ASCII then put 0. ')
@@ -1848,11 +1923,14 @@ class Note(Base):
     visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Visit during which the note was written. ')
     visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The Visit Detail during which the note was written.')
     note_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: The source value mapped to the NOTE_CLASS_CONCEPT_ID.')
+    note_event_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Note record is related to another record in the database, this field is the primary key of the linked record.  | ETLCONVENTIONS: Put the primary key of the linked record, if applicable, here.')
+    note_event_field_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Note record is related to another record in the database, this field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the NOTE_EVENT_ID came from.')
 
     encoding_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[encoding_concept_id], back_populates='note')
     language_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[language_concept_id], back_populates='note_')
     note_class_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_class_concept_id], back_populates='note1')
-    note_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_type_concept_id], back_populates='note2')
+    note_event_field_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_event_field_concept_id], back_populates='note2')
+    note_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_type_concept_id], back_populates='note3')
     person: Mapped['Person'] = relationship('Person', back_populates='note')
     provider: Mapped['Provider'] = relationship('Provider', back_populates='note')
     visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='note')
@@ -1862,6 +1940,7 @@ class Note(Base):
 class Observation(Base):
     __tablename__ = 'observation'
     __table_args__ = (
+        ForeignKeyConstraint(['obs_event_field_concept_id'], ['concept.concept_id'], name='fpk_observation_obs_event_field_concept_id'),
         ForeignKeyConstraint(['observation_concept_id'], ['concept.concept_id'], name='fpk_observation_observation_concept_id'),
         ForeignKeyConstraint(['observation_source_concept_id'], ['concept.concept_id'], name='fpk_observation_observation_source_concept_id'),
         ForeignKeyConstraint(['observation_type_concept_id'], ['concept.concept_id'], name='fpk_observation_observation_type_concept_id'),
@@ -1913,7 +1992,7 @@ class Observation(Base):
     person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the Person for whom the Observation is recorded. This may be a system generated code.')
     observation_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The OBSERVATION_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. | ETLCONVENTIONS: The CONCEPT_ID that the OBSERVATION_SOURCE_CONCEPT_ID maps to. There is no specified domain that the Concepts in this table must adhere to. The only rule is that records with Concepts in the Condition, Procedure, Drug, Measurement, or Device domains MUST go to the corresponding table. ')
     observation_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date of the Observation. Depending on what the Observation represents this could be the date of a lab test, the date of a survey, or the date a patient"s family history was taken.  | ETLCONVENTIONS: For some observations the ETL may need to make a choice as to which date to choose.')
-    observation_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Observation record, as in whether the measurement was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the OBSERVATION_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
+    observation_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Observation record, as in whether the measurement was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the OBSERVATION_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
     observation_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If no time is given set to midnight (00:00:00).')
     value_as_number: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment='USER GUIDANCE: This is the numerical value of the Result of the Observation, if applicable and available. It is not expected that all Observations will have numeric results, rather, this field is here to house values should they exist. ')
     value_as_string: Mapped[Optional[str]] = mapped_column(String(60), comment='USER GUIDANCE: This is the categorical value of the Result of the Observation, if applicable and available. ')
@@ -1927,15 +2006,83 @@ class Observation(Base):
     observation_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the OBSERVATION_SOURCE_VALUE and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Observation necessary for a given analytic use case. Consider using OBSERVATION_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the OBSERVATION_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
     unit_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the unit of the Observation that occurred.  | ETLCONVENTIONS: This code is mapped to a Standard Condition Concept in the Standardized Vocabularies and the original code is stored here for reference.')
     qualifier_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the qualifier of the Observation that occurred.  | ETLCONVENTIONS: This code is mapped to a Standard Condition Concept in the Standardized Vocabularies and the original code is stored here for reference.')
+    value_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim result value of the Observation from the source data.  Do not get confused with the Observation_source_value which captures source value of the observation mapped to observation_concept_id. This field is the observation result value from the source. | ETLCONVENTIONS:  If the observation_source_value was a question, for example,  or an observation that requires a result then this field is the answer/ result from the source data. Store the verbatim value that represents the result of the observation_source_value.  ')
+    observation_event_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Observation record is related to another record in the database, this field is the primary key of the linked record.  | ETLCONVENTIONS: Put the primary key of the linked record, if applicable, here. See the [ETL Conventions for the OBSERVATION](https://ohdsi.github.io/CommonDataModel/cdm60.html#observation) table for more details.')
+    obs_event_field_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the Observation record is related to another record in the database, this field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the OBSERVATION_EVENT_ID came from.')
 
-    observation_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_concept_id], back_populates='observation')
-    observation_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_source_concept_id], back_populates='observation_')
-    observation_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_type_concept_id], back_populates='observation1')
+    obs_event_field_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[obs_event_field_concept_id], back_populates='observation')
+    observation_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_concept_id], back_populates='observation_')
+    observation_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_source_concept_id], back_populates='observation1')
+    observation_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_type_concept_id], back_populates='observation2')
     person: Mapped['Person'] = relationship('Person', back_populates='observation')
     provider: Mapped['Provider'] = relationship('Provider', back_populates='observation')
-    qualifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[qualifier_concept_id], back_populates='observation2')
-    unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id], back_populates='observation3')
-    value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id], back_populates='observation4')
+    qualifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[qualifier_concept_id], back_populates='observation3')
+    unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id], back_populates='observation4')
+    value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id], back_populates='observation5')
     visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='observation')
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='observation')
+
+
+class ProcedureOccurrence(Base):
+    __tablename__ = 'procedure_occurrence'
+    __table_args__ = (
+        ForeignKeyConstraint(['modifier_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_modifier_concept_id'),
+        ForeignKeyConstraint(['person_id'], ['person.person_id'], name='fpk_procedure_occurrence_person_id'),
+        ForeignKeyConstraint(['procedure_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_procedure_concept_id'),
+        ForeignKeyConstraint(['procedure_source_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_procedure_source_concept_id'),
+        ForeignKeyConstraint(['procedure_type_concept_id'], ['concept.concept_id'], name='fpk_procedure_occurrence_procedure_type_concept_id'),
+        ForeignKeyConstraint(['provider_id'], ['provider.provider_id'], name='fpk_procedure_occurrence_provider_id'),
+        ForeignKeyConstraint(['visit_detail_id'], ['visit_detail.visit_detail_id'], name='fpk_procedure_occurrence_visit_detail_id'),
+        ForeignKeyConstraint(['visit_occurrence_id'], ['visit_occurrence.visit_occurrence_id'], name='fpk_procedure_occurrence_visit_occurrence_id'),
+        PrimaryKeyConstraint('procedure_occurrence_id', name='xpk_procedure_occurrence'),
+        Index('idx_procedure_concept_id_1', 'procedure_concept_id'),
+        Index('idx_procedure_person_id_1', 'person_id'),
+        Index('idx_procedure_visit_id_1', 'visit_occurrence_id'),
+        {'comment': 'DESC: This table contains records of activities or processes '
+                'ordered by, or carried out by, a healthcare provider on the '
+                'patient with a diagnostic or therapeutic purpose. | USER '
+                'GUIDANCE: Lab tests are not a procedure, if something is observed '
+                'with an expected resulting amount and unit then it should be a '
+                'measurement. Phlebotomy is a procedure but so trivial that it '
+                'tends to be rarely captured. It can be assumed that there is a '
+                'phlebotomy procedure associated with many lab tests, therefore it '
+                'is unnecessary to add them as separate procedures. If the user '
+                'finds the same procedure over concurrent days, it is assumed '
+                'those records are part of a procedure lasting more than a day. '
+                'This logic is in lieu of the procedure_end_date, which will be '
+                'added in a future version of the CDM. | ETL CONVENTIONS: When '
+                'dealing with duplicate records, the ETL must determine whether to '
+                'sum them up into one record or keep them separate. Things to '
+                'consider are: - Same Procedure - Same PROCEDURE_DATETIME - Same '
+                'Visit Occurrence or Visit Detail - Same Provider - Same Modifier '
+                'for Procedures. Source codes and source text fields mapped to '
+                'Standard Concepts of the Procedure Domain have to be recorded '
+                'here.'}
+    )
+
+    procedure_occurrence_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment='USER GUIDANCE: The unique key given to a procedure record for a person. Refer to the ETL for how duplicate procedures during the same visit were handled. | ETLCONVENTIONS: Each instance of a procedure occurrence in the source data should be assigned this unique key. In some cases, a person can have multiple records of the same procedure within the same visit. It is valid to keep these duplicates and assign them individual, unique, PROCEDURE_OCCURRENCE_IDs, though it is up to the ETL how they should be handled.')
+    person_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PERSON_ID of the PERSON for whom the procedure is recorded. This may be a system generated code.')
+    procedure_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: The PROCEDURE_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source value which represents a procedure | ETLCONVENTIONS: The CONCEPT_ID that the PROCEDURE_SOURCE_VALUE maps to. Only records whose source values map to standard concepts with a domain of "Procedure" should go in this table. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Procedure&standardConcept=Standard&page=1&pageSize=15&query=).')
+    procedure_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: Use this date to determine the date the procedure started. | ETLCONVENTIONS: This is meant to be the **start date** of the procedure. It will be renamed in a future version to **PROCEDURE_START_DATE**. ')
+    procedure_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Procedure record, as in whether the procedure was from an EHR system, insurance claim, registry, or other sources. | ETLCONVENTIONS: Choose the PROCEDURE_TYPE_CONCEPT_ID that best represents the provenance of the record, for example whether it came from an EHR record or billing claim. If a procedure is recorded as an EHR encounter, the PROCEDURE_TYPE_CONCEPT would be "EHR encounter record". [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
+    procedure_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment=' | ETLCONVENTIONS: If the procedure has a start time in the native date, use this field to house that information. This will be renamed in a future version to **PROCEDURE_START_DATETIME**.')
+    procedure_end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='USER GUIDANCE: Use this field to house the date that the procedure ended.  | ETLCONVENTIONS: This is meant to be the end date of the procedure. It is not required and for most cases will be the same as the PROCEDURE_START_DATE.')
+    procedure_end_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='USER GUIDANCE: Use this field to house the datetime that the procedure ended.  | ETLCONVENTIONS: This is meant to house the end datetime of the procedure and will most often be used in conjunction with the procedure_start_datetime to determine the length of the procedure.')
+    modifier_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The modifiers are intended to give additional information about the procedure but as of now the vocabulary is under review. | ETLCONVENTIONS: It is up to the ETL to choose how to map modifiers if they exist in source data. These concepts are typically distinguished by "Modifier" concept classes (e.g., "CPT4 Modifier" as part of the "CPT4" vocabulary). If there is more than one modifier on a record, one should be chosen that pertains to the procedure rather than provider. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?conceptClass=CPT4+Modifier&conceptClass=HCPCS+Modifier&vocabulary=CPT4&vocabulary=HCPCS&standardConcept=Standard&page=1&pageSize=15&query=).')
+    quantity: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: If the quantity value is omitted, a single procedure is assumed. | ETLCONVENTIONS: If a Procedure has a quantity of "0" in the source, this should default to "1" in the ETL. If there is a record in the source it can be assumed the exposure occurred at least once')
+    provider_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The provider associated with the procedure record, e.g. the provider who performed the Procedure. | ETLCONVENTIONS: The ETL may need to make a choice as to which PROVIDER_ID to put here. Based on what is available this may or may not be different than the provider associated with the overall VISIT_OCCURRENCE record, for example the admitting vs attending physician on an EHR record.')
+    visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The visit during which the procedure occurred. | ETLCONVENTIONS: Depending on the structure of the source data, this may have to be determined based on dates. If a PROCEDURE_DATE occurs within the start and end date of a Visit it is a valid ETL choice to choose the VISIT_OCCURRENCE_ID from the Visit that subsumes it, even if not explicitly stated in the data. While not required, an attempt should be made to locate the VISIT_OCCURRENCE_ID of the PROCEDURE_OCCURRENCE record.')
+    visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The VISIT_DETAIL record during which the Procedure occurred. For example, if the Person was in the ICU at the time of the Procedure the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit. | ETLCONVENTIONS: Same rules apply as for the VISIT_OCCURRENCE_ID.')
+    procedure_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field houses the verbatim value from the source data representing the procedure that occurred. For example, this could be an CPT4 or OPCS4 code. | ETLCONVENTIONS: Use this value to look up the source concept id and then map the source concept id to a standard concept id.')
+    procedure_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is the concept representing the procedure source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Procedure necessary for a given analytic use case. Consider using PROCEDURE_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network. | ETLCONVENTIONS: If the PROCEDURE_SOURCE_VALUE is coded in the source data using an OMOP supported vocabulary put the concept id representing the source value here.')
+    modifier_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: The original modifier code from the source is stored here for reference.')
+
+    modifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[modifier_concept_id], back_populates='procedure_occurrence')
+    person: Mapped['Person'] = relationship('Person', back_populates='procedure_occurrence')
+    procedure_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_concept_id], back_populates='procedure_occurrence_')
+    procedure_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_source_concept_id], back_populates='procedure_occurrence1')
+    procedure_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_type_concept_id], back_populates='procedure_occurrence2')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='procedure_occurrence')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='procedure_occurrence')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='procedure_occurrence')
 
