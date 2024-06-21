@@ -2069,3 +2069,6 @@ class ProcedureOccurrence(SQLModel, table=True):
     visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='procedure_occurrence')
 
 
+po = ProcedureOccurrence()
+for prov in po.provider:
+    print(prov)
