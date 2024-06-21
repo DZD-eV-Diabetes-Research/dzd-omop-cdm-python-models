@@ -66,7 +66,7 @@ class OMOPSchemaSource(BaseModel):
 
 
 omopcdm_5_3 = OMOPSchemaSource(
-    version_name="OMOP_CDM_5.3",
+    version_name="OMOP_5_3",
     sql_constraints_file_path=Path(
         PurePath(
             config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
@@ -116,7 +116,7 @@ omopcdm_5_3 = OMOPSchemaSource(
 
 
 omopcdm_5_4 = OMOPSchemaSource(
-    version_name="OMOP_CDM_5.4",
+    version_name="OMOP_5_4",
     sql_constraints_file_path=Path(
         PurePath(
             config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
