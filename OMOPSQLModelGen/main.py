@@ -47,25 +47,28 @@ for OMOP_source in SOURCES:
             "-c",
             sqlqcodegan_cmd,
         ]
-        output = Path(
+        output_file_path = Path(
             PurePath(
                 config.DATAMODEL_OUTPUT_DIR,
                 f"{OMOP_source.version_name}_{data_class_style}.py",
             )
         )
-        if not output:
+        if not output_file_path:
             print(f"Something went wrong with {sqlqcodegan_cmd}")
             continue
         config.DATAMODEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        with open(output, "w") as out:
+        # remove file if already exists:
+        output_file_path.unlink(missing_ok=True)
+        # run command and output to file
+        with open(output_file_path, "w") as out:
             return_code = subprocess.call(cmd, stdout=out)
             print("return_code", return_code)
         if OMOP_source.post_generation_python_functions:
             for post_processing_func in OMOP_source.post_generation_python_functions:
 
                 print(
-                    f"Run post processing function '{post_processing_func.__name__}' on file '{output.absolute()}'"
+                    f"Run post processing function '{post_processing_func.__name__}' on file '{output_file_path.absolute()}'"
                 )
-                post_processing_func(output, OMOP_source, data_class_style)
+                post_processing_func(output_file_path, OMOP_source, data_class_style)
 
     # sqlacodegen --generator sqlmodel postgresql://ps:ps@localhost/ps

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dzdomop"
+authors = [{ name = "Tim Bleimehl", email = "bleimehl@helmholtz-munich.de" }]
+description = "A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["DZD", "OMOP"]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = ["sqlmodel", "sqlalchemy"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest", "deepdiff"]
+docs = ["mkdocs", "mkdocstrings[python]", "mkdocs-autorefs", "mkdocs-material"]
+[project.urls]
+Source = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models"
+Issues = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues"
