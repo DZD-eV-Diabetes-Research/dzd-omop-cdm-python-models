@@ -6,6 +6,7 @@ enabled = true
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
+root = "../"
 [project]
 name = "dzdomop"
 authors = [{ name = "Tim Bleimehl", email = "bleimehl@helmholtz-munich.de" }]
