@@ -1,6 +1,6 @@
 # Create omop dat
-"""
-# from omopmodel import OMOP_5_3_sqlmodels as omop
+
+from omopmodel import OMOP_5_3_sqlmodels as omop
 
 
 person = omop.Person(person_id=1234, year_of_birth=1985)
@@ -44,3 +44,4 @@ with Session(engine) as session:
     session.add(care_site)
     session.add(person)
     session.commit()
+"""

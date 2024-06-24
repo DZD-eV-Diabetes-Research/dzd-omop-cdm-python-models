@@ -22,7 +22,12 @@ from OMOPSQLModelGen.post_processing_funcs.replace_temp_pk_with_candidate_keys i
 from OMOPSQLModelGen.post_processing_funcs.fix_sql_model import (
     fix_sql_model,
 )
-from OMOPSQLModelGen.post_processing_funcs.fix_death_table_glitch import fix_death_table_glitch
+from OMOPSQLModelGen.post_processing_funcs.fix_death_table_glitch import (
+    fix_death_table_glitch,
+)
+from OMOPSQLModelGen.post_processing_funcs.remove_backpopulating_lists import (
+    remove_back_populating_lists,
+)
 
 
 class OMOPSchemaSource(BaseModel):
@@ -112,7 +117,8 @@ omopcdm_5_3 = OMOPSchemaSource(
         rename_table_variable_names,
         replace_temp_pks_with_candidate_keys,
         fix_sql_model,
-        fix_death_table_glitch
+        fix_death_table_glitch,
+        remove_back_populating_lists,
     ],
 )
 
@@ -163,9 +169,9 @@ omopcdm_5_4 = OMOPSchemaSource(
         rename_table_variable_names,
         replace_temp_pks_with_candidate_keys,
         fix_sql_model,
-        fix_death_table_glitch
+        fix_death_table_glitch,
+        remove_back_populating_lists,
     ],
-    
 )
 
 SOURCES: List[OMOPSchemaSource] = omopcdm_5_3, omopcdm_5_4

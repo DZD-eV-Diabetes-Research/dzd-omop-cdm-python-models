@@ -75,111 +75,6 @@ class Concept(SQLModel, table=True):
     concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')
     domain: Optional['Domain'] = Relationship(back_populates='concept')
     vocabulary: Optional['Vocabulary'] = Relationship(back_populates='concept')
-    concept_class_: List['ConceptClass'] = Relationship(back_populates='concept_class_concept')
-    domain_: List['Domain'] = Relationship(back_populates='domain_concept')
-    vocabulary_: List['Vocabulary'] = Relationship(back_populates='vocabulary_concept')
-    attribute_definition: List['AttributeDefinition'] = Relationship(back_populates='attribute_type_concept')
-    care_site: List['CareSite'] = Relationship(back_populates='place_of_service_concept')
-    cohort_definition: List['CohortDefinition'] = Relationship(back_populates='definition_type_concept')
-    cohort_definition_: List['CohortDefinition'] = Relationship(back_populates='subject_concept')
-    concept_ancestor: List['ConceptAncestor'] = Relationship(back_populates='ancestor_concept')
-    concept_ancestor_: List['ConceptAncestor'] = Relationship(back_populates='descendant_concept')
-    concept_synonym: List['ConceptSynonym'] = Relationship(back_populates='concept')
-    concept_synonym_: List['ConceptSynonym'] = Relationship(back_populates='language_concept')
-    condition_era: List['ConditionEra'] = Relationship(back_populates='condition_concept')
-    cost: List['Cost'] = Relationship(back_populates='cost_type_concept')
-    cost_: List['Cost'] = Relationship(back_populates='currency_concept')
-    cost1: List['Cost'] = Relationship(back_populates='drg_concept')
-    cost2: List['Cost'] = Relationship(back_populates='revenue_code_concept')
-    drug_strength: List['DrugStrength'] = Relationship(back_populates='amount_unit_concept')
-    drug_strength_: List['DrugStrength'] = Relationship(back_populates='denominator_unit_concept')
-    drug_strength1: List['DrugStrength'] = Relationship(back_populates='drug_concept')
-    drug_strength2: List['DrugStrength'] = Relationship(back_populates='ingredient_concept')
-    drug_strength3: List['DrugStrength'] = Relationship(back_populates='numerator_unit_concept')
-    fact_relationship: List['FactRelationship'] = Relationship(back_populates='concept')
-    fact_relationship_: List['FactRelationship'] = Relationship(back_populates='concept_')
-    fact_relationship1: List['FactRelationship'] = Relationship(back_populates='relationship_concept')
-    metadata_: List['Metadata'] = Relationship(back_populates='metadata_concept')
-    metadata__: List['Metadata'] = Relationship(back_populates='metadata_type_concept')
-    metadata_1: List['Metadata'] = Relationship(back_populates='value_as_concept')
-    note_nlp: List['NoteNlp'] = Relationship(back_populates='note_nlp_concept')
-    note_nlp_: List['NoteNlp'] = Relationship(back_populates='note_nlp_source_concept')
-    note_nlp1: List['NoteNlp'] = Relationship(back_populates='section_concept')
-    relationship: List['Relationship_'] = Relationship(back_populates='relationship_concept')
-    source_to_concept_map: List['SourceToConceptMap'] = Relationship(back_populates='source_concept')
-    source_to_concept_map_: List['SourceToConceptMap'] = Relationship(back_populates='target_concept')
-    concept_relationship: List['ConceptRelationship'] = Relationship(back_populates='concept')
-    concept_relationship_: List['ConceptRelationship'] = Relationship(back_populates='concept_')
-    provider: List['Provider'] = Relationship(back_populates='gender_concept')
-    provider_: List['Provider'] = Relationship(back_populates='gender_source_concept')
-    provider1: List['Provider'] = Relationship(back_populates='specialty_concept')
-    provider2: List['Provider'] = Relationship(back_populates='specialty_source_concept')
-    person: List['Person'] = Relationship(back_populates='ethnicity_concept')
-    person_: List['Person'] = Relationship(back_populates='ethnicity_source_concept')
-    person1: List['Person'] = Relationship(back_populates='gender_concept')
-    person2: List['Person'] = Relationship(back_populates='gender_source_concept')
-    person3: List['Person'] = Relationship(back_populates='race_concept')
-    person4: List['Person'] = Relationship(back_populates='race_source_concept')
-    death: List['Death'] = Relationship(back_populates='cause_concept')
-    death_: List['Death'] = Relationship(back_populates='cause_source_concept')
-    death1: List['Death'] = Relationship(back_populates='death_type_concept')
-    dose_era: List['DoseEra'] = Relationship(back_populates='drug_concept')
-    dose_era_: List['DoseEra'] = Relationship(back_populates='unit_concept')
-    drug_era: List['DrugEra'] = Relationship(back_populates='drug_concept')
-    observation_period: List['ObservationPeriod'] = Relationship(back_populates='period_type_concept')
-    payer_plan_period: List['PayerPlanPeriod'] = Relationship(back_populates='payer_concept')
-    payer_plan_period_: List['PayerPlanPeriod'] = Relationship(back_populates='payer_source_concept')
-    payer_plan_period1: List['PayerPlanPeriod'] = Relationship(back_populates='plan_concept')
-    payer_plan_period2: List['PayerPlanPeriod'] = Relationship(back_populates='plan_source_concept')
-    payer_plan_period3: List['PayerPlanPeriod'] = Relationship(back_populates='sponsor_concept')
-    payer_plan_period4: List['PayerPlanPeriod'] = Relationship(back_populates='sponsor_source_concept')
-    payer_plan_period5: List['PayerPlanPeriod'] = Relationship(back_populates='stop_reason_concept')
-    payer_plan_period6: List['PayerPlanPeriod'] = Relationship(back_populates='stop_reason_source_concept')
-    procedure_occurrence: List['ProcedureOccurrence'] = Relationship(back_populates='modifier_concept')
-    procedure_occurrence_: List['ProcedureOccurrence'] = Relationship(back_populates='procedure_concept')
-    procedure_occurrence1: List['ProcedureOccurrence'] = Relationship(back_populates='procedure_type_concept')
-    specimen: List['Specimen'] = Relationship(back_populates='anatomic_site_concept')
-    specimen_: List['Specimen'] = Relationship(back_populates='disease_status_concept')
-    specimen1: List['Specimen'] = Relationship(back_populates='specimen_concept')
-    specimen2: List['Specimen'] = Relationship(back_populates='specimen_type_concept')
-    specimen3: List['Specimen'] = Relationship(back_populates='unit_concept')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='admitting_source_concept')
-    visit_occurrence_: List['VisitOccurrence'] = Relationship(back_populates='discharge_to_concept')
-    visit_occurrence1: List['VisitOccurrence'] = Relationship(back_populates='visit_concept')
-    visit_occurrence2: List['VisitOccurrence'] = Relationship(back_populates='visit_source_concept')
-    visit_occurrence3: List['VisitOccurrence'] = Relationship(back_populates='visit_type_concept')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='admitting_source_concept')
-    visit_detail_: List['VisitDetail'] = Relationship(back_populates='discharge_to_concept')
-    visit_detail1: List['VisitDetail'] = Relationship(back_populates='visit_detail_concept')
-    visit_detail2: List['VisitDetail'] = Relationship(back_populates='visit_detail_source_concept')
-    visit_detail3: List['VisitDetail'] = Relationship(back_populates='visit_detail_type_concept')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='condition_concept')
-    condition_occurrence_: List['ConditionOccurrence'] = Relationship(back_populates='condition_source_concept')
-    condition_occurrence1: List['ConditionOccurrence'] = Relationship(back_populates='condition_status_concept')
-    condition_occurrence2: List['ConditionOccurrence'] = Relationship(back_populates='condition_type_concept')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='device_concept')
-    device_exposure_: List['DeviceExposure'] = Relationship(back_populates='device_source_concept')
-    device_exposure1: List['DeviceExposure'] = Relationship(back_populates='device_type_concept')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='drug_concept')
-    drug_exposure_: List['DrugExposure'] = Relationship(back_populates='drug_source_concept')
-    drug_exposure1: List['DrugExposure'] = Relationship(back_populates='drug_type_concept')
-    drug_exposure2: List['DrugExposure'] = Relationship(back_populates='route_concept')
-    measurement: List['Measurement'] = Relationship(back_populates='measurement_concept')
-    measurement_: List['Measurement'] = Relationship(back_populates='measurement_source_concept')
-    measurement1: List['Measurement'] = Relationship(back_populates='measurement_type_concept')
-    measurement2: List['Measurement'] = Relationship(back_populates='operator_concept')
-    measurement3: List['Measurement'] = Relationship(back_populates='unit_concept')
-    measurement4: List['Measurement'] = Relationship(back_populates='value_as_concept')
-    note: List['Note'] = Relationship(back_populates='encoding_concept')
-    note_: List['Note'] = Relationship(back_populates='language_concept')
-    note1: List['Note'] = Relationship(back_populates='note_class_concept')
-    note2: List['Note'] = Relationship(back_populates='note_type_concept')
-    observation: List['Observation'] = Relationship(back_populates='observation_concept')
-    observation_: List['Observation'] = Relationship(back_populates='observation_source_concept')
-    observation1: List['Observation'] = Relationship(back_populates='observation_type_concept')
-    observation2: List['Observation'] = Relationship(back_populates='qualifier_concept')
-    observation3: List['Observation'] = Relationship(back_populates='unit_concept')
-    observation4: List['Observation'] = Relationship(back_populates='value_as_concept')
 
 
 class ConceptClass(SQLModel, table=True):
@@ -198,7 +93,6 @@ class ConceptClass(SQLModel, table=True):
     concept_class_name: str = Field(sa_column=Column('concept_class_name', String(255)), description='USER GUIDANCE: The name describing the Concept Class, e.g.\nClinical Finding, Ingredient, etc.')
     concept_class_concept_id: int = Field(sa_column=Column('concept_class_concept_id', Integer), description='USER GUIDANCE: A Concept that represents the Concept Class.')
 
-    concept: List['Concept'] = Relationship(back_populates='concept_class')
     concept_class_concept: Optional['Concept'] = Relationship(back_populates='concept_class_')
 
 
@@ -222,9 +116,7 @@ class Domain(SQLModel, table=True):
     domain_name: str = Field(sa_column=Column('domain_name', String(255)), description='USER GUIDANCE: The name describing the Domain, e.g.\nCondition, Procedure, Measurement\netc.')
     domain_concept_id: int = Field(sa_column=Column('domain_concept_id', Integer), description='USER GUIDANCE: A Concept representing the Domain Concept the DOMAIN record belongs to.')
 
-    concept: List['Concept'] = Relationship(back_populates='domain')
     domain_concept: Optional['Concept'] = Relationship(back_populates='domain_')
-    cost: List['Cost'] = Relationship(back_populates='cost_domain')
 
 
 class Location(SQLModel, table=True):
@@ -250,8 +142,6 @@ class Location(SQLModel, table=True):
     county: Optional[str] = Field(default=None, sa_column=Column('county', String(20)))
     location_source_value: Optional[str] = Field(default=None, sa_column=Column('location_source_value', String(50)), description=' | ETLCONVENTIONS: Put the verbatim value for the location here, as it shows up in the source. ')
 
-    care_site: List['CareSite'] = Relationship(back_populates='location')
-    person: List['Person'] = Relationship(back_populates='location')
 
 
 class Vocabulary(SQLModel, table=True):
@@ -272,9 +162,7 @@ class Vocabulary(SQLModel, table=True):
     vocabulary_concept_id: int = Field(sa_column=Column('vocabulary_concept_id', Integer), description='USER GUIDANCE: A Concept that represents the Vocabulary the VOCABULARY record belongs to.')
     vocabulary_version: Optional[str] = Field(default=None, sa_column=Column('vocabulary_version', String(255)), description='USER GUIDANCE: Version of the Vocabulary as indicated in\nthe source.')
 
-    concept: List['Concept'] = Relationship(back_populates='vocabulary')
     vocabulary_concept: Optional['Concept'] = Relationship(back_populates='vocabulary_')
-    source_to_concept_map: List['SourceToConceptMap'] = Relationship(back_populates='target_vocabulary')
 
 
 class AttributeDefinition(SQLModel, table=True):
@@ -339,10 +227,6 @@ class CareSite(SQLModel, table=True):
 
     location: Optional['Location'] = Relationship(back_populates='care_site')
     place_of_service_concept: Optional['Concept'] = Relationship(back_populates='care_site')
-    provider: List['Provider'] = Relationship(back_populates='care_site')
-    person: List['Person'] = Relationship(back_populates='care_site')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='care_site')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='care_site')
 
 
 class CohortDefinition(SQLModel, table=True):
@@ -705,7 +589,6 @@ class Relationship_(SQLModel, table=True):
     relationship_concept_id: int = Field(sa_column=Column('relationship_concept_id', Integer), description='USER GUIDANCE: A foreign key that refers to an identifier in\nthe [CONCEPT](https://ohdsi.github.io/CommonDataModel/cdm531.html#concept) table for the unique\nrelationship concept.')
 
     relationship_concept: Optional['Concept'] = Relationship(back_populates='relationship')
-    concept_relationship: List['ConceptRelationship'] = Relationship(back_populates='relationship')
 
 
 class SourceToConceptMap(SQLModel, table=True):
@@ -811,15 +694,6 @@ class Provider(SQLModel, table=True):
     gender_source_concept: Optional['Concept'] = Relationship(back_populates='provider_')
     specialty_concept: Optional['Concept'] = Relationship(back_populates='provider1')
     specialty_source_concept: Optional['Concept'] = Relationship(back_populates='provider2')
-    person: List['Person'] = Relationship(back_populates='provider')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='provider')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='provider')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='provider')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='provider')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='provider')
-    measurement: List['Measurement'] = Relationship(back_populates='provider')
-    note: List['Note'] = Relationship(back_populates='provider')
-    observation: List['Observation'] = Relationship(back_populates='provider')
 
 
 class Person(SQLModel, table=True):
@@ -878,20 +752,6 @@ class Person(SQLModel, table=True):
     provider: Optional['Provider'] = Relationship(back_populates='person')
     race_concept: Optional['Concept'] = Relationship(back_populates='person3')
     race_source_concept: Optional['Concept'] = Relationship(back_populates='person4')
-    dose_era: List['DoseEra'] = Relationship(back_populates='person')
-    drug_era: List['DrugEra'] = Relationship(back_populates='person')
-    observation_period: List['ObservationPeriod'] = Relationship(back_populates='person')
-    payer_plan_period: List['PayerPlanPeriod'] = Relationship(back_populates='person')
-    procedure_occurrence: List['ProcedureOccurrence'] = Relationship(back_populates='person')
-    specimen: List['Specimen'] = Relationship(back_populates='person')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='person')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='person')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='person')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='person')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='person')
-    measurement: List['Measurement'] = Relationship(back_populates='person')
-    note: List['Note'] = Relationship(back_populates='person')
-    observation: List['Observation'] = Relationship(back_populates='person')
 
 
 class Death(SQLModel, table=True):
@@ -1345,18 +1205,10 @@ class VisitOccurrence(SQLModel, table=True):
     discharge_to_concept: Optional['Concept'] = Relationship(back_populates='visit_occurrence_')
     person: Optional['Person'] = Relationship(back_populates='visit_occurrence')
     preceding_visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='preceding_visit_occurrence_reverse')
-    preceding_visit_occurrence_reverse: List['VisitOccurrence'] = Relationship(back_populates='preceding_visit_occurrence')
     provider: Optional['Provider'] = Relationship(back_populates='visit_occurrence')
     visit_concept: Optional['Concept'] = Relationship(back_populates='visit_occurrence1')
     visit_source_concept: Optional['Concept'] = Relationship(back_populates='visit_occurrence2')
     visit_type_concept: Optional['Concept'] = Relationship(back_populates='visit_occurrence3')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='visit_occurrence')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='visit_occurrence')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='visit_occurrence')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='visit_occurrence')
-    measurement: List['Measurement'] = Relationship(back_populates='visit_occurrence')
-    note: List['Note'] = Relationship(back_populates='visit_occurrence')
-    observation: List['Observation'] = Relationship(back_populates='visit_occurrence')
 
 
 class VisitDetail(SQLModel, table=True):
@@ -1439,20 +1291,12 @@ class VisitDetail(SQLModel, table=True):
     discharge_to_concept: Optional['Concept'] = Relationship(back_populates='visit_detail_')
     person: Optional['Person'] = Relationship(back_populates='visit_detail')
     preceding_visit_detail: Optional['VisitDetail'] = Relationship(back_populates='preceding_visit_detail_reverse')
-    preceding_visit_detail_reverse: List['VisitDetail'] = Relationship(back_populates='preceding_visit_detail')
     provider: Optional['Provider'] = Relationship(back_populates='visit_detail')
     visit_detail_concept: Optional['Concept'] = Relationship(back_populates='visit_detail1')
     visit_detail_parent: Optional['VisitDetail'] = Relationship(back_populates='visit_detail_parent_reverse')
-    visit_detail_parent_reverse: List['VisitDetail'] = Relationship(back_populates='visit_detail_parent')
     visit_detail_source_concept: Optional['Concept'] = Relationship(back_populates='visit_detail2')
     visit_detail_type_concept: Optional['Concept'] = Relationship(back_populates='visit_detail3')
     visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='visit_detail')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='visit_detail')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='visit_detail')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='visit_detail')
-    measurement: List['Measurement'] = Relationship(back_populates='visit_detail')
-    note: List['Note'] = Relationship(back_populates='visit_detail')
-    observation: List['Observation'] = Relationship(back_populates='visit_detail')
 
 
 class ConditionOccurrence(SQLModel, table=True):
@@ -1920,5 +1764,6 @@ class Observation(SQLModel, table=True):
     value_as_concept: Optional['Concept'] = Relationship(back_populates='observation4')
     visit_detail: Optional['VisitDetail'] = Relationship(back_populates='observation')
     visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='observation')
+
 
 
