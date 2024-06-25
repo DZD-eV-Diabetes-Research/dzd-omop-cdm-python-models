@@ -23,6 +23,7 @@ def remove_back_populating_lists(
     omop_source_desc: "OMOPSchemaSource",
     generator_style: Literal["tables", "declarative", "dataclasses", "sqlmodels"],
 ):
+    return
     # sqlmodel generation is broken/alpha in sqlacodegen. This is a hotfix
     # https://github.com/agronholm/sqlacodegen/issues/302
     if generator_style not in ["sqlmodels", "declarative", "dataclasses"]:
