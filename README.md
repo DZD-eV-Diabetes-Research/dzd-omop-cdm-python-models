@@ -4,6 +4,9 @@ A Python ORM/data classes representation of the [Observational Medical Outcomes 
 Author/Maintainer: Tim Bleimehl  
 Status: Proof of Concept successfull. Working towards a Beta Version  
 
+> [!WARNING]  
+> This project is under heavy construction and not ready to use.
+
 
 - [DZD - OMOP CDM Python ORM/Data Classes Representation](#dzd---omop-cdm-python-ormdata-classes-representation)
 - [Kudos](#kudos)
@@ -68,9 +71,40 @@ sqlalchemy is the most common way to inetract with relational databases in pytho
 
 # how to install DZD OMOP Models
 
-todo
+`pip install dzdomop`
 
 # How to use this DZD OMOP Models
 
-todo
+
+Small example how to use the sqlalchemy declarative flavor:
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from omopmodel import OMOP_5_3_declarative as omop
+
+# Create a SQLite database and deploy the omop schema (tables,constraints, indices and primary keys)
+engine = create_engine("sqlite:///cdm_source.db", echo=True)
+omop.Base.metadata.create_all(engine)
+
+#todo
+# you need to fill in some default vocabulary at this stage (gender concepts, race concepts,...)
+
+# Insert a row into the cdm_source table
+care_site = omop.CareSite(care_site_id=5678, care_site_name="St. Local")
+person = omop.Person(
+    person_id=1234,
+    year_of_birth=1985,
+    care_site=care_site,
+    gender_concept_id=1,
+    race_concept_id=1,
+    ethnicity_concept_id=1,
+)
+
+# Open a session and add the new source
+with Session(engine) as session:
+    session.add(care_site)
+    session.add(person)
+    session.commit()
+```
 
