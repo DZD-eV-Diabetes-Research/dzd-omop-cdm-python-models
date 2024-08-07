@@ -84,8 +84,7 @@ class Concept(SQLModel, table=True):
     standard_concept: Optional[str] = Field(default=None, sa_column=Column('standard_concept', String(1)), description='USER GUIDANCE: This flag determines where a Concept is\na Standard Concept, i.e. is used in the\ndata, a Classification Concept, or a\nnon-standard Source Concept. The\nallowable values are "S" (Standard\nConcept) and "C" (Classification\nConcept), otherwise the content is NULL.')
     invalid_reason: Optional[str] = Field(default=None, sa_column=Column('invalid_reason', String(1)), description='USER GUIDANCE: Reason the Concept was invalidated.\nPossible values are D (deleted), U\n(replaced with an update) or NULL when\nvalid_end_date has the default value.')
 
-    # concept_class: Mapped['ConceptClass'] = relationship('ConceptClass', foreign_keys=[concept_class_id], back_populates='concept')
-    concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept',sa_relationship_kwargs={"foreign_keys":"[Concept.concept_class_id]"})
+    concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')
     domain: Optional['Domain'] = Relationship(back_populates='concept')
     vocabulary: Optional['Vocabulary'] = Relationship(back_populates='concept')
     concept_class_: List['ConceptClass'] = Relationship(back_populates='concept_class_concept')
@@ -224,8 +223,7 @@ class ConceptClass(SQLModel, table=True):
     concept_class_name: str = Field(sa_column=Column('concept_class_name', String(255)), description='USER GUIDANCE: The name describing the Concept Class, e.g.\nClinical Finding, Ingredient, etc.')
     concept_class_concept_id: int = Field(sa_column=Column('concept_class_concept_id', Integer), description='USER GUIDANCE: A Concept that represents the Concept Class.')
 
-    # concept: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.concept_class_id]', back_populates='concept_class')
-    concept: List['Concept'] = Relationship(back_populates='concept_class',sa_relationship_kwargs={"foreign_keys":'[Concept.concept_class_id]'})
+    concept: List['Concept'] = Relationship(back_populates='concept_class')
     concept_class_concept: Optional['Concept'] = Relationship(back_populates='concept_class_')
 
 
