@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = ["sqlmodel", "sqlalchemy", "tqdm"]
+dependencies = ["sqlmodel", "sqlalchemy", "tqdm", "pg8000"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
