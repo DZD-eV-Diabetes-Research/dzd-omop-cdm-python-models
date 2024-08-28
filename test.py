@@ -1,3 +1,6 @@
+from typing import List, Optional, Dict
+
+
 def create_table_test():
     # OMOP CDM Source Version name: OMOP_CDM_5.3
     from typing import List, Optional
@@ -121,4 +124,42 @@ def first_test():
     person.care_site = omop.CareSite(care_site_name="St. Local")
 
 
-first_test()
+def check_vocab_ids():
+
+    import pathlib
+    import csv
+
+    p = pathlib.Path("/home/tim/Downloads/AthenaVocab_DZD1.0/CONCEPT.csv")
+
+    csv_headers: List[str]
+    rows: List[List[str]] = []
+    voc_id: List[str] = []
+    # Iterate over each row in the CSV file
+    with open(p, mode="r") as file:
+        csv_reader = csv.reader(file, delimiter="\t")
+        for row_no, row_raw in enumerate(csv_reader):
+            if row_no == 0:
+                csv_headers = row_raw
+                continue
+            if row_raw[3] not in voc_id:
+                voc_id.append(row_raw[3])
+                print(row_no, voc_id)
+
+
+def count_rows():
+
+    import pathlib
+    import csv
+
+    p = pathlib.Path("/home/tim/Downloads/AthenaVocab_DZD1.0/CONCEPT_CLASS.csv")
+
+    csv_headers: List[str]
+    rows: List[List[str]] = []
+    voc_id: List[str] = []
+    # Iterate over each row in the CSV file
+    with open(p, mode="r") as file:
+        lc = sum(1 for row in file if "Gene RNA Variant" in row)
+        print(lc)
+
+
+count_rows()
