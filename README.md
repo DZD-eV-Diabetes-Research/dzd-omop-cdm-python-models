@@ -17,7 +17,7 @@ Status: Proof of Concept successfull. Working towards a Beta Version
   - [how to install DZD OMOP Models](#how-to-install-dzd-omop-models)
   - [How to use this DZD OMOP Models](#how-to-use-this-dzd-omop-models)
     - [Example1: Create OMOP CDM Schema V5.3 on a sqlite database](#example1-create-omop-cdm-schema-v53-on-a-sqlite-database)
-    - [Example2: Create OMOP CDM Schema V5.3 and Standardized Vocabulary on Postresql](#example2-create-omop-cdm-schema-v53-and-standardized-vocabulary-on-postresql)
+    - [Example2: Create OMOP CDM Schema V5.4 and Standardized Vocabulary on Postresql](#example2-create-omop-cdm-schema-v54-and-standardized-vocabulary-on-postresql)
 - [Details](#details)
   - [Data classes flavors](#data-classes-flavors)
 - [FAQ](#faq)
@@ -92,7 +92,7 @@ with Session(engine) as session:
     session.commit()
 ```
 
-### Example2: Create OMOP CDM Schema V5.3 and Standardized Vocabulary on Postresql
+### Example2: Create OMOP CDM Schema V5.4 and Standardized Vocabulary on Postresql
 
 
 This assumes you have a [https://athena.ohdsi.org/vocabulary/list](https://athena.ohdsi.org/vocabulary/list) export downloaded and unzipped to `/home/me/Downloads/AthenaUnzipped`  
