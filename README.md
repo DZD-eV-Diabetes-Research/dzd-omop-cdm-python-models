@@ -117,7 +117,8 @@ omop54.Base.metadata.create_all(engine)
 v = VocabulariesLoader(
     authena_export_directory,
     database_engine=engine,
-    omop_module=omop54,  # <- This is optional. default is OMOP CDM V5.4
+    omop_module=omop54,  # <- optional. default is OMOP CDM V5.4
+    truncate_vocabulary_tables_before_insert=True, # <- optional. Will delete existing vocabularies from the DB
 )
 # Load the vocaablary from the CSV files into the database.
 # This will take some time, you will see some progress bars.
