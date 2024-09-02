@@ -1,1 +1,1 @@
-from vocabularies_loader import VocabulariesLoader
+from omopmodel.vocabularies_loader import VocabulariesLoader
