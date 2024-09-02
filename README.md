@@ -105,9 +105,10 @@ from omopmodel import VocabulariesLoader
 
 # Define the connection to our running postgresql database. 
 # Please use the pg8000 driver as we use some features of it internaly
-engine = create_engine("postgresql+pg8000://ps:ps@localhost/ps")
+engine = create_engine("postgresql+pg8000://my-db-user:my-db-password@localhost:5432/my-database-name")
 
 # Define the directory where our athena vocabularies csv files are stored.
+# You can define and download the vocabulary from https://athena.ohdsi.org/vocabulary/list
 authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
 
 # Create the OMOP Schema on our database
