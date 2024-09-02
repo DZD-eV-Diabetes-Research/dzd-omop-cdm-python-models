@@ -212,6 +212,34 @@ class VocabulariesLoader:
         self.initial_sqlite_fk_pragma: Optional[bool] = None
         # self._create_loader_state_table_if_not_exists()
 
+    """
+    def add_null_concept(self):
+        '''Add a Concept with the ID 0 with fitting domain,vocabulary and conceptclass'''
+        self.omop_module: OMOP_5_4_declarative = self.omop_module
+        domain = self.omop_module.Domain()
+        domain.domain_id = 0
+        domain.domain_name = "NullClass"
+        domain.domain_concept_id = 0
+
+        vocabulary = self.omop_module.Vocabulary()
+        vocabulary.vocabulary_id = 0
+        vocabulary.vocabulary_name = "NullVocabulary"
+
+        concept_class = self.omop_module.ConceptClass()
+        concept_class.concept_class_id = 0
+        concept_class.concept_class_name = "NullConceptClass"
+
+        concept = self.omop_module.Concept()
+        concept.concept_id = 0
+        concept.concept_name = "No matching concept"
+        concept.domain_id = 0
+        concept.vocabulary_id = 0
+        concept.concept_class_id = 0
+        concept.concept_code = "No matching concept"
+        concept.valid_start_date = datetime.date(year=1970, month=1, day=1)
+        concept.valid_end_date = datetime.date(year=2099, month=12, day=31)
+    """
+
     def load_all(self):
         """Try to load all CSVs in the given directory ('VocabularyLoader.vocabulary_directory')
 
@@ -227,7 +255,12 @@ class VocabulariesLoader:
         try:
             if self.drop_constraints_and_indexes_before_insert:
                 self.drop_constraints_and_pks_and_indexes()
+            # if add_null_concept:
+            #    print("Add null concept")
+            #    self.add_null_concept()
+
             for file_obj in self.vocabulary_directory.iterdir():
+
                 if file_obj.is_file() and file_obj.suffix.lower() == ".csv":
                     csv_container = self._determine_csv_file_mapping(file_obj)
                     if csv_container.mapped_omop_class is None:
@@ -236,6 +269,7 @@ class VocabulariesLoader:
                         )
                         continue
                     self.load_csv(csv_container)
+
         except (Exception, KeyboardInterrupt) as e:
             if self.recreate_constraints_and_indexes_after_insert:
 
@@ -245,7 +279,6 @@ class VocabulariesLoader:
             else:
                 # traceback.print_exception(e)
                 print("KeyboardInterrupt")
-                exit(1)
 
         # end
         if self.recreate_constraints_and_indexes_after_insert:
@@ -529,7 +562,7 @@ class VocabulariesLoader:
             )
 
         # Execute the truncate statement
-        with engine.connect() as connection:
+        with self.database_engine.connect() as connection:
             connection.execute(text(truncate_sql))
             connection.commit()
 
@@ -634,6 +667,7 @@ class VocabulariesLoader:
                         )
                     )
                     session.commit()
+
 
 """
 ## local dev testing /home/tim/Downloads/AthenaVocab_DZD1.0/
