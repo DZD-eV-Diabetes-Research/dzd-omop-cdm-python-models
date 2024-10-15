@@ -1,5 +1,6 @@
 # DZD - OMOP CDM Python ORM/Data Classes Tools
-A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen) which can also help you load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) (from exported http://athena.ohdsi.org files)
+A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)   
+This library also can also load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) into a OMOP Postgres DB (from exported http://athena.ohdsi.org vocabulary files)
 
 Author/Maintainer: Tim Bleimehl  
 Status: Proof of Concept successfull. Working towards a Beta Version  
