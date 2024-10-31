@@ -70,6 +70,7 @@ def fix_sql_model(
         if ", comment='" in line:
             line = line.replace(", comment='", "), description='")
             line = rreplace(line, "'))", "')", 1)
+        if line 
 
         new_file_content += line + "\n"
 
