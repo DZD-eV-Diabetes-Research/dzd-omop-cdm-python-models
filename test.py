@@ -190,3 +190,49 @@ def omoptest():
         session.add(care_site)
         session.add(person)
         session.commit()
+
+
+
+def recoursive_two_tables():
+    from sqlmodel import SQLModel, Field, Relationship,ForeignKeyConstraint,PrimaryKeyConstraint,Index,Column,Integer,String
+    from typing import Optional, List
+    class Concept(SQLModel, table=True):
+        __table_args__ = (
+            ForeignKeyConstraint(['concept_class_id'], ['concept_class.concept_class_id'], name='fpk_concept_concept_class_id'),
+            PrimaryKeyConstraint('concept_id', name='xpk_concept'),
+            Index('idx_concept_class_id', 'concept_class_id'),
+            Index('idx_concept_concept_id', 'concept_id'))
+
+        concept_id: int = Field(sa_column=Column('concept_id', Integer, primary_key=True), description='USER GUIDANCE: A unique identifier for each Concept across all domains.')
+        concept_name: str = Field(sa_column=Column('concept_name', String(255)), description='USER GUIDANCE: An unambiguous, meaningful and descriptive name for the Concept.')
+        concept_class_id: str = Field(foreign_key='concept_class.concept_class_id', description='USER GUIDANCE: The attribute or concept class of the\nConcept. Examples are "Clinical Drug",\n"Ingredient", "Clinical Finding" etc.')
+
+        #concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')
+        concept_class: Optional['ConceptClass'] = Relationship(
+            back_populates='concept_class_concept',
+            sa_relationship_kwargs={'primaryjoin': 'Concept.concept_class_id == ConceptClass.concept_class_id'}
+        )
+
+    class ConceptClass(SQLModel, table=True):
+        __tablename__ = 'concept_class'
+        __table_args__ = (
+            PrimaryKeyConstraint('concept_class_id', name='xpk_concept_class'),
+            Index('idx_concept_class_class_id', 'concept_class_id'),
+            {'comment': 'DESC: The CONCEPT_CLASS table is a reference table, which '
+                    'includes a list of the classifications used to differentiate '
+                    'Concepts within a given Vocabulary. This reference table is '
+                    'populated with a single record for each Concept Class.'}
+        )
+
+        concept_class_id: str = Field(sa_column=Column('concept_class_id', String(20), primary_key=True), description='USER GUIDANCE: A unique key for each class.')
+        concept_class_name: str = Field(sa_column=Column('concept_class_name', String(255)), description='USER GUIDANCE: The name describing the Concept Class, e.g.\nClinical Finding, Ingredient, etc.')
+        concept_class_concept_id: int = Field(foreign_key='concept.concept_id', description='USER GUIDANCE: A Concept that represents the Concept Class.')
+
+        concept_class_concept: Optional['Concept'] = Relationship(
+            back_populates='concept_class',
+            sa_relationship_kwargs={'primaryjoin': 'ConceptClass.concept_class_id == Concept.concept_class_id'}
+        )
+    
+    Concept(concept_id=1,concept_name="test")
+
+recoursive_two_tables()

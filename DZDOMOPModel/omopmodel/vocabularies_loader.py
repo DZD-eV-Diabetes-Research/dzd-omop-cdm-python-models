@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 import datetime
 from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm.properties import ColumnProperty
-from tqdm import tqdm
+
 import sqlmodel
 import inspect
 from io import StringIO
@@ -348,6 +348,8 @@ class VocabulariesLoader:
             rows: List[List[str]] = []
             # Iterate over each row in the CSV file
             if self.show_progress_bar:
+                from tqdm import tqdm
+
                 progress_bar = tqdm(
                     total=source_csv.rows_no,
                     desc=source_csv.filepath.name,

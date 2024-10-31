@@ -61,6 +61,8 @@ class ReferencePostgresHandler:
 
     def run_sql_script_file(self, file_path: Path):
         with self.db_con() as db_con:
+            if not file_path.exists():
+                raise FileNotFoundError(f"No such file at {file_path.resolve()}")
             with open(file_path) as sql_script:
                 db_con.run(
                     sql_script.read().replace(
