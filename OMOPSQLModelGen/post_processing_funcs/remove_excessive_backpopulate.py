@@ -43,43 +43,38 @@ class CdmSource(SQLModel, table=True):
 """
 
 
-def rreplace(s: str, old: str, new: str, count: int = -1):
-    # reverse replace. count = 1 will only replace the last item instead of the first
-    li = s.rsplit(old, count)
-    return new.join(li)
-
-
-def fix_sql_model(
+def remove_excessive_backpopulate(
     model_file: Path,
     omop_source_desc: "OMOPSchemaSource",
     generator_style: Literal["tables", "declarative", "dataclasses", "sqlmodels"],
 ):
     # sqlmodel generation is broken/alpha in sqlacodegen. This is a hotfix
     # https://github.com/agronholm/sqlacodegen/issues/302
-    if generator_style != "sqlmodels":
+    if generator_style not in ["sqlmodels", "declarative","dataclasses"]:
         return
+    classes_to_clean = ["Concept", "ConceptClass"]
+    current_class_to_clean = None
     current_file_content = None
     with open(model_file, "r") as f:
         current_file_content = f.read()
     new_file_content = ""
-    currently_in_concept_class:bool = False
+
     for line in current_file_content.split("\n"):
-        if line == "from sqlmodel import Field, Relationship, SQLModel":
-            line = "from sqlmodel import Field, Relationship, SQLModel, Column"
-        if "sa_column=mapped_column(" in line:
-            line = line.replace("sa_column=mapped_column(", "sa_column=Column(", 1)
-        if ", comment='" in line:
-            line = line.replace(", comment='", "), description='")
-            line = rreplace(line, "'))", "')", 1)
+        for class_to_clean in classes_to_clean:
+            if line == f"class {class_to_clean}(SQLModel, table=True):":
+                current_class_to_clean = class_to_clean
+        if line.startswith("class ") and current_class_to_clean is not None:
+            # we are leaving the lines of the class we wanted to be cleaned
+            currently_in_concept_class = None
 
-
-        """
-        if line == "class Concept(SQLModel, table=True):":
-            currently_in_concept_class = True
-        if line.startswith("class ") and currently_in_concept_class:
-            # we are leaving the lines of Concept class
-            currently_in_concept_class = False
-        """    
+        if (
+            current_class_to_clean is not None
+            and ": List['" in line # for sqlmodel
+            or ": Mapped[List['" in line # for sqlalchemy.declarative and dataclasses
+        ):
+            # we want to remove all excesive back_populates list at this class class
+            # therefor lets just skipt this line
+            continue
 
         new_file_content += line + "\n"
 
