@@ -28,6 +28,7 @@ from OMOPSQLModelGen.post_processing_funcs.fix_death_table_glitch import (
 from OMOPSQLModelGen.post_processing_funcs.remove_backpopulating_lists import (
     remove_back_populating_lists,
 )
+from OMOPSQLModelGen.post_processing_funcs.remove_backpopulating_lists
 
 
 class OMOPSchemaSource(BaseModel):
@@ -119,6 +120,7 @@ omopcdm_5_3 = OMOPSchemaSource(
         fix_sql_model,
         fix_death_table_glitch,
         remove_back_populating_lists,
+        
     ],
 )
 
