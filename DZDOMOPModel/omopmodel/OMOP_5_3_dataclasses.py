@@ -80,7 +80,7 @@ class Concept(Base):
     concept_class: Mapped['ConceptClass'] = relationship('ConceptClass', foreign_keys=[concept_class_id], back_populates='concept')
     domain: Mapped['Domain'] = relationship('Domain', foreign_keys=[domain_id], back_populates='concept')
     vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', foreign_keys=[vocabulary_id], back_populates='concept')
-    concept_class_: Mapped[List['ConceptClass']] = relationship('ConceptClass', foreign_keys='[ConceptClass.concept_class_concept_id]', back_populates='concept_class_concept')
+    concept_classes: Mapped[List['ConceptClass']] = relationship('ConceptClass', foreign_keys='[ConceptClass.concept_class_concept_id]', back_populates='concept_class_concept')
 
 
 class ConceptClass(Base):
@@ -530,8 +530,8 @@ class FactRelationship(Base):
     fact_id_2: Mapped[int] = mapped_column(Integer, )
     relationship_concept_id: Mapped[int] = mapped_column(Integer, )
 
-    concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_1])
-    concept_: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_2])
+    domain_concept_1: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_1])
+    domain_concept_2: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id_2])
     relationship_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[relationship_concept_id])
 
 
@@ -672,8 +672,8 @@ class ConceptRelationship(Base):
     valid_end_date: Mapped[datetime.date] = mapped_column(Date, comment='USER GUIDANCE: The date when the relationship is invalidated.')
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the relationship was invalidated. Possible values are "D" (deleted), "U" (updated) or NULL. ')
 
-    concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1])
-    concept_: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_2])
+    concept_1: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1])
+    concept_2: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_2])
     relationship_: Mapped['Relationship'] = relationship('Relationship', back_populates='concept_relationship')
 
 
@@ -1254,8 +1254,7 @@ class VisitOccurrence(Base):
     care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_occurrence')
     discharge_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharge_to_concept_id])
     person: Mapped['Person'] = relationship('Person', back_populates='visit_occurrence')
-    preceding_visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', remote_side=[visit_occurrence_id], back_populates='preceding_visit_occurrence_reverse')
-    preceding_visit_occurrence_reverse: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', remote_side=[preceding_visit_occurrence_id], back_populates='preceding_visit_occurrence')
+    preceding_visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', remote_side=[visit_occurrence_id])
     provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_occurrence')
     visit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_concept_id])
     visit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_source_concept_id])
@@ -1348,12 +1347,10 @@ class VisitDetail(Base):
     care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_detail')
     discharge_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharge_to_concept_id])
     person: Mapped['Person'] = relationship('Person', back_populates='visit_detail')
-    preceding_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[preceding_visit_detail_id], back_populates='preceding_visit_detail_reverse')
-    preceding_visit_detail_reverse: Mapped[List['VisitDetail']] = relationship('VisitDetail', remote_side=[preceding_visit_detail_id], foreign_keys=[preceding_visit_detail_id], back_populates='preceding_visit_detail')
+    preceding_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[preceding_visit_detail_id])
     provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_detail')
     visit_detail_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_concept_id])
-    visit_detail_parent: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[visit_detail_parent_id], back_populates='visit_detail_parent_reverse')
-    visit_detail_parent_reverse: Mapped[List['VisitDetail']] = relationship('VisitDetail', remote_side=[visit_detail_parent_id], foreign_keys=[visit_detail_parent_id], back_populates='visit_detail_parent')
+    visit_detail_parent: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[visit_detail_parent_id])
     visit_detail_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_source_concept_id])
     visit_detail_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_type_concept_id])
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='visit_detail')
@@ -1833,6 +1830,7 @@ class Observation(Base):
     value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id])
     visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='observation')
     visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='observation')
+
 
 
 
