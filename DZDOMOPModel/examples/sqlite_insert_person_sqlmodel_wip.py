@@ -1,17 +1,5 @@
 from sqlmodel import SQLModel, Session, create_engine
 
-#### THIS IS WORK IN PROGRESS AND NOT WORKING ###
-#### PLEASE IGNORE ME ###
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-    import sys, os
-
-    MODULE_DIR = Path(__file__).parent
-    MODULE_PARENT_DIR = MODULE_DIR.parent.absolute()
-    sys.path.insert(0, os.path.normpath(MODULE_PARENT_DIR))
-
 
 from omopmodel import OMOP_5_4_sqlmodels as omop54
 
