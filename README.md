@@ -9,7 +9,7 @@ Status: Alpha
 > This project is under construction. Expect breaking changes.
 
 
-> [!INFO]  
+> [!IMPORTANT]  
 > We only use and test against Postgres Databases. If you have experience in other databases supported by OMOP your [feedback](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues) is welcomed.
 
 
