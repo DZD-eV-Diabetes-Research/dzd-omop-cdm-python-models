@@ -10,7 +10,7 @@ Status: Alpha
 
 
 > [!IMPORTANT]  
-> We only use and test against Postgres Databases. If you have experience in other databases supported by OMOP your [feedback](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues) is welcomed.
+> We use and test **only on Postgres** (and sqlite) Databases. If you have experience in other databases supported by OMOP your [feedback](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues) is welcomed.
 
 
 - [DZD - OMOP CDM Python ORM/Data Classes Tools](#dzd---omop-cdm-python-ormdata-classes-tools)
