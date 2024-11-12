@@ -3,10 +3,14 @@ A Python SQL-ORM/data classes representation of the [Observational Medical Outco
 This library also can also load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) into a OMOP Postgres DB (from exported http://athena.ohdsi.org vocabulary files)
 
 Author/Maintainer: Tim Bleimehl  
-Status: Proof of Concept successfull. Working towards a Beta Version  
+Status: Alpha
 
 > [!WARNING]  
-> This project is under heavy construction and not ready to use.
+> This project is under construction. Expect breaking changes.
+
+
+> [!INFO]  
+> We only use and test against Postgres Databases. If you have experience in other databases supported by OMOP your [feedback](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues) is welcomed.
 
 
 - [DZD - OMOP CDM Python ORM/Data Classes Tools](#dzd---omop-cdm-python-ormdata-classes-tools)
@@ -49,7 +53,7 @@ This is propably the interesting stuff for you! We provide the OMOP CDM as [sqla
 This can be used to create a OMOP CDM Schema on your database and to streamline your python scripts that handle OMOP CDM data.  
 Have a look at the ["Usage chapter"](#usage) to get an idea what you can do.
 
-Also there is a tool onbard called 
+Also there is a tool onbard to load vocabularies from [athena.ohdsi.org](https://athena.ohdsi.org)-exports into the OMOP database (see [Example2: Create OMOP CDM Schema V5.4 and Standardized Vocabulary on Postresql](#example2-create-omop-cdm-schema-v54-and-standardized-vocabulary-on-postresql) )
 
 # Usage
 
