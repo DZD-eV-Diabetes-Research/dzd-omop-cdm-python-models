@@ -112,12 +112,12 @@ from omopmodel import VocabulariesLoader
 # Please use the pg8000 driver as we use some features of it internaly
 engine = create_engine("postgresql+pg8000://my-db-user:my-db-password@localhost:5432/my-database-name")
 
+# Create the OMOP Schema on our database
+omop54.Base.metadata.create_all(engine)
+
 # Define the directory where our athena vocabularies csv files are stored.
 # You can define and download the vocabulary from https://athena.ohdsi.org/vocabulary/list
 authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
-
-# Create the OMOP Schema on our database
-omop54.Base.metadata.create_all(engine)
 
 # Initialize the vocabulary loader.
 v = VocabulariesLoader(
@@ -132,7 +132,7 @@ v = VocabulariesLoader(
 v.load_all()
 ```
 
-During the laoding process which will take some time (30min to 2hours depending on your hardware) you will see something like this
+During the loading process which will take some time (some seconds up to multiple hours depending on your Athena export size and hardware) you will see something like this
 ![alt text](load_vocab.png)
 
 
