@@ -192,47 +192,131 @@ def omoptest():
         session.commit()
 
 
-
 def recoursive_two_tables():
-    from sqlmodel import SQLModel, Field, Relationship,ForeignKeyConstraint,PrimaryKeyConstraint,Index,Column,Integer,String
+    from sqlmodel import (
+        SQLModel,
+        Field,
+        Relationship,
+        ForeignKeyConstraint,
+        PrimaryKeyConstraint,
+        Index,
+        Column,
+        Integer,
+        String,
+    )
     from typing import Optional, List
+
     class Concept(SQLModel, table=True):
         __table_args__ = (
-            ForeignKeyConstraint(['concept_class_id'], ['concept_class.concept_class_id'], name='fpk_concept_concept_class_id'),
-            PrimaryKeyConstraint('concept_id', name='xpk_concept'),
-            Index('idx_concept_class_id', 'concept_class_id'),
-            Index('idx_concept_concept_id', 'concept_id'))
+            ForeignKeyConstraint(
+                ["concept_class_id"],
+                ["concept_class.concept_class_id"],
+                name="fpk_concept_concept_class_id",
+            ),
+            PrimaryKeyConstraint("concept_id", name="xpk_concept"),
+            Index("idx_concept_class_id", "concept_class_id"),
+            Index("idx_concept_concept_id", "concept_id"),
+        )
 
-        concept_id: int = Field(sa_column=Column('concept_id', Integer, primary_key=True), description='USER GUIDANCE: A unique identifier for each Concept across all domains.')
-        concept_name: str = Field(sa_column=Column('concept_name', String(255)), description='USER GUIDANCE: An unambiguous, meaningful and descriptive name for the Concept.')
-        concept_class_id: str = Field(foreign_key='concept_class.concept_class_id', description='USER GUIDANCE: The attribute or concept class of the\nConcept. Examples are "Clinical Drug",\n"Ingredient", "Clinical Finding" etc.')
+        concept_id: int = Field(
+            sa_column=Column("concept_id", Integer, primary_key=True),
+            description="USER GUIDANCE: A unique identifier for each Concept across all domains.",
+        )
+        concept_name: str = Field(
+            sa_column=Column("concept_name", String(255)),
+            description="USER GUIDANCE: An unambiguous, meaningful and descriptive name for the Concept.",
+        )
+        concept_class_id: str = Field(
+            foreign_key="concept_class.concept_class_id",
+            description='USER GUIDANCE: The attribute or concept class of the\nConcept. Examples are "Clinical Drug",\n"Ingredient", "Clinical Finding" etc.',
+        )
 
-        #concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')
-        concept_class: Optional['ConceptClass'] = Relationship(
-            back_populates='concept_class_concept',
-            sa_relationship_kwargs={'primaryjoin': 'Concept.concept_class_id == ConceptClass.concept_class_id'}
+        # concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')
+        concept_class: Optional["ConceptClass"] = Relationship(
+            back_populates="concept_class_concept",
+            sa_relationship_kwargs={
+                "primaryjoin": "Concept.concept_class_id == ConceptClass.concept_class_id"
+            },
         )
 
     class ConceptClass(SQLModel, table=True):
-        __tablename__ = 'concept_class'
+        __tablename__ = "concept_class"
         __table_args__ = (
-            PrimaryKeyConstraint('concept_class_id', name='xpk_concept_class'),
-            Index('idx_concept_class_class_id', 'concept_class_id'),
-            {'comment': 'DESC: The CONCEPT_CLASS table is a reference table, which '
-                    'includes a list of the classifications used to differentiate '
-                    'Concepts within a given Vocabulary. This reference table is '
-                    'populated with a single record for each Concept Class.'}
+            PrimaryKeyConstraint("concept_class_id", name="xpk_concept_class"),
+            Index("idx_concept_class_class_id", "concept_class_id"),
+            {
+                "comment": "DESC: The CONCEPT_CLASS table is a reference table, which "
+                "includes a list of the classifications used to differentiate "
+                "Concepts within a given Vocabulary. This reference table is "
+                "populated with a single record for each Concept Class."
+            },
         )
 
-        concept_class_id: str = Field(sa_column=Column('concept_class_id', String(20), primary_key=True), description='USER GUIDANCE: A unique key for each class.')
-        concept_class_name: str = Field(sa_column=Column('concept_class_name', String(255)), description='USER GUIDANCE: The name describing the Concept Class, e.g.\nClinical Finding, Ingredient, etc.')
-        concept_class_concept_id: int = Field(foreign_key='concept.concept_id', description='USER GUIDANCE: A Concept that represents the Concept Class.')
-
-        concept_class_concept: Optional['Concept'] = Relationship(
-            back_populates='concept_class',
-            sa_relationship_kwargs={'primaryjoin': 'ConceptClass.concept_class_id == Concept.concept_class_id'}
+        concept_class_id: str = Field(
+            sa_column=Column("concept_class_id", String(20), primary_key=True),
+            description="USER GUIDANCE: A unique key for each class.",
         )
-    
-    Concept(concept_id=1,concept_name="test")
+        concept_class_name: str = Field(
+            sa_column=Column("concept_class_name", String(255)),
+            description="USER GUIDANCE: The name describing the Concept Class, e.g.\nClinical Finding, Ingredient, etc.",
+        )
+        concept_class_concept_id: int = Field(
+            foreign_key="concept.concept_id",
+            description="USER GUIDANCE: A Concept that represents the Concept Class.",
+        )
 
-recoursive_two_tables()
+        concept_class_concept: Optional["Concept"] = Relationship(
+            back_populates="concept_class",
+            sa_relationship_kwargs={
+                "primaryjoin": "ConceptClass.concept_class_id == Concept.concept_class_id"
+            },
+        )
+
+    Concept(concept_id=1, concept_name="test")
+
+
+def extract_class_name():
+    import re
+    from typing import Optional
+
+    def extract_class_name(line: str) -> Optional[str]:
+        # Regular expression to capture the class name inside List['ClassName']
+        match = re.search(r"List\['(\w+)'\]", line)
+        if match:
+            return match.group(1)  # Return the captured class name
+        return None
+
+    # Test examples
+    examples = [
+        "concept_ancestor_: Mapped[List['ConceptAncestor']] = relationship('ConceptAncestor', foreign_keys='[ConceptAncestor.descendant_concept_id]', back_populates='descendant_concept')",
+        "concept_ancestor_: List['ConceptAncestor'] = Relationship(back_populates='descendant_concept')",
+        "other: Mapped[List['Other']] = relationship('Other', foreign_keys='[Other.descendant_concept_id]', back_populates='descendant_concept')",
+        "other: List['Other'] = Relationship(back_populates='descendant_concept')",
+    ]
+
+    for example in examples:
+        print(extract_class_name(example))
+
+
+def remove_backp():
+    import re
+
+    def remove_back_populates(line: str) -> str:
+        # Regular expression to match `back_populates` and its value, removing it from the line
+        return re.sub(r",?\s*back_populates=['\"][\w]+['\"]", "", line)
+
+    # Test examples
+    examples = [
+        "other: List['Other'] = Relationship(back_populates='descendant_concept')",
+        "concept_ancestor_: Mapped[List['ConceptAncestor']] = relationship('ConceptAncestor', foreign_keys='[ConceptAncestor.descendant_concept_id]', back_populates='descendant_concept')",
+        "other: Mapped[List['Other']] = relationship('Other', back_populates='descendant_concept')",
+        "other: List['Other'] = Relationship()",
+        "concept_ancestor_: Mapped[List['ConceptAncestor']] = relationship('ConceptAncestor', foreign_keys='[ConceptAncestor.descendant_concept_id]')",
+        "drug_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_concept_id], back_populates='drug_strength1')",
+    ]
+
+    for example in examples:
+        print(remove_back_populates(example))
+
+
+remove_backp()
