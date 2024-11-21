@@ -20,11 +20,12 @@ from OMOPSQLModelGen.pre_generation_processes import run_pre_sql_scripts
 from OMOPSQLModelGen.config import Config
 
 config = Config()
-OMOPCDMReleaseDownloader().download(
+source_data_path = OMOPCDMReleaseDownloader().download(
     force_redownload=config.FORCE_REDOWNLOAD_OMOP_CDM_RELEASE
 )
 for OMOP_source in SOURCES:
     print("config.POSTGRESQL_DATABASE", config.POSTGRESQL_DATABASE)
+    OMOP_source.base_path = source_data_path
     db = ReferencePostgresHandler(
         db_host=config.POSTGRESQL_HOST,
         db_name=config.POSTGRESQL_DATABASE,
@@ -32,7 +33,10 @@ for OMOP_source in SOURCES:
         db_password=config.POSTGRESQL_PASSWORD,
         db_port=config.POSTGRESQL_PORT,
     )
-    db.create_omop_schema(omop_schema_source=OMOP_source, wipe_clean_before=True)
+    db.create_omop_schema(
+        omop_schema_source=OMOP_source,
+        wipe_clean_before=True,
+    )
     db.enrich_omop_schema_metadata(omop_schema_source=OMOP_source)
     # pre sql scripts
     run_pre_sql_scripts(db, OMOP_source)

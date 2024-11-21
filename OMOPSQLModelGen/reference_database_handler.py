@@ -62,7 +62,11 @@ class ReferencePostgresHandler:
     def run_sql_script_file(self, file_path: Path):
         with self.db_con() as db_con:
             if not file_path.exists():
-                raise FileNotFoundError(f"No such file at {file_path.resolve()}")
+                print(
+                    "input content:",
+                    list(Path(config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR).iterdir()),
+                )
+                raise FileNotFoundError(f"No such file at {file_path.resolve()}.")
             with open(file_path) as sql_script:
                 db_con.run(
                     sql_script.read().replace(
@@ -78,7 +82,9 @@ class ReferencePostgresHandler:
             db.run(f"create schema {self.db_schema};")
 
     def create_omop_schema(
-        self, omop_schema_source: OMOPSchemaSource, wipe_clean_before: bool = False
+        self,
+        omop_schema_source: OMOPSchemaSource,
+        wipe_clean_before: bool = False,
     ):
         if wipe_clean_before is True:
             self.wipe_schema_clean()
@@ -88,7 +94,9 @@ class ReferencePostgresHandler:
             omop_schema_source.sql_indices_file_path,
             omop_schema_source.sql_constraints_file_path,
         ]:
-            self.run_sql_script_file(sql_source_file)
+            self.run_sql_script_file(
+                Path(omop_schema_source.base_path, sql_source_file)
+            )
 
     def enrich_omop_schema_metadata(self, omop_schema_source: OMOPSchemaSource):
         """Add comments to tables and field based on the OMOP Documentation (csv files)
@@ -148,7 +156,13 @@ class ReferencePostgresHandler:
     def _get_table_metadata(self, omop_schema_source: OMOPSchemaSource):
         # todo: IMPROVE THIS! It is unreadable...
         metadata: Dict[str, Dict[str, str]] = {}
-        with open(omop_schema_source.csv_table_desc_file_path, "r") as file:
+        with open(
+            Path(
+                omop_schema_source.base_path,
+                omop_schema_source.csv_table_desc_file_path,
+            ),
+            "r",
+        ) as file:
             csv_rows: List = list(csv.reader(file, delimiter=","))
             header_row = csv_rows.pop(0)
             for row in csv_rows:
@@ -161,7 +175,13 @@ class ReferencePostgresHandler:
     def _get_field_metadata(self, omop_schema_source: OMOPSchemaSource):
         # todo: IMPROVE THIS! It is unreadable...
         metadata: Dict[str, Dict[str, Dict[str, str]]] = {}
-        with open(omop_schema_source.csv_field_desc_file_path, "r") as file:
+        with open(
+            Path(
+                omop_schema_source.base_path,
+                omop_schema_source.csv_field_desc_file_path,
+            ),
+            "r",
+        ) as file:
             csv_rows: List = list(csv.reader(file, delimiter=","))
             header_row = csv_rows.pop(0)
             for row in csv_rows:

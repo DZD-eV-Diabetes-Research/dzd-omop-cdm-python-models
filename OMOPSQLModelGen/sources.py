@@ -3,13 +3,8 @@ from typing_extensions import Self
 from pydantic import (
     BaseModel,
     Field,
-    AnyUrl,
-    SecretStr,
-    AnyHttpUrl,
-    StringConstraints,
-    model_validator,
 )
-from pathlib import Path, PurePath
+from pathlib import Path
 from config import Config
 
 config = Config()
@@ -28,11 +23,11 @@ from OMOPSQLModelGen.post_processing_funcs.fix_death_table_glitch import (
 from OMOPSQLModelGen.post_processing_funcs.remove_backpopulating_lists import (
     remove_back_populating_lists,
 )
-from OMOPSQLModelGen.post_processing_funcs.remove_backpopulating_lists
 
 
 class OMOPSchemaSource(BaseModel):
     version_name: str
+    base_path: Path = None
     sql_constraints_file_path: Path = Field(
         description="The path to the sql script file in the OMOP release archive (As defined in the config var 'OMOP_CDM_RELEASE_FILE') for sql constraints."
     )
@@ -75,44 +70,20 @@ class OMOPSchemaSource(BaseModel):
 omopcdm_5_3 = OMOPSchemaSource(
     version_name="OMOP_5_3",
     sql_constraints_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_constraints.sql",
-        )
+        "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_constraints.sql"
     ),
-    sql_ddl_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_ddl.sql",
-        )
-    ),
+    sql_ddl_file_path=Path("inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_ddl.sql"),
     sql_indices_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_indices.sql",
-        )
+        "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_indices.sql"
     ),
     sql_primary_keys_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_primary_keys.sql",
-        )
+        "inst/ddl/5.3/postgresql/OMOPCDM_postgresql_5.3_primary_keys.sql"
     ),
-    csv_table_desc_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/csv/OMOP_CDMv5.3_Table_Level.csv",
-        )
-    ),
-    csv_field_desc_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/csv/OMOP_CDMv5.3_Field_Level.csv",
-        )
-    ),
+    csv_table_desc_file_path=Path("inst/csv/OMOP_CDMv5.3_Table_Level.csv"),
+    csv_field_desc_file_path=Path("inst/csv/OMOP_CDMv5.3_Field_Level.csv"),
     pre_generation_sql_script_dirs=[
-        "OMOPSQLModelGen/pre_gen_sql/5.x/",
-        "OMOPSQLModelGen/pre_gen_sql/5.3/",
+        "pre_gen_sql/5.x/",
+        "pre_gen_sql/5.3/",
     ],
     post_generation_python_functions=[
         rename_table_variable_names,
@@ -120,7 +91,6 @@ omopcdm_5_3 = OMOPSchemaSource(
         fix_sql_model,
         fix_death_table_glitch,
         remove_back_populating_lists,
-        
     ],
 )
 
@@ -128,44 +98,20 @@ omopcdm_5_3 = OMOPSchemaSource(
 omopcdm_5_4 = OMOPSchemaSource(
     version_name="OMOP_5_4",
     sql_constraints_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_constraints.sql",
-        )
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_constraints.sql"
     ),
-    sql_ddl_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_ddl.sql",
-        )
-    ),
+    sql_ddl_file_path=Path("inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_ddl.sql"),
     sql_indices_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_indices.sql",
-        )
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_indices.sql"
     ),
     sql_primary_keys_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_primary_keys.sql",
-        )
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_primary_keys.sql"
     ),
-    csv_table_desc_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/csv/OMOP_CDMv5.4_Table_Level.csv",
-        )
-    ),
-    csv_field_desc_file_path=Path(
-        PurePath(
-            config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
-            "inst/csv/OMOP_CDMv5.4_Field_Level.csv",
-        )
-    ),
+    csv_table_desc_file_path=Path("inst/csv/OMOP_CDMv5.4_Table_Level.csv"),
+    csv_field_desc_file_path=Path("inst/csv/OMOP_CDMv5.4_Field_Level.csv"),
     pre_generation_sql_script_dirs=[
-        "OMOPSQLModelGen/pre_gen_sql/5.x/",
-        "OMOPSQLModelGen/pre_gen_sql/5.4/",
+        "pre_gen_sql/5.x/",
+        "pre_gen_sql/5.4/",
     ],
     post_generation_python_functions=[
         rename_table_variable_names,

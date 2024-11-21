@@ -1,1 +1,38 @@
-# todo: run the local pipeline with a postgres database
+networks:
+  defaultnet:
+
+
+services:
+  omopcodegen:
+    build:
+      dockerfile: ./dockerfile
+    environment:
+      POSTGRESQL_HOST: postgresql
+      POSTGRESQL_USER: omop
+      POSTGRESQL_DATABASE: omop
+      POSTGRESQL_PASSWORD: omop
+      POSTGRESQL_PORT: 5432
+    user: ${UID:-1000}:${GID:-1000}
+    volumes:
+      - ./DZDOMOPModel/omopmodel:/output
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - defaultnet
+
+  postgresql:
+    image: postgres:16
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=omop
+      - POSTGRES_DB=omop
+      - POSTGRES_USER=omop
+      - POSTGRES_INITDB_ARGS=--lc-collate C.UTF-8 --lc-ctype C --encoding UTF8
+    healthcheck:
+      test: "pg_isready -h localhost -p 5432 -q -U omop"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defaultnet
