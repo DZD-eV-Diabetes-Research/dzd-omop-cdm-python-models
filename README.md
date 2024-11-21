@@ -1,12 +1,16 @@
-# DZD - OMOP CDM Python ORM/Data Classes Tools
-A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)   
+# DZD - OMOP CDM Python SQL-ORM/Data Classes Tools
+A Python SQL-ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)   
 This library also can also load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) into a OMOP Postgres DB (from exported http://athena.ohdsi.org vocabulary files)
 
 Author/Maintainer: Tim Bleimehl  
-Status: Proof of Concept successfull. Working towards a Beta Version  
+Status: Alpha
 
 > [!WARNING]  
-> This project is under heavy construction and not ready to use.
+> This project is under construction. Expect breaking changes.
+
+
+> [!IMPORTANT]  
+> We use and test **only on Postgres** (and sqlite) Databases. If you have experience in other databases supported by OMOP your [feedback](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues) is welcomed.
 
 
 - [DZD - OMOP CDM Python ORM/Data Classes Tools](#dzd---omop-cdm-python-ormdata-classes-tools)
@@ -49,7 +53,7 @@ This is propably the interesting stuff for you! We provide the OMOP CDM as [sqla
 This can be used to create a OMOP CDM Schema on your database and to streamline your python scripts that handle OMOP CDM data.  
 Have a look at the ["Usage chapter"](#usage) to get an idea what you can do.
 
-Also there is a tool onbard called 
+Also there is a tool onbard to load vocabularies from [athena.ohdsi.org](https://athena.ohdsi.org)-exports into the OMOP database (see [Example2: Create OMOP CDM Schema V5.4 and Standardized Vocabulary on Postresql](#example2-create-omop-cdm-schema-v54-and-standardized-vocabulary-on-postresql) )
 
 # Usage
 
@@ -108,12 +112,12 @@ from omopmodel import VocabulariesLoader
 # Please use the pg8000 driver as we use some features of it internaly
 engine = create_engine("postgresql+pg8000://my-db-user:my-db-password@localhost:5432/my-database-name")
 
+# Create the OMOP Schema on our database
+omop54.Base.metadata.create_all(engine)
+
 # Define the directory where our athena vocabularies csv files are stored.
 # You can define and download the vocabulary from https://athena.ohdsi.org/vocabulary/list
 authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
-
-# Create the OMOP Schema on our database
-omop54.Base.metadata.create_all(engine)
 
 # Initialize the vocabulary loader.
 v = VocabulariesLoader(
@@ -128,7 +132,7 @@ v = VocabulariesLoader(
 v.load_all()
 ```
 
-During the laoding process which will take some time (30min to 2hours depending on your hardware) you will see something like this
+During the loading process which will take some time (some seconds up to multiple hours depending on your Athena export size and hardware) you will see something like this
 ![alt text](load_vocab.png)
 
 
@@ -145,7 +149,7 @@ sqlalchemy is the most common way to inetract with relational databases in pytho
 * `tables` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_tables.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_tables.py)): only basic `Table` objects that represant the OMOP CDM. No real ORM functionality. if you dont have a specific reason to use these, ignore it.
 * `declarative` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_declarative.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_declarative.py)): the default way to declare table based data classes in sqlalchemy; generates classes inheriting from `declarative_base()`. See https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models for more details behind the scenes. if you are an old sqlalchemy veteran, you may want to have a look at these.
 * `dataclasses` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_dataclasses.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_dataclasses.py)): The more modern (2.0) approach of sqlalchemy representation of ORM/data classes. https://docs.sqlalchemy.org/en/20/orm/dataclasses.html 
-* ~~`sqlmodels` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_sqlmodels.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_sqlmodels.py)): (Chef's recommendation 😘🤌 )~~ () (**We still have some issues with the code generator** Wait for it...) - [sqlmodel](https://sqlmodel.tiangolo.com/) is the new kid on the block. Its a project by the maker of [Pydantic](https://docs.pydantic.dev/latest/). It unites sqlalchemy and Pydantic. Two of the most beatiful and useful python module out there. My personal favorite!
+* `sqlmodels` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_sqlmodels.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_sqlmodels.py)): (Chef's recommendation 😘🤌 ) - [sqlmodel](https://sqlmodel.tiangolo.com/) is the new kid on the block. Its a project by the maker of [Pydantic](https://docs.pydantic.dev/latest/). It unites sqlalchemy and Pydantic. Two of the most beatiful and useful python module out there. My personal favorite!
 
 # FAQ
 
