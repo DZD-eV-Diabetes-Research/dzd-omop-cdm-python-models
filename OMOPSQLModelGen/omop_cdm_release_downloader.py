@@ -18,7 +18,7 @@ class OMOPCDMReleaseDownloader:
             target_extraction_dir=config.OMOP_CDM_RELEASE_DOWNLOAD_TARGET_DIR,
         )
 
-    def download(self, force_redownload: bool):
+    def download(self, force_redownload: bool) -> Path:
 
         if not self.downloader.target_is_empty() and not force_redownload:
             print(
@@ -32,7 +32,7 @@ class OMOPCDMReleaseDownloader:
             self.downloader.target_extraction_dir,
         )
         self.downloader.clean_target()
-        self.downloader.download_and_extract(keep_source_zip=True)
+        return self.downloader.download_and_extract(keep_source_zip=True)
 
 
 class ZipDownloader:
@@ -64,10 +64,11 @@ class ZipDownloader:
         with open(self.download_target_path, "wb") as file:
             file.write(response.content)
 
-    def extract_zip(self) -> None:
+    def extract_zip(self) -> Path:
         self.target_extraction_dir.mkdir(exist_ok=True, parents=True)
         with zipfile.ZipFile(self.download_target_path, "r") as zip_ref:
             zip_ref.extractall(self.target_extraction_dir)
+        return list(self.target_extraction_dir.iterdir())[0]
 
     def clean_up(self) -> None:
         if self.download_target_path.exists():
@@ -75,6 +76,7 @@ class ZipDownloader:
 
     def download_and_extract(self, keep_source_zip: bool = False) -> None:
         self.download_zip()
-        self.extract_zip()
+        p = self.extract_zip()
         if not keep_source_zip:
             self.clean_up()
+        return p
