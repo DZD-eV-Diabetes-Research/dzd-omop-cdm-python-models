@@ -93,14 +93,11 @@ def _fix_sqlmodel_missing_relationship_fks(
 def _hotfixes(line: str) -> str:
     ## attach plural to concept classes
     def replace_line(l: str, if_line: str, replace_with: str, tabs="    ") -> str:
-        if (
-            l.strip
-            == "concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1])"
-        ):
-            print("YOOOO1111111")
         if l.strip() == if_line.strip():
             return tabs + replace_with
         return l
+    
+    # 
 
     line = replace_line(
         l=line,
@@ -121,6 +118,11 @@ def _hotfixes(line: str) -> str:
         l=line,
         if_line="concept_class: Optional['ConceptClass'] = Relationship(back_populates='concept')",
         replace_with="""concept_class: Optional['ConceptClass'] = Relationship(back_populates='concepts',sa_relationship_kwargs={"foreign_keys":"[Concept.concept_class_id]"})""",
+    )
+    line = replace_line(
+        l=line,
+        if_line="concept_class: Mapped['ConceptClass'] = relationship('ConceptClass', foreign_keys=[concept_class_id], back_populates='concept')",
+        replace_with="concept_class: Mapped['ConceptClass'] = relationship('ConceptClass', foreign_keys=[concept_class_id], back_populates='concepts')",
     )
     ## remove backpopulate for concep_class_concepts but keep relationship
     line = replace_line(
