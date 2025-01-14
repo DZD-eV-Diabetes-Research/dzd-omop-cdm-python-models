@@ -7,7 +7,7 @@ from omopmodel import VocabulariesLoader
 engine = create_engine("sqlite:///cdm_source.db", echo=False)
 
 # Define the directory where our athena vocabularies csv files are stored.
-authena_export_directory = "/home/tim/Downloads/tmp/athenalars"
+authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
 
 # Create the OMOP Schema on our database
 omop54.Base.metadata.create_all(engine)
