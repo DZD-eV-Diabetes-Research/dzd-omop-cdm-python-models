@@ -6,15 +6,15 @@ from omopmodel import VocabulariesLoader
 # if it does not exists, it will created on the fly
 engine = create_engine("sqlite:///cdm_source.db", echo=False)
 
-# Define the directory where our athena vocabularies csv files are stored.
-authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
+# Define the directory where our exported https://athena.ohdsi.org vocabularies csv files are stored.
+athena_export_directory = "/home/me/Downloads/AthenaUnzipped"
 
 # Create the OMOP Schema on our database
 omop54.Base.metadata.create_all(engine)
 
 # Initialize the vocabulary loader.
 v = VocabulariesLoader(
-    authena_export_directory,
+    athena_export_directory,
     database_engine=engine,
     omop_module=omop54,  # <- This is optional. default is OMOP CDM V5.4
 )
