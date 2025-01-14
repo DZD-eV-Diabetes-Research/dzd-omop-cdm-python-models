@@ -64,7 +64,7 @@ class _CSVFileMetadataContainer:
         static_filename_table_mapping: Dict[str, str] = {},
     ) -> Self:
         line_count = None
-        with open(csv_path, mode="r") as file:
+        with open(csv_path, encoding="utf8", mode="r") as file:
             # -1 for headers
             line_count = sum(1 for row in file) - 1
             file.seek(0)
@@ -340,7 +340,7 @@ class VocabulariesLoader:
                 f"{source_csv.filepath.name} vocabulary source file seems to be loaded allready. Will skip..."
             )
             return
-        with open(source_csv.filepath, mode="r") as file:
+        with open(source_csv.filepath, encoding="utf8", mode="r") as file:
             # skip allready loaded lines
 
             csv_reader = csv.reader(file, delimiter="\t")
