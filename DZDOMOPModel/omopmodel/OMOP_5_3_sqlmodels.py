@@ -1,3 +1,31 @@
+'''
+
+MIT License
+
+Copyright (c) 2024 Deutsche Zentrum für Diabetesforschung e.V.
+
+Source: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:  
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.     
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT . IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+'''
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
@@ -119,7 +147,7 @@ class Domain(SQLModel, table=True):
     domain_concept_id: int = Field(sa_column=Column('domain_concept_id', Integer), description='USER GUIDANCE: A Concept representing the Domain Concept the DOMAIN record belongs to.')
 
     domain_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Domain.domain_concept_id]"})
-    cost: List['Cost'] = Relationship(back_populates='cost_domain')
+    costs: List['Cost'] = Relationship(back_populates='cost_domain')
 
 
 class Location(SQLModel, table=True):
@@ -145,8 +173,8 @@ class Location(SQLModel, table=True):
     county: Optional[str] = Field(default=None, sa_column=Column('county', String(20)))
     location_source_value: Optional[str] = Field(default=None, sa_column=Column('location_source_value', String(50)), description=' | ETLCONVENTIONS: Put the verbatim value for the location here, as it shows up in the source. ')
 
-    care_site: List['CareSite'] = Relationship(back_populates='location')
-    person: List['Person'] = Relationship(back_populates='location')
+    care_sites: List['CareSite'] = Relationship(back_populates='location')
+    persons: List['Person'] = Relationship(back_populates='location')
 
 
 class Vocabulary(SQLModel, table=True):
@@ -168,7 +196,7 @@ class Vocabulary(SQLModel, table=True):
     vocabulary_version: Optional[str] = Field(default=None, sa_column=Column('vocabulary_version', String(255)), description='USER GUIDANCE: Version of the Vocabulary as indicated in\nthe source.')
 
     vocabulary_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Vocabulary.vocabulary_concept_id]"})
-    source_to_concept_map: List['SourceToConceptMap'] = Relationship(back_populates='target_vocabulary')
+    source_to_concept_maps: List['SourceToConceptMap'] = Relationship(back_populates='target_vocabulary')
 
 
 class AttributeDefinition(SQLModel, table=True):
@@ -231,12 +259,12 @@ class CareSite(SQLModel, table=True):
     care_site_source_value: Optional[str] = Field(default=None, sa_column=Column('care_site_source_value', String(50)), description='USER GUIDANCE: The identifier of the care_site as it appears in the source data. This could be an identifier separate from the name of the care_site.')
     place_of_service_source_value: Optional[str] = Field(default=None, sa_column=Column('place_of_service_source_value', String(50)), description=' | ETLCONVENTIONS: Put the place of service of the care_site as it appears in the source data.')
 
-    location: Optional['Location'] = Relationship(back_populates='care_site')
+    location: Optional['Location'] = Relationship(back_populates='care_sites')
     place_of_service_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[CareSite.place_of_service_concept_id]"})
-    provider: List['Provider'] = Relationship(back_populates='care_site')
-    person: List['Person'] = Relationship(back_populates='care_site')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='care_site')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='care_site')
+    providers: List['Provider'] = Relationship(back_populates='care_site')
+    persons: List['Person'] = Relationship(back_populates='care_site')
+    visit_occurrences: List['VisitOccurrence'] = Relationship(back_populates='care_site')
+    visit_details: List['VisitDetail'] = Relationship(back_populates='care_site')
 
 
 class CohortDefinition(SQLModel, table=True):
@@ -438,7 +466,7 @@ class Cost(SQLModel, table=True):
     drg_concept_id: Optional[int] = Field(default=None, sa_column=Column('drg_concept_id', Integer))
     drg_source_value: Optional[str] = Field(default=None, sa_column=Column('drg_source_value', String(3)), description='USER GUIDANCE: Diagnosis Related Groups are US codes used to classify hospital cases into one of approximately 500 groups. ')
 
-    cost_domain: Optional['Domain'] = Relationship(back_populates='cost')
+    cost_domain: Optional['Domain'] = Relationship(back_populates='costs')
     cost_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Cost.cost_type_concept_id]"})
     currency_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Cost.currency_concept_id]"})
     drg_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Cost.drg_concept_id]"})
@@ -599,7 +627,7 @@ class Relationship_(SQLModel, table=True):
     relationship_concept_id: int = Field(sa_column=Column('relationship_concept_id', Integer), description='USER GUIDANCE: A foreign key that refers to an identifier in\nthe [CONCEPT](https://ohdsi.github.io/CommonDataModel/cdm531.html#concept) table for the unique\nrelationship concept.')
 
     relationship_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Relationship_.relationship_concept_id]"})
-    concept_relationship: List['ConceptRelationship'] = Relationship(back_populates='relationship')
+    concept_relationships: List['ConceptRelationship'] = Relationship(back_populates='relationship')
 
 
 class SourceToConceptMap(SQLModel, table=True):
@@ -635,7 +663,7 @@ class SourceToConceptMap(SQLModel, table=True):
 
     source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[SourceToConceptMap.source_concept_id]"})
     target_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[SourceToConceptMap.target_concept_id]"})
-    target_vocabulary: Optional['Vocabulary'] = Relationship(back_populates='source_to_concept_map')
+    target_vocabulary: Optional['Vocabulary'] = Relationship(back_populates='source_to_concept_maps')
 
 
 class ConceptRelationship(SQLModel, table=True):
@@ -662,7 +690,7 @@ class ConceptRelationship(SQLModel, table=True):
 
     concept_1: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ConceptRelationship.concept_id_1]"})
     concept_2: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ConceptRelationship.concept_id_2]"})
-    relationship: Optional['Relationship_'] = Relationship(back_populates='concept_relationship')
+    relationship: Optional['Relationship_'] = Relationship(back_populates='concept_relationships')
 
 
 class Provider(SQLModel, table=True):
@@ -700,20 +728,20 @@ class Provider(SQLModel, table=True):
     gender_source_value: Optional[str] = Field(default=None, sa_column=Column('gender_source_value', String(50)), description='USER GUIDANCE: This is provider"s gender as it appears in the source data. | ETLCONVENTIONS: Put the provider"s gender as it appears in the source data. This field is up to the discretion of the ETL-er as to whether this should be the coded value from the source or the text description of the lookup value.')
     gender_source_concept_id: Optional[int] = Field(default=None, sa_column=Column('gender_source_concept_id', Integer), description='USER GUIDANCE: This is often zero as many sites use proprietary codes to store provider gender. | ETLCONVENTIONS: If the source data codes provider gender in an OMOP supported vocabulary store the concept_id here.')
 
-    care_site: Optional['CareSite'] = Relationship(back_populates='provider')
+    care_site: Optional['CareSite'] = Relationship(back_populates='providers')
     gender_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Provider.gender_concept_id]"})
     gender_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Provider.gender_source_concept_id]"})
     specialty_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Provider.specialty_concept_id]"})
     specialty_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Provider.specialty_source_concept_id]"})
-    person: List['Person'] = Relationship(back_populates='provider')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='provider')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='provider')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='provider')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='provider')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='provider')
-    measurement: List['Measurement'] = Relationship(back_populates='provider')
-    note: List['Note'] = Relationship(back_populates='provider')
-    observation: List['Observation'] = Relationship(back_populates='provider')
+    persons: List['Person'] = Relationship(back_populates='provider')
+    visit_occurrences: List['VisitOccurrence'] = Relationship(back_populates='provider')
+    visit_details: List['VisitDetail'] = Relationship(back_populates='provider')
+    condition_occurrences: List['ConditionOccurrence'] = Relationship(back_populates='provider')
+    device_exposures: List['DeviceExposure'] = Relationship(back_populates='provider')
+    drug_exposures: List['DrugExposure'] = Relationship(back_populates='provider')
+    measurements: List['Measurement'] = Relationship(back_populates='provider')
+    notes: List['Note'] = Relationship(back_populates='provider')
+    observations: List['Observation'] = Relationship(back_populates='provider')
 
 
 class Person(SQLModel, table=True):
@@ -763,29 +791,29 @@ class Person(SQLModel, table=True):
     ethnicity_source_value: Optional[str] = Field(default=None, sa_column=Column('ethnicity_source_value', String(50)), description='USER GUIDANCE: This field is used to store the ethnicity of the person from the source data. It is not intended for use in standard analytics but for reference only. | ETLCONVENTIONS: If the person has an ethnicity other than the OMB standard of "Hispanic" or "Not Hispanic" store that value from the source data here.')
     ethnicity_source_concept_id: Optional[int] = Field(default=None, sa_column=Column('ethnicity_source_concept_id', Integer), description='USER GUIDANCE: Due to the small number of options, this tends to be zero. | ETLCONVENTIONS: If the source data codes ethnicity in an OMOP supported vocabulary, store the concept_id here.')
 
-    care_site: Optional['CareSite'] = Relationship(back_populates='person')
+    care_site: Optional['CareSite'] = Relationship(back_populates='persons')
     ethnicity_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.ethnicity_concept_id]"})
     ethnicity_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.ethnicity_source_concept_id]"})
     gender_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.gender_concept_id]"})
     gender_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.gender_source_concept_id]"})
-    location: Optional['Location'] = Relationship(back_populates='person')
-    provider: Optional['Provider'] = Relationship(back_populates='person')
+    location: Optional['Location'] = Relationship(back_populates='persons')
+    provider: Optional['Provider'] = Relationship(back_populates='persons')
     race_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.race_concept_id]"})
     race_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Person.race_source_concept_id]"})
-    dose_era: List['DoseEra'] = Relationship(back_populates='person')
-    drug_era: List['DrugEra'] = Relationship(back_populates='person')
-    observation_period: List['ObservationPeriod'] = Relationship(back_populates='person')
-    payer_plan_period: List['PayerPlanPeriod'] = Relationship(back_populates='person')
-    procedure_occurrence: List['ProcedureOccurrence'] = Relationship(back_populates='person')
-    specimen: List['Specimen'] = Relationship(back_populates='person')
-    visit_occurrence: List['VisitOccurrence'] = Relationship(back_populates='person')
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='person')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='person')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='person')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='person')
-    measurement: List['Measurement'] = Relationship(back_populates='person')
-    note: List['Note'] = Relationship(back_populates='person')
-    observation: List['Observation'] = Relationship(back_populates='person')
+    dose_eras: List['DoseEra'] = Relationship(back_populates='person')
+    drug_eras: List['DrugEra'] = Relationship(back_populates='person')
+    observation_periods: List['ObservationPeriod'] = Relationship(back_populates='person')
+    payer_plan_periods: List['PayerPlanPeriod'] = Relationship(back_populates='person')
+    procedure_occurrences: List['ProcedureOccurrence'] = Relationship(back_populates='person')
+    specimens: List['Specimen'] = Relationship(back_populates='person')
+    visit_occurrences: List['VisitOccurrence'] = Relationship(back_populates='person')
+    visit_details: List['VisitDetail'] = Relationship(back_populates='person')
+    condition_occurrences: List['ConditionOccurrence'] = Relationship(back_populates='person')
+    device_exposures: List['DeviceExposure'] = Relationship(back_populates='person')
+    drug_exposures: List['DrugExposure'] = Relationship(back_populates='person')
+    measurements: List['Measurement'] = Relationship(back_populates='person')
+    notes: List['Note'] = Relationship(back_populates='person')
+    observations: List['Observation'] = Relationship(back_populates='person')
 
 
 class Death(SQLModel, table=True):
@@ -844,7 +872,7 @@ class DoseEra(SQLModel, table=True):
     dose_era_end_date: date = Field(sa_column=Column('dose_era_end_date', Date), description=' | ETLCONVENTIONS: The date the Person was no longer exposed to the dosage of the specific drug ingredient. An era is ended if there are 31 days or more between dosage records.')
 
     drug_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DoseEra.drug_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='dose_era')
+    person: Optional['Person'] = Relationship(back_populates='dose_eras')
     unit_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DoseEra.unit_concept_id]"})
 
 
@@ -876,7 +904,7 @@ class DrugEra(SQLModel, table=True):
     gap_days: Optional[int] = Field(default=None, sa_column=Column('gap_days', Integer), description=' | ETLCONVENTIONS: The Gap Days determine how many total drug-free days are observed between all Drug Exposure events that contribute to a DRUG_ERA record. It is assumed that the drugs are "not stockpiled" by the patient, i.e. that if a new drug prescription or refill is observed (a new DRUG_EXPOSURE record is written), the remaining supply from the previous events is abandoned.   The difference between Persistence Window and Gap Days is that the former is the maximum drug-free time allowed between two subsequent DRUG_EXPOSURE records, while the latter is the sum of actual drug-free days for the given Drug Era under the above assumption of non-stockpiling.')
 
     drug_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DrugEra.drug_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='drug_era')
+    person: Optional['Person'] = Relationship(back_populates='drug_eras')
 
 
 class ObservationPeriod(SQLModel, table=True):
@@ -936,7 +964,7 @@ class ObservationPeriod(SQLModel, table=True):
     period_type_concept_id: int = Field(sa_column=Column('period_type_concept_id', Integer), description='USER GUIDANCE: This field can be used to determine the provenance of the Observation Period as in whether the period was determined from an insurance enrollment file, EHR healthcare encounters, or other sources. | ETLCONVENTIONS: Choose the observation_period_type_concept_id that best represents how the period was determined. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=).')
 
     period_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ObservationPeriod.period_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='observation_period')
+    person: Optional['Person'] = Relationship(back_populates='observation_periods')
 
 
 class PayerPlanPeriod(SQLModel, table=True):
@@ -994,7 +1022,7 @@ class PayerPlanPeriod(SQLModel, table=True):
 
     payer_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[PayerPlanPeriod.payer_concept_id]"})
     payer_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[PayerPlanPeriod.payer_source_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='payer_plan_period')
+    person: Optional['Person'] = Relationship(back_populates='payer_plan_periods')
     plan_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[PayerPlanPeriod.plan_concept_id]"})
     plan_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[PayerPlanPeriod.plan_source_concept_id]"})
     sponsor_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[PayerPlanPeriod.sponsor_concept_id]"})
@@ -1055,7 +1083,7 @@ class ProcedureOccurrence(SQLModel, table=True):
     modifier_source_value: Optional[str] = Field(default=None, sa_column=Column('modifier_source_value', String(50)), description=' | ETLCONVENTIONS: The original modifier code from the source is stored here for reference.')
 
     modifier_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ProcedureOccurrence.modifier_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='procedure_occurrence')
+    person: Optional['Person'] = Relationship(back_populates='procedure_occurrences')
     procedure_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ProcedureOccurrence.procedure_concept_id]"})
     procedure_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ProcedureOccurrence.procedure_type_concept_id]"})
 
@@ -1096,7 +1124,7 @@ class Specimen(SQLModel, table=True):
 
     anatomic_site_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Specimen.anatomic_site_concept_id]"})
     disease_status_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Specimen.disease_status_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='specimen')
+    person: Optional['Person'] = Relationship(back_populates='specimens')
     specimen_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Specimen.specimen_concept_id]"})
     specimen_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Specimen.specimen_type_concept_id]"})
     unit_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Specimen.unit_concept_id]"})
@@ -1235,21 +1263,21 @@ class VisitOccurrence(SQLModel, table=True):
     preceding_visit_occurrence_id: Optional[int] = Field(default=None, sa_column=Column('preceding_visit_occurrence_id', Integer), description='USER GUIDANCE: Use this field to find the visit that occurred for the person prior to the given visit. There could be a few days or a few years in between. | ETLCONVENTIONS: This field can be used to link a visit immediately preceding the current visit. Note this is not symmetrical, and there is no such thing as a "following_visit_id".')
 
     admitting_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.admitting_source_concept_id]"})
-    care_site: Optional['CareSite'] = Relationship(back_populates='visit_occurrence')
+    care_site: Optional['CareSite'] = Relationship(back_populates='visit_occurrences')
     discharge_to_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.discharge_to_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='visit_occurrence')
+    person: Optional['Person'] = Relationship(back_populates='visit_occurrences')
     preceding_visit_occurrence: Optional['VisitOccurrence'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.preceding_visit_occurrence_id]"})
-    provider: Optional['Provider'] = Relationship(back_populates='visit_occurrence')
+    provider: Optional['Provider'] = Relationship(back_populates='visit_occurrences')
     visit_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.visit_concept_id]"})
     visit_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.visit_source_concept_id]"})
     visit_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitOccurrence.visit_type_concept_id]"})
-    visit_detail: List['VisitDetail'] = Relationship(back_populates='visit_occurrence')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='visit_occurrence')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='visit_occurrence')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='visit_occurrence')
-    measurement: List['Measurement'] = Relationship(back_populates='visit_occurrence')
-    note: List['Note'] = Relationship(back_populates='visit_occurrence')
-    observation: List['Observation'] = Relationship(back_populates='visit_occurrence')
+    visit_details: List['VisitDetail'] = Relationship(back_populates='visit_occurrence')
+    condition_occurrences: List['ConditionOccurrence'] = Relationship(back_populates='visit_occurrence')
+    device_exposures: List['DeviceExposure'] = Relationship(back_populates='visit_occurrence')
+    drug_exposures: List['DrugExposure'] = Relationship(back_populates='visit_occurrence')
+    measurements: List['Measurement'] = Relationship(back_populates='visit_occurrence')
+    notes: List['Note'] = Relationship(back_populates='visit_occurrence')
+    observations: List['Observation'] = Relationship(back_populates='visit_occurrence')
 
 
 class VisitDetail(SQLModel, table=True):
@@ -1328,22 +1356,22 @@ class VisitDetail(SQLModel, table=True):
     visit_detail_parent_id: Optional[int] = Field(default=None, sa_column=Column('visit_detail_parent_id', Integer), description='USER GUIDANCE: Use this field to find the visit detail that subsumes the given visit detail record. This is used in the case that a visit detail record needs to be nested beyond the VISIT_OCCURRENCE/VISIT_DETAIL relationship. | ETLCONVENTIONS: If there are multiple nested levels to how Visits are represented in the source, the VISIT_DETAIL_PARENT_ID can be used to record this relationship. ')
 
     admitting_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.admitting_source_concept_id]"})
-    care_site: Optional['CareSite'] = Relationship(back_populates='visit_detail')
+    care_site: Optional['CareSite'] = Relationship(back_populates='visit_details')
     discharge_to_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.discharge_to_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='visit_detail')
+    person: Optional['Person'] = Relationship(back_populates='visit_details')
     preceding_visit_detail: Optional['VisitDetail'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.preceding_visit_detail_id]"})
-    provider: Optional['Provider'] = Relationship(back_populates='visit_detail')
+    provider: Optional['Provider'] = Relationship(back_populates='visit_details')
     visit_detail_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.visit_detail_concept_id]"})
     visit_detail_parent: Optional['VisitDetail'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.visit_detail_parent_id]"})
     visit_detail_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.visit_detail_source_concept_id]"})
     visit_detail_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[VisitDetail.visit_detail_type_concept_id]"})
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='visit_detail')
-    condition_occurrence: List['ConditionOccurrence'] = Relationship(back_populates='visit_detail')
-    device_exposure: List['DeviceExposure'] = Relationship(back_populates='visit_detail')
-    drug_exposure: List['DrugExposure'] = Relationship(back_populates='visit_detail')
-    measurement: List['Measurement'] = Relationship(back_populates='visit_detail')
-    note: List['Note'] = Relationship(back_populates='visit_detail')
-    observation: List['Observation'] = Relationship(back_populates='visit_detail')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='visit_details')
+    condition_occurrences: List['ConditionOccurrence'] = Relationship(back_populates='visit_detail')
+    device_exposures: List['DeviceExposure'] = Relationship(back_populates='visit_detail')
+    drug_exposures: List['DrugExposure'] = Relationship(back_populates='visit_detail')
+    measurements: List['Measurement'] = Relationship(back_populates='visit_detail')
+    notes: List['Note'] = Relationship(back_populates='visit_detail')
+    observations: List['Observation'] = Relationship(back_populates='visit_detail')
 
 
 class ConditionOccurrence(SQLModel, table=True):
@@ -1422,10 +1450,10 @@ class ConditionOccurrence(SQLModel, table=True):
     condition_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ConditionOccurrence.condition_source_concept_id]"})
     condition_status_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ConditionOccurrence.condition_status_concept_id]"})
     condition_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[ConditionOccurrence.condition_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='condition_occurrence')
-    provider: Optional['Provider'] = Relationship(back_populates='condition_occurrence')
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='condition_occurrence')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='condition_occurrence')
+    person: Optional['Person'] = Relationship(back_populates='condition_occurrences')
+    provider: Optional['Provider'] = Relationship(back_populates='condition_occurrences')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='condition_occurrences')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='condition_occurrences')
 
 
 class DeviceExposure(SQLModel, table=True):
@@ -1477,10 +1505,10 @@ class DeviceExposure(SQLModel, table=True):
     device_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DeviceExposure.device_concept_id]"})
     device_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DeviceExposure.device_source_concept_id]"})
     device_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DeviceExposure.device_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='device_exposure')
-    provider: Optional['Provider'] = Relationship(back_populates='device_exposure')
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='device_exposure')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='device_exposure')
+    person: Optional['Person'] = Relationship(back_populates='device_exposures')
+    provider: Optional['Provider'] = Relationship(back_populates='device_exposures')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='device_exposures')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='device_exposures')
 
 
 class DrugExposure(SQLModel, table=True):
@@ -1556,11 +1584,11 @@ class DrugExposure(SQLModel, table=True):
     drug_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DrugExposure.drug_concept_id]"})
     drug_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DrugExposure.drug_source_concept_id]"})
     drug_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DrugExposure.drug_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='drug_exposure')
-    provider: Optional['Provider'] = Relationship(back_populates='drug_exposure')
+    person: Optional['Person'] = Relationship(back_populates='drug_exposures')
+    provider: Optional['Provider'] = Relationship(back_populates='drug_exposures')
     route_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[DrugExposure.route_concept_id]"})
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='drug_exposure')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='drug_exposure')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='drug_exposures')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='drug_exposures')
 
 
 class Measurement(SQLModel, table=True):
@@ -1649,12 +1677,12 @@ class Measurement(SQLModel, table=True):
     measurement_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Measurement.measurement_source_concept_id]"})
     measurement_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Measurement.measurement_type_concept_id]"})
     operator_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Measurement.operator_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='measurement')
-    provider: Optional['Provider'] = Relationship(back_populates='measurement')
+    person: Optional['Person'] = Relationship(back_populates='measurements')
+    provider: Optional['Provider'] = Relationship(back_populates='measurements')
     unit_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Measurement.unit_concept_id]"})
     value_as_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Measurement.value_as_concept_id]"})
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='measurement')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='measurement')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='measurements')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='measurements')
 
 
 class Note(SQLModel, table=True):
@@ -1727,10 +1755,10 @@ class Note(SQLModel, table=True):
     language_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Note.language_concept_id]"})
     note_class_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Note.note_class_concept_id]"})
     note_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Note.note_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='note')
-    provider: Optional['Provider'] = Relationship(back_populates='note')
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='note')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='note')
+    person: Optional['Person'] = Relationship(back_populates='notes')
+    provider: Optional['Provider'] = Relationship(back_populates='notes')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='notes')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='notes')
 
 
 class Observation(SQLModel, table=True):
@@ -1804,13 +1832,15 @@ class Observation(SQLModel, table=True):
     observation_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.observation_concept_id]"})
     observation_source_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.observation_source_concept_id]"})
     observation_type_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.observation_type_concept_id]"})
-    person: Optional['Person'] = Relationship(back_populates='observation')
-    provider: Optional['Provider'] = Relationship(back_populates='observation')
+    person: Optional['Person'] = Relationship(back_populates='observations')
+    provider: Optional['Provider'] = Relationship(back_populates='observations')
     qualifier_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.qualifier_concept_id]"})
     unit_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.unit_concept_id]"})
     value_as_concept: Optional['Concept'] = Relationship(sa_relationship_kwargs={"foreign_keys":"[Observation.value_as_concept_id]"})
-    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='observation')
-    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='observation')
+    visit_detail: Optional['VisitDetail'] = Relationship(back_populates='observations')
+    visit_occurrence: Optional['VisitOccurrence'] = Relationship(back_populates='observations')
+
+
 
 
 

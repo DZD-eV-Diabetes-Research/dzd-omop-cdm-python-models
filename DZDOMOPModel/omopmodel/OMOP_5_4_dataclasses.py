@@ -1,3 +1,31 @@
+'''
+
+MIT License
+
+Copyright (c) 2024 Deutsche Zentrum für Diabetesforschung e.V.
+
+Source: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:  
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.     
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT . IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+'''
 from typing import List, Optional
 
 from sqlalchemy import Date, DateTime, ForeignKeyConstraint, Index, Integer, Numeric, PrimaryKeyConstraint, String, Text
@@ -91,8 +119,8 @@ class Concept(Base):
     invalid_reason: Mapped[Optional[str]] = mapped_column(String(1), comment='USER GUIDANCE: Reason the Concept was invalidated.\nPossible values are D (deleted), U\n(replaced with an update) or NULL when\nvalid_end_date has the default value.')
 
     concept_class: Mapped['ConceptClass'] = relationship('ConceptClass', foreign_keys=[concept_class_id], back_populates='concepts')
-    domain: Mapped['Domain'] = relationship('Domain', foreign_keys=[domain_id], back_populates='concept')
-    vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', foreign_keys=[vocabulary_id], back_populates='concept')
+    domain: Mapped['Domain'] = relationship('Domain', foreign_keys=[domain_id], back_populates='concepts')
+    vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', foreign_keys=[vocabulary_id], back_populates='concepts')
     concept_classes: Mapped[List['ConceptClass']] = relationship('ConceptClass', foreign_keys='[ConceptClass.concept_class_concept_id]', back_populates='concept_class_concept')
 
 
@@ -137,9 +165,9 @@ class Domain(Base):
     domain_name: Mapped[str] = mapped_column(String(255), comment='USER GUIDANCE: The name describing the Domain, e.g.\nCondition, Procedure, Measurement\netc.')
     domain_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A Concept representing the Domain Concept the DOMAIN record belongs to.')
 
-    concept: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.domain_id]', back_populates='domain')
+    concepts: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.domain_id]', back_populates='domain')
     domain_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[domain_concept_id])
-    cost: Mapped[List['Cost']] = relationship('Cost', back_populates='cost_domain')
+    costs: Mapped[List['Cost']] = relationship('Cost', back_populates='cost_domain')
 
 
 class Vocabulary(Base):
@@ -161,9 +189,9 @@ class Vocabulary(Base):
     vocabulary_reference: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: External reference to documentation or\navailable download of the about the\nvocabulary.')
     vocabulary_version: Mapped[Optional[str]] = mapped_column(String(255), comment='USER GUIDANCE: Version of the Vocabulary as indicated in\nthe source.')
 
-    concept: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.vocabulary_id]', back_populates='vocabulary')
+    concepts: Mapped[List['Concept']] = relationship('Concept', foreign_keys='[Concept.vocabulary_id]', back_populates='vocabulary')
     vocabulary_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[vocabulary_concept_id])
-    source_to_concept_map: Mapped[List['SourceToConceptMap']] = relationship('SourceToConceptMap', back_populates='target_vocabulary')
+    source_to_concept_maps: Mapped[List['SourceToConceptMap']] = relationship('SourceToConceptMap', back_populates='target_vocabulary')
 
 
 class CdmSource(Base):
@@ -337,7 +365,7 @@ class Cost(Base):
     drg_concept_id: Mapped[Optional[int]] = mapped_column(Integer)
     drg_source_value: Mapped[Optional[str]] = mapped_column(String(3), comment='USER GUIDANCE: Diagnosis Related Groups are US codes used to classify hospital cases into one of approximately 500 groups. ')
 
-    cost_domain: Mapped['Domain'] = relationship('Domain', back_populates='cost')
+    cost_domain: Mapped['Domain'] = relationship('Domain', back_populates='costs')
     cost_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[cost_type_concept_id])
     currency_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[currency_concept_id])
     drg_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drg_concept_id])
@@ -458,8 +486,8 @@ class Location(Base):
     longitude: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric, comment=' | ETLCONVENTIONS: Must be between -180 and 180.')
 
     country_concept: Mapped['Concept'] = relationship('Concept')
-    care_site: Mapped[List['CareSite']] = relationship('CareSite', back_populates='location')
-    person: Mapped[List['Person']] = relationship('Person', back_populates='location')
+    care_sites: Mapped[List['CareSite']] = relationship('CareSite', back_populates='location')
+    persons: Mapped[List['Person']] = relationship('Person', back_populates='location')
 
 
 class Metadata(Base):
@@ -541,7 +569,7 @@ class Relationship(Base):
     relationship_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: A foreign key that refers to an identifier in\nthe [CONCEPT](https://ohdsi.github.io/CommonDataModel/cdm531.html#concept) table for the unique\nrelationship concept.')
 
     relationship_concept: Mapped['Concept'] = relationship('Concept')
-    concept_relationship: Mapped[List['ConceptRelationship']] = relationship('ConceptRelationship', back_populates='relationship_')
+    concept_relationships: Mapped[List['ConceptRelationship']] = relationship('ConceptRelationship', back_populates='relationship_')
 
 
 class SourceToConceptMap(Base):
@@ -577,7 +605,7 @@ class SourceToConceptMap(Base):
 
     source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[source_concept_id])
     target_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[target_concept_id])
-    target_vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', back_populates='source_to_concept_map')
+    target_vocabulary: Mapped['Vocabulary'] = relationship('Vocabulary', back_populates='source_to_concept_maps')
 
 
 class CareSite(Base):
@@ -613,12 +641,12 @@ class CareSite(Base):
     care_site_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: The identifier of the care_site as it appears in the source data. This could be an identifier separate from the name of the care_site.')
     place_of_service_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: Put the place of service of the care_site as it appears in the source data.')
 
-    location: Mapped['Location'] = relationship('Location', back_populates='care_site')
+    location: Mapped['Location'] = relationship('Location', back_populates='care_sites')
     place_of_service_concept: Mapped['Concept'] = relationship('Concept')
-    provider: Mapped[List['Provider']] = relationship('Provider', back_populates='care_site')
-    person: Mapped[List['Person']] = relationship('Person', back_populates='care_site')
-    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='care_site')
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='care_site')
+    providers: Mapped[List['Provider']] = relationship('Provider', back_populates='care_site')
+    persons: Mapped[List['Person']] = relationship('Person', back_populates='care_site')
+    visit_occurrences: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='care_site')
+    visit_details: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='care_site')
 
 
 class ConceptRelationship(Base):
@@ -645,7 +673,7 @@ class ConceptRelationship(Base):
 
     concept_1: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_1])
     concept_2: Mapped['Concept'] = relationship('Concept', foreign_keys=[concept_id_2])
-    relationship_: Mapped['Relationship'] = relationship('Relationship', back_populates='concept_relationship')
+    relationship_: Mapped['Relationship'] = relationship('Relationship', back_populates='concept_relationships')
 
 
 class Provider(Base):
@@ -684,21 +712,21 @@ class Provider(Base):
     gender_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This is provider"s gender as it appears in the source data. | ETLCONVENTIONS: Put the provider"s gender as it appears in the source data. This field is up to the discretion of the ETL-er as to whether this should be the coded value from the source or the text description of the lookup value.')
     gender_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: This is often zero as many sites use proprietary codes to store provider gender. | ETLCONVENTIONS: If the source data codes provider gender in an OMOP supported vocabulary store the concept_id here.')
 
-    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='provider')
+    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='providers')
     gender_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[gender_concept_id])
     gender_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[gender_source_concept_id])
     specialty_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[specialty_concept_id])
     specialty_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[specialty_source_concept_id])
-    person: Mapped[List['Person']] = relationship('Person', back_populates='provider')
-    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='provider')
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='provider')
-    condition_occurrence: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='provider')
-    device_exposure: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='provider')
-    drug_exposure: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='provider')
-    measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='provider')
-    note: Mapped[List['Note']] = relationship('Note', back_populates='provider')
-    observation: Mapped[List['Observation']] = relationship('Observation', back_populates='provider')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='provider')
+    persons: Mapped[List['Person']] = relationship('Person', back_populates='provider')
+    visit_occurrences: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='provider')
+    visit_details: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='provider')
+    condition_occurrences: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='provider')
+    device_exposures: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='provider')
+    drug_exposures: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='provider')
+    measurements: Mapped[List['Measurement']] = relationship('Measurement', back_populates='provider')
+    notes: Mapped[List['Note']] = relationship('Note', back_populates='provider')
+    observations: Mapped[List['Observation']] = relationship('Observation', back_populates='provider')
+    procedure_occurrences: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='provider')
 
 
 class Person(Base):
@@ -749,31 +777,31 @@ class Person(Base):
     ethnicity_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment='USER GUIDANCE: This field is used to store the ethnicity of the person from the source data. It is not intended for use in standard analytics but for reference only. | ETLCONVENTIONS: If the person has an ethnicity other than the OMB standard of "Hispanic" or "Not Hispanic" store that value from the source data here.')
     ethnicity_source_concept_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Due to the small number of options, this tends to be zero. | ETLCONVENTIONS: If the source data codes ethnicity in an OMOP supported vocabulary, store the concept_id here.')
 
-    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='person')
+    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='persons')
     ethnicity_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[ethnicity_concept_id])
     ethnicity_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[ethnicity_source_concept_id])
     gender_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[gender_concept_id])
     gender_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[gender_source_concept_id])
-    location: Mapped['Location'] = relationship('Location', back_populates='person')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='person')
+    location: Mapped['Location'] = relationship('Location', back_populates='persons')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='persons')
     race_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[race_concept_id])
     race_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[race_source_concept_id])
-    condition_era: Mapped[List['ConditionEra']] = relationship('ConditionEra', back_populates='person')
-    dose_era: Mapped[List['DoseEra']] = relationship('DoseEra', back_populates='person')
-    drug_era: Mapped[List['DrugEra']] = relationship('DrugEra', back_populates='person')
-    episode: Mapped[List['Episode']] = relationship('Episode', back_populates='person')
-    observation_period: Mapped[List['ObservationPeriod']] = relationship('ObservationPeriod', back_populates='person')
-    payer_plan_period: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', back_populates='person')
-    specimen: Mapped[List['Specimen']] = relationship('Specimen', back_populates='person')
-    visit_occurrence: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='person')
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='person')
-    condition_occurrence: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='person')
-    device_exposure: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='person')
-    drug_exposure: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='person')
-    measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='person')
-    note: Mapped[List['Note']] = relationship('Note', back_populates='person')
-    observation: Mapped[List['Observation']] = relationship('Observation', back_populates='person')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='person')
+    condition_eras: Mapped[List['ConditionEra']] = relationship('ConditionEra', back_populates='person')
+    dose_eras: Mapped[List['DoseEra']] = relationship('DoseEra', back_populates='person')
+    drug_eras: Mapped[List['DrugEra']] = relationship('DrugEra', back_populates='person')
+    episodes: Mapped[List['Episode']] = relationship('Episode', back_populates='person')
+    observation_periods: Mapped[List['ObservationPeriod']] = relationship('ObservationPeriod', back_populates='person')
+    payer_plan_periods: Mapped[List['PayerPlanPeriod']] = relationship('PayerPlanPeriod', back_populates='person')
+    specimens: Mapped[List['Specimen']] = relationship('Specimen', back_populates='person')
+    visit_occurrences: Mapped[List['VisitOccurrence']] = relationship('VisitOccurrence', back_populates='person')
+    visit_details: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='person')
+    condition_occurrences: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='person')
+    device_exposures: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='person')
+    drug_exposures: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='person')
+    measurements: Mapped[List['Measurement']] = relationship('Measurement', back_populates='person')
+    notes: Mapped[List['Note']] = relationship('Note', back_populates='person')
+    observations: Mapped[List['Observation']] = relationship('Observation', back_populates='person')
+    procedure_occurrences: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='person')
 
 
 class ConditionEra(Base):
@@ -828,7 +856,7 @@ class ConditionEra(Base):
     condition_occurrence_count: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: The number of individual Condition\nOccurrences used to construct the\ncondition era.')
 
     condition_concept: Mapped['Concept'] = relationship('Concept')
-    person: Mapped['Person'] = relationship('Person', back_populates='condition_era')
+    person: Mapped['Person'] = relationship('Person', back_populates='condition_eras')
 
 
 class Death(Base):
@@ -888,7 +916,7 @@ class DoseEra(Base):
     dose_era_end_date: Mapped[datetime.date] = mapped_column(Date, comment=' | ETLCONVENTIONS: The date the Person was no longer exposed to the dosage of the specific drug ingredient. An era is ended if there are 31 days or more between dosage records.')
 
     drug_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='dose_era')
+    person: Mapped['Person'] = relationship('Person', back_populates='dose_eras')
     unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id])
 
 
@@ -920,7 +948,7 @@ class DrugEra(Base):
     gap_days: Mapped[Optional[int]] = mapped_column(Integer, comment=' | ETLCONVENTIONS: The Gap Days determine how many total drug-free days are observed between all Drug Exposure events that contribute to a DRUG_ERA record. It is assumed that the drugs are "not stockpiled" by the patient, i.e. that if a new drug prescription or refill is observed (a new DRUG_EXPOSURE record is written), the remaining supply from the previous events is abandoned.   The difference between Persistence Window and Gap Days is that the former is the maximum drug-free time allowed between two subsequent DRUG_EXPOSURE records, while the latter is the sum of actual drug-free days for the given Drug Era under the above assumption of non-stockpiling.')
 
     drug_concept: Mapped['Concept'] = relationship('Concept')
-    person: Mapped['Person'] = relationship('Person', back_populates='drug_era')
+    person: Mapped['Person'] = relationship('Person', back_populates='drug_eras')
 
 
 class Episode(Base):
@@ -967,8 +995,8 @@ class Episode(Base):
     episode_object_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_object_concept_id])
     episode_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_source_concept_id])
     episode_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[episode_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='episode')
-    episode_event: Mapped[List['EpisodeEvent']] = relationship('EpisodeEvent', back_populates='episode')
+    person: Mapped['Person'] = relationship('Person', back_populates='episodes')
+    episode_events: Mapped[List['EpisodeEvent']] = relationship('EpisodeEvent', back_populates='episode')
 
 
 class ObservationPeriod(Base):
@@ -1028,7 +1056,7 @@ class ObservationPeriod(Base):
     period_type_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field can be used to determine the provenance of the Observation Period as in whether the period was determined from an insurance enrollment file, EHR healthcare encounters, or other sources. | ETLCONVENTIONS: Choose the observation_period_type_concept_id that best represents how the period was determined. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). A more detailed explanation of each Type Concept can be found on the [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT). ')
 
     period_type_concept: Mapped['Concept'] = relationship('Concept')
-    person: Mapped['Person'] = relationship('Person', back_populates='observation_period')
+    person: Mapped['Person'] = relationship('Person', back_populates='observation_periods')
 
 
 class PayerPlanPeriod(Base):
@@ -1086,7 +1114,7 @@ class PayerPlanPeriod(Base):
 
     payer_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[payer_concept_id])
     payer_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[payer_source_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='payer_plan_period')
+    person: Mapped['Person'] = relationship('Person', back_populates='payer_plan_periods')
     plan_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[plan_concept_id])
     plan_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[plan_source_concept_id])
     sponsor_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[sponsor_concept_id])
@@ -1132,7 +1160,7 @@ class Specimen(Base):
 
     anatomic_site_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[anatomic_site_concept_id])
     disease_status_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[disease_status_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='specimen')
+    person: Mapped['Person'] = relationship('Person', back_populates='specimens')
     specimen_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[specimen_concept_id])
     specimen_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[specimen_type_concept_id])
     unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id])
@@ -1271,22 +1299,22 @@ class VisitOccurrence(Base):
     preceding_visit_occurrence_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit that occurred for the person prior to the given visit. There could be a few days or a few years in between. | ETLCONVENTIONS: This field can be used to link a visit immediately preceding the current visit. Note this is not symmetrical, and there is no such thing as a "following_visit_id".')
 
     admitted_from_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitted_from_concept_id])
-    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_occurrence')
+    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_occurrences')
     discharged_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharged_to_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='visit_occurrence')
+    person: Mapped['Person'] = relationship('Person', back_populates='visit_occurrences')
     preceding_visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', remote_side=[visit_occurrence_id])
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_occurrence')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_occurrences')
     visit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_concept_id])
     visit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_source_concept_id])
     visit_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_type_concept_id])
-    visit_detail: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='visit_occurrence')
-    condition_occurrence: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='visit_occurrence')
-    device_exposure: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='visit_occurrence')
-    drug_exposure: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='visit_occurrence')
-    measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_occurrence')
-    note: Mapped[List['Note']] = relationship('Note', back_populates='visit_occurrence')
-    observation: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_occurrence')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_occurrence')
+    visit_details: Mapped[List['VisitDetail']] = relationship('VisitDetail', back_populates='visit_occurrence')
+    condition_occurrences: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='visit_occurrence')
+    device_exposures: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='visit_occurrence')
+    drug_exposures: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='visit_occurrence')
+    measurements: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_occurrence')
+    notes: Mapped[List['Note']] = relationship('Note', back_populates='visit_occurrence')
+    observations: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_occurrence')
+    procedure_occurrences: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_occurrence')
 
 
 class EpisodeEvent(Base):
@@ -1311,7 +1339,7 @@ class EpisodeEvent(Base):
     episode_event_field_concept_id: Mapped[int] = mapped_column(Integer, comment='USER GUIDANCE: This field is the CONCEPT_ID that identifies which table the primary key of the linked record came from.  | ETLCONVENTIONS: Put the CONCEPT_ID that identifies which table and field the EVENT_ID came from. [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?vocabulary=CDM&conceptClass=Field&page=1&pageSize=15&query=)')
 
     episode_event_field_concept: Mapped['Concept'] = relationship('Concept')
-    episode: Mapped['Episode'] = relationship('Episode', back_populates='episode_event')
+    episode: Mapped['Episode'] = relationship('Episode', back_populates='episode_events')
 
 
 class VisitDetail(Base):
@@ -1390,23 +1418,23 @@ class VisitDetail(Base):
     parent_visit_detail_id: Mapped[Optional[int]] = mapped_column(Integer, comment='USER GUIDANCE: Use this field to find the visit detail that subsumes the given visit detail record. This is used in the case that a visit detail record needs to be nested beyond the VISIT_OCCURRENCE/VISIT_DETAIL relationship. | ETLCONVENTIONS: If there are multiple nested levels to how Visits are represented in the source, the VISIT_DETAIL_PARENT_ID can be used to record this relationship. ')
 
     admitted_from_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[admitted_from_concept_id])
-    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_detail')
+    care_site: Mapped['CareSite'] = relationship('CareSite', back_populates='visit_details')
     discharged_to_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[discharged_to_concept_id])
     parent_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[parent_visit_detail_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='visit_detail')
+    person: Mapped['Person'] = relationship('Person', back_populates='visit_details')
     preceding_visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', remote_side=[visit_detail_id], foreign_keys=[preceding_visit_detail_id])
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_detail')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='visit_details')
     visit_detail_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_concept_id])
     visit_detail_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_source_concept_id])
     visit_detail_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[visit_detail_type_concept_id])
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='visit_detail')
-    condition_occurrence: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='visit_detail')
-    device_exposure: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='visit_detail')
-    drug_exposure: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='visit_detail')
-    measurement: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_detail')
-    note: Mapped[List['Note']] = relationship('Note', back_populates='visit_detail')
-    observation: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_detail')
-    procedure_occurrence: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_detail')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='visit_details')
+    condition_occurrences: Mapped[List['ConditionOccurrence']] = relationship('ConditionOccurrence', back_populates='visit_detail')
+    device_exposures: Mapped[List['DeviceExposure']] = relationship('DeviceExposure', back_populates='visit_detail')
+    drug_exposures: Mapped[List['DrugExposure']] = relationship('DrugExposure', back_populates='visit_detail')
+    measurements: Mapped[List['Measurement']] = relationship('Measurement', back_populates='visit_detail')
+    notes: Mapped[List['Note']] = relationship('Note', back_populates='visit_detail')
+    observations: Mapped[List['Observation']] = relationship('Observation', back_populates='visit_detail')
+    procedure_occurrences: Mapped[List['ProcedureOccurrence']] = relationship('ProcedureOccurrence', back_populates='visit_detail')
 
 
 class ConditionOccurrence(Base):
@@ -1485,10 +1513,10 @@ class ConditionOccurrence(Base):
     condition_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[condition_source_concept_id])
     condition_status_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[condition_status_concept_id])
     condition_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[condition_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='condition_occurrence')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='condition_occurrence')
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='condition_occurrence')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='condition_occurrence')
+    person: Mapped['Person'] = relationship('Person', back_populates='condition_occurrences')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='condition_occurrences')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='condition_occurrences')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='condition_occurrences')
 
 
 class DeviceExposure(Base):
@@ -1546,12 +1574,12 @@ class DeviceExposure(Base):
     device_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_concept_id])
     device_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_source_concept_id])
     device_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[device_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='device_exposure')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='device_exposure')
+    person: Mapped['Person'] = relationship('Person', back_populates='device_exposures')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='device_exposures')
     unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id])
     unit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_source_concept_id])
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='device_exposure')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='device_exposure')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='device_exposures')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='device_exposures')
 
 
 class DrugExposure(Base):
@@ -1627,11 +1655,11 @@ class DrugExposure(Base):
     drug_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_concept_id])
     drug_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_source_concept_id])
     drug_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[drug_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='drug_exposure')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='drug_exposure')
+    person: Mapped['Person'] = relationship('Person', back_populates='drug_exposures')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='drug_exposures')
     route_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[route_concept_id])
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='drug_exposure')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='drug_exposure')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='drug_exposures')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='drug_exposures')
 
 
 class Measurement(Base):
@@ -1727,13 +1755,13 @@ class Measurement(Base):
     measurement_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_source_concept_id])
     measurement_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[measurement_type_concept_id])
     operator_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[operator_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='measurement')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='measurement')
+    person: Mapped['Person'] = relationship('Person', back_populates='measurements')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='measurements')
     unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id])
     unit_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_source_concept_id])
     value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id])
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='measurement')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='measurement')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='measurements')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='measurements')
 
 
 class Note(Base):
@@ -1811,10 +1839,10 @@ class Note(Base):
     note_class_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_class_concept_id])
     note_event_field_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_event_field_concept_id])
     note_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[note_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='note')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='note')
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='note')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='note')
+    person: Mapped['Person'] = relationship('Person', back_populates='notes')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='notes')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='notes')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='notes')
 
 
 class Observation(Base):
@@ -1894,13 +1922,13 @@ class Observation(Base):
     observation_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_concept_id])
     observation_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_source_concept_id])
     observation_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[observation_type_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='observation')
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='observation')
+    person: Mapped['Person'] = relationship('Person', back_populates='observations')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='observations')
     qualifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[qualifier_concept_id])
     unit_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[unit_concept_id])
     value_as_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[value_as_concept_id])
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='observation')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='observation')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='observations')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='observations')
 
 
 class ProcedureOccurrence(Base):
@@ -1958,13 +1986,15 @@ class ProcedureOccurrence(Base):
     modifier_source_value: Mapped[Optional[str]] = mapped_column(String(50), comment=' | ETLCONVENTIONS: The original modifier code from the source is stored here for reference.')
 
     modifier_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[modifier_concept_id])
-    person: Mapped['Person'] = relationship('Person', back_populates='procedure_occurrence')
+    person: Mapped['Person'] = relationship('Person', back_populates='procedure_occurrences')
     procedure_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_concept_id])
     procedure_source_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_source_concept_id])
     procedure_type_concept: Mapped['Concept'] = relationship('Concept', foreign_keys=[procedure_type_concept_id])
-    provider: Mapped['Provider'] = relationship('Provider', back_populates='procedure_occurrence')
-    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='procedure_occurrence')
-    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='procedure_occurrence')
+    provider: Mapped['Provider'] = relationship('Provider', back_populates='procedure_occurrences')
+    visit_detail: Mapped['VisitDetail'] = relationship('VisitDetail', back_populates='procedure_occurrences')
+    visit_occurrence: Mapped['VisitOccurrence'] = relationship('VisitOccurrence', back_populates='procedure_occurrences')
+
+
 
 
 
