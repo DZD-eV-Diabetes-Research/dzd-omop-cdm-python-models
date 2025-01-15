@@ -3,6 +3,7 @@ COPY reqs_gen.txt /tmp/reqs_gen.txt
 RUN python -m pip install -U -r /tmp/reqs_gen.txt
 RUN mkdir /OMOPSQLModelGen
 COPY OMOPSQLModelGen /OMOPSQLModelGen
+COPY LICENSE /OMOPSQLModelGen/LICENSE
 WORKDIR /OMOPSQLModelGen
 RUN mkdir -p /output
 ENV DATAMODEL_OUTPUT_DIR=/output

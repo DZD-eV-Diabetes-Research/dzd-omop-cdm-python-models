@@ -26,6 +26,12 @@ from OMOPSQLModelGen.post_processing_funcs.remove_reverse_1to1 import (
 from OMOPSQLModelGen.post_processing_funcs.remove_excessive_backpopulate import (
     remove_excessive_backpopulate,
 )
+from OMOPSQLModelGen.post_processing_funcs.add_pural_names_to_back_populating_lists import (
+    pluralize_names_of_list_attributes,
+)
+from OMOPSQLModelGen.post_processing_funcs.add_license import (
+    add_license,
+)
 
 
 class OMOPSchemaSource(BaseModel):
@@ -95,6 +101,8 @@ omopcdm_5_3 = OMOPSchemaSource(
         fix_death_table_glitch,
         remove_reverse_1to1,
         remove_excessive_backpopulate,
+        pluralize_names_of_list_attributes,
+        add_license,
     ],
 )
 
@@ -124,6 +132,8 @@ omopcdm_5_4 = OMOPSchemaSource(
         fix_death_table_glitch,
         remove_reverse_1to1,
         remove_excessive_backpopulate,
+        pluralize_names_of_list_attributes,
+        add_license,
     ],
 )
 
