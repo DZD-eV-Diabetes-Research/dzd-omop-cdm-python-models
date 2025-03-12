@@ -97,7 +97,7 @@ omopcdm_5_3 = OMOPSchemaSource(
     post_generation_python_functions=[
         rename_table_variable_names,
         replace_temp_pks_with_candidate_keys,
-        fix_sql_model,
+        #fix_sql_model,
         fix_death_table_glitch,
         remove_reverse_1to1,
         remove_excessive_backpopulate,
@@ -128,7 +128,37 @@ omopcdm_5_4 = OMOPSchemaSource(
     post_generation_python_functions=[
         rename_table_variable_names,
         replace_temp_pks_with_candidate_keys,
-        fix_sql_model,
+        #fix_sql_model,
+        fix_death_table_glitch,
+        remove_reverse_1to1,
+        remove_excessive_backpopulate,
+        pluralize_names_of_list_attributes,
+        add_license,
+    ],
+)
+
+omopcdm_6_0 = OMOPSchemaSource(
+    version_name="OMOP_6_0",
+    sql_constraints_file_path=Path(
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_constraints.sql"
+    ),
+    sql_ddl_file_path=Path("inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_ddl.sql"),
+    sql_indices_file_path=Path(
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_indices.sql"
+    ),
+    sql_primary_keys_file_path=Path(
+        "inst/ddl/5.4/postgresql/OMOPCDM_postgresql_5.4_primary_keys.sql"
+    ),
+    csv_table_desc_file_path=Path("inst/csv/OMOP_CDMv5.4_Table_Level.csv"),
+    csv_field_desc_file_path=Path("inst/csv/OMOP_CDMv5.4_Field_Level.csv"),
+    pre_generation_sql_script_dirs=[
+        "pre_gen_sql/5.x/",
+        "pre_gen_sql/5.4/",
+    ],
+    post_generation_python_functions=[
+        rename_table_variable_names,
+        replace_temp_pks_with_candidate_keys,
+        #fix_sql_model,
         fix_death_table_glitch,
         remove_reverse_1to1,
         remove_excessive_backpopulate,

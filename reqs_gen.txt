@@ -2,6 +2,6 @@ pg8000
 sqlmodel
 requests
 pydantic-settings
-sqlacodegen==3.0.0rc5
+sqlacodegen==3.0.0
 sqlalchemy
 tqdm
