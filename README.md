@@ -3,7 +3,7 @@ A Python SQL-ORM/data classes representation of the [Observational Medical Outco
 This library also can also load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) into a OMOP Postgres DB (from exported http://athena.ohdsi.org vocabulary files)
 
 Author/Maintainer: Tim Bleimehl  
-Status: Alpha
+Status: Beta
 
 > [!WARNING]  
 > This project is considered "beta". Your feedback is welcome.
