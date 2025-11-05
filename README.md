@@ -6,7 +6,7 @@ Author/Maintainer: Tim Bleimehl
 Status: Alpha
 
 > [!WARNING]  
-> This project is under construction. Expect breaking changes.
+> This project is considered "beta". Your feedback is welcome.
 
 
 > [!IMPORTANT]  
