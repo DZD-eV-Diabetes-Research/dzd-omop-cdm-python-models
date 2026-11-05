@@ -1,6 +1,33 @@
-"""OMOP-specific choices for the generator. Plain data, no logic."""
+"""OMOP-specific choices for the generator. Plain data, no logic.
+
+The generator subclasses in ``generate.py`` apply these. Everything else is sqlacodegen's
+default behavior (with the options ``nojoined`` and ``nofknames``).
+"""
 
 from __future__ import annotations
+
+# --------------------------------------------------------------------------- relationships
+
+# Tables that get no list back-reference for the foreign keys that point at them, except
+# for the foreign keys listed here ("table.column").
+# Concept is the target of ~120 foreign keys (gender_concept_id, unit_concept_id, ...). A
+# list attribute for each one would bury the useful attributes of Concept. The many-to-one
+# side (e.g. Person.gender_concept) is always generated.
+NO_REVERSE_RELATIONSHIPS: dict[str, frozenset[str]] = {
+    "concept": frozenset({"concept_class.concept_class_concept_id"}),  # Concept.concept_classes
+}
+
+# Self-references (visit_detail.parent_visit_detail_id, ...) get no reverse side. sqlacodegen
+# would call it ``<name>_reverse``.
+SELF_REFERENCE_REVERSE_RELATIONSHIPS = False
+
+# --------------------------------------------------------------------------- names
+
+# Variable names in the ``tables`` flavor are the table names. These ones would clash with
+# a name the module needs: ``metadata`` is the MetaData object (bug B1).
+TABLE_VARIABLE_NAMES: dict[str, str] = {"metadata": "metadata_table"}
+
+# --------------------------------------------------------------------------- candidate keys
 
 # Candidate keys for tables that have no primary key in the official DDL.
 # SQLAlchemy's ORM needs a primary key to map a class, so these columns identify a row

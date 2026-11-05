@@ -49,7 +49,7 @@ class Settings(BaseSettings):
         default=list(FLAVORS), description="Model flavors (sqlacodegen generators) to generate."
     )
     DATAMODEL_OUTPUT_DIR: Path = Field(
-        default=Path("build/omopmodel"),
+        default=Path("packages/dzdomop/src/omopmodel"),
         description="Where the generated OMOP_<version>_<flavor>.py files go.",
     )
 

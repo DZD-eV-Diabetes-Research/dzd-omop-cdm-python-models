@@ -54,7 +54,13 @@ def run(settings: Settings) -> list[Path]:
                     metadata, version.table_csv(release_dir), version.field_csv(release_dir)
                 )
                 mark_candidate_keys(metadata, CANDIDATE_KEYS[name])
-                source = render(metadata, engine, flavor)
+                source = render(
+                    metadata,
+                    engine,
+                    flavor,
+                    cdm_version=name,
+                    release_tag=settings.OMOP_CDM_RELEASE_TAG,
+                )
                 compile(source, f"{module}.py", "exec")  # fail here, not when users import it
                 (staging / f"{module}.py").write_text(source, encoding="utf-8")
 

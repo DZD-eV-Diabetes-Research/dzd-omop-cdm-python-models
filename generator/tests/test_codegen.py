@@ -17,9 +17,18 @@ from omop_codegen.enrich import (
     format_comment,
     mark_candidate_keys,
 )
-from omop_codegen.generate import render
+from omop_codegen.generate import pluralize, render
 from omop_codegen.omop_policy import CANDIDATE_KEYS
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, create_engine
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+)
+from sqlalchemy.orm import clear_mappers, configure_mappers
 
 # --------------------------------------------------------------------------- config
 
@@ -183,6 +192,166 @@ def test_death_is_not_a_person_subclass(flavor):
     """PK == FK to person: without ``nojoined`` sqlacodegen makes Death inherit from Person."""
     metadata = _person_and_death()
     mark_candidate_keys(metadata, {"death": ("person_id",)})
-    source = render(metadata, create_engine("sqlite://"), flavor)
+    source = _render(metadata, flavor)
     assert "class Death(Person" not in source
     compile(source, "generated.py", "exec")
+
+
+def _render(metadata: MetaData, flavor: str) -> str:
+    return render(metadata, create_engine("sqlite://"), flavor, cdm_version="5.4", release_tag="v0")
+
+
+# concept <-> concept_class is a foreign key cycle, like in the real CDM. Harmless.
+_FK_CYCLE = pytest.mark.filterwarnings("ignore:Cannot correctly sort tables")
+
+
+def _mini_omop() -> MetaData:
+    """A few OMOP tables with the cases the relationship policy handles."""
+    metadata = MetaData()
+    concept_fk = ForeignKey("concept.concept_id")
+    Table(
+        "concept",
+        metadata,
+        Column("concept_id", Integer, primary_key=True),
+        Column("concept_class_id", String(20), ForeignKey("concept_class.concept_class_id")),
+    )
+    Table(
+        "concept_class",
+        metadata,
+        Column("concept_class_id", String(20), primary_key=True),
+        Column("concept_class_concept_id", Integer, concept_fk, nullable=False),
+    )
+    Table(
+        "person",
+        metadata,
+        Column("person_id", Integer, primary_key=True),
+        Column("gender_concept_id", Integer, ForeignKey("concept.concept_id"), nullable=False),
+    )
+    Table(
+        "visit_detail",
+        metadata,
+        Column("visit_detail_id", Integer, primary_key=True),
+        Column("person_id", Integer, ForeignKey("person.person_id"), nullable=False),
+        Column("parent_visit_detail_id", Integer, ForeignKey("visit_detail.visit_detail_id")),
+    )
+    Table(
+        "concept_relationship",
+        metadata,
+        Column("concept_id_1", Integer, ForeignKey("concept.concept_id"), nullable=False),
+        Column("concept_id_2", Integer, ForeignKey("concept.concept_id"), nullable=False),
+        Column("relationship_id", String(20), nullable=False),
+    )
+    Table(
+        "metadata",
+        metadata,
+        Column("metadata_id", Integer, primary_key=True),
+        Column("name", String(250), nullable=False),
+    )
+    mark_candidate_keys(
+        metadata, {"concept_relationship": ("concept_id_1", "concept_id_2", "relationship_id")}
+    )
+    return metadata
+
+
+def _load_declarative(source: str) -> dict:
+    namespace: dict = {}
+    exec(compile(source, "generated.py", "exec", dont_inherit=True), namespace)
+    configure_mappers()
+    return namespace
+
+
+def _relationships(cls) -> dict[str, str | None]:
+    """Relationship name -> back_populates."""
+    return {r.key: r.back_populates for r in cls.__mapper__.relationships}
+
+
+@pytest.mark.parametrize(
+    ("name", "plural"),
+    [("person", "persons"), ("concept_class", "concept_classes"), ("specimen", "specimens")],
+)
+def test_pluralize(name, plural):
+    assert pluralize(name) == plural
+
+
+@_FK_CYCLE
+def test_relationship_policy():
+    ns = _load_declarative(_render(_mini_omop(), "declarative"))
+    try:
+        # Concept: no list back-reference, except concept_classes
+        assert _relationships(ns["Concept"]) == {
+            "concept_class": "concepts",
+            "concept_classes": "concept_class_concept",
+        }
+        assert _relationships(ns["ConceptClass"]) == {
+            "concept_class_concept": "concept_classes",  # both sides back-populate
+            "concepts": "concept_class",
+        }
+        # Lists are plural. The many-to-one side to Concept stays, without back_populates.
+        assert _relationships(ns["Person"]) == {"gender_concept": None, "visit_details": "person"}
+        # Self-reference: no ``_reverse`` side
+        assert _relationships(ns["VisitDetail"]) == {
+            "parent_visit_detail": None,
+            "person": "visit_details",
+        }
+        parent = ns["VisitDetail"].parent_visit_detail.property
+        assert parent.direction.name == "MANYTOONE"
+    finally:
+        clear_mappers()
+
+
+@_FK_CYCLE
+def test_multi_fk_relationship_names():
+    """The names the old ``_hotfixes()`` patched in. nofknames gives them, an upgrade must too."""
+    ns = _load_declarative(_render(_mini_omop(), "declarative"))
+    try:
+        cr = ns["ConceptRelationship"]
+        assert _relationships(cr) == {"concept_1": None, "concept_2": None}
+        assert [c.name for c in cr.concept_1.property.local_columns] == ["concept_id_1"]
+    finally:
+        clear_mappers()
+
+
+@_FK_CYCLE
+@pytest.mark.parametrize("flavor", ["declarative", "dataclasses", "sqlmodels"])
+def test_candidate_key_is_mapper_primary_key(flavor):
+    source = _render(_mini_omop(), flavor)
+    assert (
+        "__mapper_args__ = {'primary_key': ['concept_id_1', 'concept_id_2', 'relationship_id']}"
+        in source
+    )
+    assert "tmp_pk_candiate_key" not in source  # no constraint in the database
+
+
+@_FK_CYCLE
+def test_candidate_key_columns_stay_not_null():
+    ns = _load_declarative(_render(_mini_omop(), "declarative"))
+    try:
+        table = ns["ConceptRelationship"].__table__
+        assert not table.primary_key.columns
+        assert not table.c.concept_id_1.nullable
+        assert [c.name for c in ns["ConceptRelationship"].__mapper__.primary_key] == [
+            "concept_id_1",
+            "concept_id_2",
+            "relationship_id",
+        ]
+    finally:
+        clear_mappers()
+
+
+@_FK_CYCLE
+def test_tables_flavor_names():
+    source = _render(_mini_omop(), "tables")
+    assert "\nperson = Table(" in source  # no t_ prefix
+    assert "\nmetadata_table = Table(\n    'metadata', metadata," in source  # B1
+    namespace: dict = {}
+    exec(compile(source, "generated.py", "exec", dont_inherit=True), namespace)
+    assert isinstance(namespace["metadata"], MetaData)
+
+
+@_FK_CYCLE
+@pytest.mark.parametrize("flavor", ["tables", "declarative", "dataclasses", "sqlmodels"])
+def test_module_header(flavor):
+    source = _render(_mini_omop(), flavor)
+    assert source.startswith('"""OMOP CDM 5.4 models, ' + flavor + " flavor.")
+    assert "release v0" in source
+    assert "SPDX-License-Identifier: MIT" in source
