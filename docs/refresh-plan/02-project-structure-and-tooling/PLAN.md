@@ -6,7 +6,7 @@ Follows **D1** (keep the import path) and **D3** (Python 3.10–3.14).
 
 ## Tasks
 
-- [ ] Set up a uv workspace:
+- [x] Set up a uv workspace:
   ```
   pyproject.toml              # workspace root, dev tools
   packages/dzdomop/           # published package (models + vocabulary loader)
@@ -14,22 +14,22 @@ Follows **D1** (keep the import path) and **D3** (Python 3.10–3.14).
   tests/
   docs/
   ```
-- [ ] Move `DZDOMOPModel/omopmodel` → `packages/dzdomop/src/omopmodel/`.
+- [x] Move `DZDOMOPModel/omopmodel` → `packages/dzdomop/src/omopmodel/`.
       The PyPI name stays `dzdomop` and the import stays `omopmodel`, so users see no change.
-- [ ] Clean up the dependencies of `dzdomop`:
+- [x] Clean up the dependencies of `dzdomop`:
   - Core: `sqlalchemy>=2.0,<2.2` and `requires-python = ">=3.10"`
-  - Extras: `sqlmodel`, `postgres` (`psycopg[binary]`), `pg8000`, `progress` (`tqdm`)
+  - Extras: `sqlmodel`, `pg8000`, `progress` (`tqdm`). `postgres` (`psycopg[binary]`) moved to S07 (Tim, D6)
   - `pg8000` stops being a hard dependency
-- [ ] Generator dependencies go in `generator/pyproject.toml`. Pin `sqlacodegen==4.0.4`.
+- [x] Generator dependencies go in `generator/pyproject.toml`. Pin `sqlacodegen==4.0.4`.
       Replace `reqs_gen.txt` with the uv lockfile.
-- [ ] Configure ruff (lint + format) and a pre-commit config. Optional: mypy/pyright on the
-      hand-written code.
-- [ ] CI with GitHub Actions:
+- [x] Configure ruff (lint + format) and a pre-commit config. Optional: mypy/pyright on the
+      hand-written code *(optional part not done, see handover)*.
+- [x] CI with GitHub Actions:
   - `test.yaml`: pytest on Python 3.10–3.14, on every push and PR. Add one
     `--resolution lowest-direct` job (Python 3.10 + SQLAlchemy 2.0), so the generated code
     keeps working on both SQLAlchemy lines.
   - `publish.yaml`: switch to PyPI trusted publishing, update the actions to current versions
-- [ ] Versioning: move the `setuptools_scm` root to the new location, or use `hatch-vcs`.
+- [x] Versioning: move the `setuptools_scm` root to the new location, or use `hatch-vcs`.
 
 ## Done when
 

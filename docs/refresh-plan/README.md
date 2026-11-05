@@ -128,7 +128,8 @@ one class and one test parametrization, so we keep all four and fix `tables` (B1
 | D3 | Which Python versions? | **3.10–3.14.** Allow `sqlalchemy>=2.0,<2.2`, so Python 3.10 gets SQLAlchemy 2.0 and 3.11+ gets 2.1. CI tests both ends. We drop 3.10 when SQLModel or pydantic drop it. The generator itself is internal and can require 3.12+. |
 | D4 | Relationship names? | **Keep today's names.** Pinned through `nofknames` + the policy file. The S01 baseline enforces it. |
 | D5 | Which CDM versions do we ship? | 5.3, 5.4, 5.5 (all from the v5.5.0 archive). Drop the 6.0 stub. *(proposed)* |
-| D6 | Postgres driver for the vocabulary loader | psycopg 3 *and* pg8000, both as optional extras. *(proposed)* |
+| D6 | Postgres driver for the vocabulary loader | psycopg 3 *and* pg8000, both as optional extras. *(proposed; decide in S07. S02 only adds the `pg8000` extra, the `postgres`/psycopg extra comes with the loader code in S07)* |
+| D7 | Core dependencies of `dzdomop` | **SQLAlchemy only.** `sqlmodel`, `pg8000`, `progress` (tqdm) are extras. `omopmodel/__init__.py` imports `VocabulariesLoader` lazily. Install change, noted in `CHANGELOG.md`. *(Tim, S02)* |
 
 ### The one breaking change we can't avoid (B4)
 
@@ -138,7 +139,8 @@ it fails silently**. The new call is:
 
 ```python
 from omopmodel import OMOP_5_4_sqlmodels as omop
-omop.metadata.create_all(engine)       # same name for every flavor
+
+omop.metadata.create_all(engine)  # same name for every flavor
 ```
 
 What we do to soften it:
@@ -160,8 +162,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | -- | ------- | ----------- | ------ |
 | 00 | Planning ([handover](00-planning/HANDOVER.md)) | This plan | ✅ done |
 | 01 | Baseline & safety net ([plan](01-baseline-and-safety-net/PLAN.md), [handover](01-baseline-and-safety-net/HANDOVER.md)) | Snapshot of today's model surface + smoke tests | ✅ done |
-| 02 | [Project structure & tooling](02-project-structure-and-tooling/PLAN.md) | uv workspace, pyproject, ruff, CI | ⏳ next |
-| 03 | [Generator core rewrite](03-generator-core/PLAN.md) | Library-based pipeline, no post-processing yet | – |
+| 02 | Project structure & tooling ([plan](02-project-structure-and-tooling/PLAN.md), [handover](02-project-structure-and-tooling/HANDOVER.md)) | uv workspace, pyproject, ruff, CI | ✅ done |
+| 03 | [Generator core rewrite](03-generator-core/PLAN.md) | Library-based pipeline, no post-processing yet | ⏳ next |
 | 04 | [OMOP generator subclasses](04-omop-generator-subclasses/PLAN.md) | Policy file replaces all text hacks. Diff to baseline = intended only. | – |
 | 05 | [Model usability](05-model-usability/PLAN.md) | Docstrings, formatting, flavor fixes (B1–B4) | – |
 | 06 | [CDM 5.5 & version update](06-cdm-versions/PLAN.md) | 5.3 / 5.4.x / 5.5 models | – |
