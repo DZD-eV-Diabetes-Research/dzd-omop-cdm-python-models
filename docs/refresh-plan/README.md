@@ -159,8 +159,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | #  | Session | Main output | Status |
 | -- | ------- | ----------- | ------ |
 | 00 | Planning ([handover](00-planning/HANDOVER.md)) | This plan | ✅ done |
-| 01 | [Baseline & safety net](01-baseline-and-safety-net/PLAN.md) | Snapshot of today's model surface + smoke tests | ⏳ next |
-| 02 | [Project structure & tooling](02-project-structure-and-tooling/PLAN.md) | uv workspace, pyproject, ruff, CI | – |
+| 01 | Baseline & safety net ([plan](01-baseline-and-safety-net/PLAN.md), [handover](01-baseline-and-safety-net/HANDOVER.md)) | Snapshot of today's model surface + smoke tests | ✅ done |
+| 02 | [Project structure & tooling](02-project-structure-and-tooling/PLAN.md) | uv workspace, pyproject, ruff, CI | ⏳ next |
 | 03 | [Generator core rewrite](03-generator-core/PLAN.md) | Library-based pipeline, no post-processing yet | – |
 | 04 | [OMOP generator subclasses](04-omop-generator-subclasses/PLAN.md) | Policy file replaces all text hacks. Diff to baseline = intended only. | – |
 | 05 | [Model usability](05-model-usability/PLAN.md) | Docstrings, formatting, flavor fixes (B1–B4) | – |
