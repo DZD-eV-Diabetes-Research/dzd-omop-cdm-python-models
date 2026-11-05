@@ -1,12 +1,12 @@
 from omopmodel import OMOP_5_4_sqlmodels as omop54
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 # Create a SQLite database and deploy the omop schema (tables,constraints, indices and primary keys)
 
 engine = create_engine("sqlite:///cdm_source.db", echo=False)
 
 # Create the schema if not done
-SQLModel.metadata.create_all(engine)
+omop54.metadata.create_all(engine)
 
 # Define a caresite and a person. Connect these two
 care_site = omop54.CareSite(care_site_id=5678, care_site_name="St. Local")

@@ -87,7 +87,7 @@ from omopmodel import OMOP_5_3_declarative as omop53
 engine = create_engine("sqlite:///cdm_source.db", echo=False)
 
 # Create the schema if not done
-omop53.Base.metadata.create_all(engine)
+omop53.metadata.create_all(engine)
 
 # Define a caresite and a person. Connect these two
 care_site = omop53.CareSite(care_site_id=5678, care_site_name="St. Local")
@@ -125,7 +125,7 @@ engine = create_engine(
 )
 
 # Create the OMOP Schema on our database
-omop54.Base.metadata.create_all(engine)
+omop54.metadata.create_all(engine)
 
 # Define the directory where our athena vocabularies csv files are stored.
 # You can define and download the vocabulary from https://athena.ohdsi.org/vocabulary/list
@@ -182,7 +182,7 @@ That's sounds fancy but lets at the real life impact ORM Classes can have for yo
 * **Easy Database Use**: Instead of developing complex SQL queries, you can use simple Python code to interact with your database. This makes it much easier to add, remove, or change data.
 * **Clear and Organized Code**: Using Data classes help you keep your code neat and organized. Each class represents a table, making it easy to see what data you have and how it’s structured.
 * **Better Tools Support**: Many coding tools and editors can help you write and debug your code better when you use data classes. This includes features like suggestions and error checking, making coding easier and more fun.
-* **Data Validation**: Because ORM classes specify the datamodel, you can not enter wrong datatypes. You can immediate feedback where and what was entered on a wrong location (Or when required data is missing.)
+* **Type hints**: Your editor and type checker (mypy, pyright) know the type of every column and flag wrong ones. The classes don't check values at runtime: `Person(person_id="abc")` is accepted. With the SQLModel flavor, `Person.model_validate({...})` validates and raises a `ValidationError`.
 * **Integration with Data Analysis Libraries**: Python has powerful libraries for data analysis (like pandas and NumPy) that integrate well with ORMs. This allows you to easily query the OMOP CDM database and directly use the results for analysis.
 
 There are many more great and subtil advantages, but lets keep it short here. In summary, using ORM classes simplifies database management, makes your code more understandable, speeds up development, ensures data quality, and provides better tool support.

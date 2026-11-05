@@ -29,7 +29,7 @@ The vocabulary loader and the `sqlmodels` flavor need extras:
 
 This tiny script demostrates how this module can help you to
 * Create a local dev database with the complete omop datamodel
-* insert some data based on our classes with some basic guardrails like type validation, typo prevention, ...
+* insert some data based on our classes with some basic guardrails like type hints for your editor, typo prevention, ...
 
 ```python
 from sqlalchemy import create_engine
@@ -38,7 +38,7 @@ from omopmodel import OMOP_5_3_declarative as omop
 
 # Create a local SQLite database with all OMOP CDM tables+properties
 engine = create_engine("sqlite:///cdm_source.db", echo=True)
-omop.Base.metadata.create_all(engine)
+omop.metadata.create_all(engine)
 
 # Create a some basic OMOP objects
 care_site = omop.CareSite(care_site_id=5678, care_site_name="St. Local")

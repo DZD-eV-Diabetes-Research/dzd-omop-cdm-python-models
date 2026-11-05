@@ -13,8 +13,9 @@ download ─▶ deploy DDL to Postgres ─▶ reflect MetaData ─▶ enrich ─
 | download | [`download.py`](generator/src/omop_codegen/download.py) | Fetches an [OHDSI/CommonDataModel](https://github.com/OHDSI/CommonDataModel/releases) release archive, cached by tag in `OMOP_CDM_DOWNLOAD_DIR` |
 | deploy | [`database.py`](generator/src/omop_codegen/database.py) | Drops and recreates `POSTGRESQL_SCHEMA`, runs the 4 official DDL scripts of one CDM version ([`cdm_versions.py`](generator/src/omop_codegen/cdm_versions.py)) |
 | reflect | [`database.py`](generator/src/omop_codegen/database.py) | `MetaData().reflect(engine)` |
-| enrich | [`enrich.py`](generator/src/omop_codegen/enrich.py) | Table and column comments from the CSV specs. Candidate keys from [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py) for tables without a primary key |
-| generate | [`generate.py`](generator/src/omop_codegen/generate.py) | One subclass of a [sqlacodegen](https://github.com/agronholm/sqlacodegen) generator per flavor. They apply [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py) and write the module header |
+| enrich | [`enrich.py`](generator/src/omop_codegen/enrich.py) | Table and column comments (and the docstring text) from the CSV specs. Candidate keys from [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py) for tables without a primary key |
+| generate | [`generate.py`](generator/src/omop_codegen/generate.py) | One subclass of a [sqlacodegen](https://github.com/agronholm/sqlacodegen) generator per flavor. They apply [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py), write the module header, variables and docstrings ([`text.py`](generator/src/omop_codegen/text.py)) |
+| format | [`generate.py`](generator/src/omop_codegen/generate.py) | `ruff check --select=I --fix` and `ruff format`, line length 100, `--isolated` (no project config). ruff is pinned like sqlacodegen |
 | write | [`cli.py`](generator/src/omop_codegen/cli.py) | Writes `OMOP_<version>_<flavor>.py` to a staging folder, moves them into `DATAMODEL_OUTPUT_DIR` only when everything succeeded |
 
 ## Settings
@@ -75,3 +76,21 @@ All in [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py), plain data
 sqlacodegen options: `nojoined` (Death isn't a subclass of Person) and `nofknames` (relationships
 are named after the column: `concept_1`, `domain_concept_2`, …). List attributes are named after
 the plural of the target table (`Person.visit_occurrences`).
+
+## What every module contains
+
+| Name | `tables` | `declarative` / `dataclasses` | `sqlmodels` |
+| ---- | -------- | ----------------------------- | ----------- |
+| `metadata` | `MetaData()` | `Base.metadata` | `MetaData()`, own registry (B4) |
+| `Base` | – | `DeclarativeBase` (+ `MappedAsDataclass`) | `SQLModel` subclass with `registry=registry(metadata=metadata)` |
+| `CDM_VERSION`, `CDM_RELEASE` | `"5.4"`, `"v5.4.1"` | same | same |
+| `__all__` | all of the above + table variables | + classes | + classes |
+| Docstrings | under each `Table` variable | class: table docs. Attribute: field docs (IDE hover) | same |
+
+Comments stay in `comment=` for the database. Docstrings use the same CSV text, wrapped:
+the description (table) or user guidance (field) first, then `User guidance:` / `ETL
+conventions:` sections.
+
+`dataclasses` flavor (B2): nullable columns `default=None`, lists `default_factory=list`,
+many-to-one / one-to-one `init=False`. Not `default=None`: on SQLAlchemy 2.0 that overwrites a
+foreign key passed to `__init__` with NULL.

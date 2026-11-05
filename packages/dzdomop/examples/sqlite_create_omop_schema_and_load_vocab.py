@@ -10,7 +10,7 @@ engine = create_engine("sqlite:///cdm_source.db", echo=False)
 athena_export_directory = "/home/me/Downloads/AthenaUnzipped"
 
 # Create the OMOP Schema on our database
-omop54.Base.metadata.create_all(engine)
+omop54.metadata.create_all(engine)
 
 # Initialize the vocabulary loader.
 v = VocabulariesLoader(
