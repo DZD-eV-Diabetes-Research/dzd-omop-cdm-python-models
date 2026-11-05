@@ -11,12 +11,12 @@
 
 ## Tasks
 
-- [ ] Switch the download URL to the v5.5.0 archive. Keep the release tag in config.
-- [ ] Add `CdmVersion("5.5")` and check whether the new vocab tables need candidate keys or policy entries
-- [ ] Regenerate 5.3 and 5.4 from the new archive and review the diff. These are upstream doc
+- [x] Switch the download URL to the v5.5.0 archive. Keep the release tag in config.
+- [x] Add `CdmVersion("5.5")` and check whether the new vocab tables need candidate keys or policy entries
+- [x] Regenerate 5.3 and 5.4 from the new archive and review the diff. These are upstream doc
       and DDL fixes (5.4.1 → 5.4.3), and each one goes in the changelog.
-- [ ] Snapshot 5.5 as a new baseline
-- [ ] Extend the smoke tests to 5.5
+- [x] Snapshot 5.5 as a new baseline
+- [x] Extend the smoke tests to 5.5
 
 ## Done when
 

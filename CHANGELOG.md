@@ -56,7 +56,17 @@ The models are regenerated with sqlacodegen 4 and the new generator.
 
 ### Added
 
-- `metadata`, `CDM_VERSION` (`"5.4"`), `CDM_RELEASE` (`"v5.4.1"`) and `__all__` in every
+- **OMOP CDM 5.5 models**: `OMOP_5_5_tables`, `_declarative`, `_dataclasses`, `_sqlmodels`.
+  Compared to 5.4: new tables `ConceptMetadata`, `ConceptRelationshipMetadata` and
+  `PackContent`; new columns `CdmSource.cdm_release_identifier`,
+  `Measurement.value_as_source_concept_id`, `Observation.unit_source_concept_id`,
+  `Observation.value_as_date`, `Observation.value_as_source_concept_id`,
+  `Specimen.visit_occurrence_id`, `Specimen.visit_detail_id`. The 3 new tables have no
+  primary key upstream; like the others, they get a candidate key on the Python side.
+  5.5 `vocabulary` has a UNIQUE `vocabulary_id` instead of a primary key upstream. The models
+  map it the same way and keep `vocabulary_id` NOT NULL (Athena's version row uses the string
+  `'None'`).
+- `metadata`, `CDM_VERSION` (`"5.4"`), `CDM_RELEASE` (`"v5.5.0"`) and `__all__` in every
   module. `omop.metadata.create_all(engine)` works for every flavor.
 - Docstrings from the OMOP CDM docs: on each class (table) and attribute (field), so your IDE
   shows them on hover. `tables` flavor: under each `Table` variable.
@@ -66,6 +76,22 @@ The models are regenerated with sqlacodegen 4 and the new generator.
 - SQLModel flavor: `Domain.concepts` and `Vocabulary.concepts`, as in the other flavors.
 
 ### Changed (models)
+
+- **5.3 and 5.4 are generated from the OMOP CDM release v5.5.0** (was v5.4.1). It has
+  the upstream fixes of v5.4.2 and v5.4.3:
+  - 5.4: new foreign keys `episode.episode_parent_id` → `episode` and `note_nlp.note_id` →
+    `note`, with the relationships `Episode.episode_parent`, `NoteNlp.note` and
+    `Note.note_nlps`.
+  - 5.3 and 5.4: index `idx_concept_vocabluary_id` is renamed to `idx_concept_vocabulary_id`
+    (only matters for tables you create with `create_all()`).
+  - Docs (comments and docstrings) of about 130 tables and columns per version: typos,
+    links to the 5.4 docs instead of 5.3.1, new docs for `cost`, links to the THEMIS
+    conventions. Some ETL conventions changed, e.g. a missing time in a `*_datetime` field is
+    now `NULL` instead of midnight. See the
+    [upstream release notes](https://github.com/OHDSI/CommonDataModel/releases).
+  - Upstream v5.4.3 dropped the primary key of 5.4 `vocabulary` but kept the foreign keys
+    to it, so its Postgres DDL doesn't run. The generator puts the key back; the 5.4
+    `Vocabulary` model is unchanged.
 
 - SQLModel flavor: a many-to-one relationship over a NOT NULL foreign key is typed
   `'Concept'` instead of `Optional['Concept']`, as in the declarative flavor. Only type hints change.
