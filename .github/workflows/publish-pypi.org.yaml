@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # hatch-vcs needs the tags for the version
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       - name: Build package
         run: uv build --package dzdomop --out-dir dist
       - name: Publish package
