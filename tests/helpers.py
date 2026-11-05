@@ -12,11 +12,8 @@ MODULES = discover_modules()
 
 # How each known bug shows up in a traceback. A check marked with a bug only counts as
 # "expected failure" when the traceback matches, so a new, different error still fails.
-BUG_SIGNATURES = {
-    "B2": r"TypeError: .*__init__\(\) missing \d+ required",
-    "B3": r"AssertionError: B3: global SQLModel.metadata has tables",
-    "B4": r"Table '\w+' is already defined for this MetaData instance",
-}
+# Empty since B2-B4 are fixed. Example entry: "B4": r"Table '\w+' is already defined".
+BUG_SIGNATURES: dict[str, str] = {}
 
 
 class KnownBug(Exception):

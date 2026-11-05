@@ -55,7 +55,7 @@ import itertools
 import sqlalchemy.inspection
 from sqlalchemy.orm import Session
 import datetime
-from sqlalchemy.orm import class_mapper
+from sqlalchemy.orm import class_mapper, registry
 from sqlalchemy.orm.properties import ColumnProperty
 
 import sqlmodel
@@ -103,7 +103,13 @@ class _CSVFileMetadataContainer:
         return cls(filepath=csv_path, rows_no=line_count, mapped_tablename=table_name)
 
 
-class _VocabularyLoaderState(sqlmodel.SQLModel, table=True):
+class _LoaderStateBase(sqlmodel.SQLModel, registry=registry()):
+    # Own registry and MetaData: importing the loader must not add a table to the global
+    # SQLModel.metadata (B3). create_loader_state_table() creates it.
+    pass
+
+
+class _VocabularyLoaderState(_LoaderStateBase, table=True):
     __tablename__ = "_vocabulary_loader_state"
     filename: str = sqlmodel.Field(primary_key=True)
     file_total_rows: int = sqlmodel.Field(primary_key=True)

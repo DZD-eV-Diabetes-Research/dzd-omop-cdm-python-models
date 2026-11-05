@@ -47,8 +47,6 @@ ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     # Death <-> Person
     ("OMOP_5_*", "classes.Death.relationships.person", _DEATH),
     ("OMOP_5_*", "classes.Person.relationships.death", _DEATH),
-    ("OMOP_5_*_dataclasses", "classes.Death.init_required.person", _DEATH),
-    ("OMOP_5_*_dataclasses", "classes.Person.init_required.death", _DEATH),
     # Both sides of ConceptClass.concept_class_concept <-> Concept.concept_classes now
     # back-populate each other. Before, only Concept.concept_classes did (S04 plan).
     (
@@ -78,6 +76,13 @@ ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     # B12: self-references pointed the wrong way in the SQLModel flavor
     ("OMOP_5_*_sqlmodels", "classes.VisitDetail.relationships.*.direction", "B12"),
     ("OMOP_5_*_sqlmodels", "classes.VisitOccurrence.relationships.*.direction", "B12"),
+    # One `metadata` for every flavor: `omop.metadata.create_all(engine)`
+    ("OMOP_5_*", "module_objects.metadata", "same MetaData name in every flavor (S05)"),
+    # B2: dataclasses need only the NOT NULL columns. Nullable columns default to None, lists
+    # to [], many-to-one / one-to-one relationships are no __init__ arguments (init=False)
+    ("OMOP_5_*_dataclasses", "classes.*.init_required.*", "B2"),
+    # B4: SQLModel classes derive from the module's own Base (own registry and MetaData)
+    ("OMOP_5_*_sqlmodels", "classes.*.bases", "B4"),
     # sqlacodegen 4: `'Concept'` instead of `Optional['Concept']` for NOT NULL foreign keys,
     # like the declarative flavor (Tim, S04)
     ("OMOP_5_*_sqlmodels", "classes.*.relationships.*.python_type", "sqlacodegen 4 types"),

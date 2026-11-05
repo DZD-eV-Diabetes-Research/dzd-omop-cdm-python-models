@@ -10,11 +10,8 @@ from __future__ import annotations
 import pytest
 from helpers import MODULES, KnownBug, run_check
 
-# (check, flavor) -> bug ID
-KNOWN_BUGS = {
-    ("insert_person", "dataclasses"): "B2",
-    ("import_together", "sqlmodels"): "B4",
-}
+# (check, flavor) -> bug ID. Empty: B2 and B4 are fixed.
+KNOWN_BUGS: dict[tuple[str, str], str] = {}
 
 FLAVORS = sorted({m.rsplit("_", 1)[1] for m in MODULES})
 
@@ -49,9 +46,26 @@ def test_two_cdm_versions_in_one_process(flavor, bug):
     run_check("import_together", *modules, known_bug=bug)
 
 
-@pytest.mark.xfail(raises=KnownBug, strict=True, reason="B3")
-def test_package_import_keeps_global_sqlmodel_metadata_clean():
-    run_check("package_import", known_bug="B3")
+@pytest.mark.parametrize(("module", "bug"), params("module_variables", MODULES))
+def test_module_variables(module, bug):
+    run_check("module_variables", module, known_bug=bug)
+
+
+@pytest.mark.parametrize(("module", "bug"), params("docstrings", MODULES))
+def test_docstrings(module, bug):
+    run_check("docstrings", module, known_bug=bug)
+
+
+@pytest.mark.parametrize(
+    ("module", "bug"),
+    params("sqlmodel_validation", [m for m in MODULES if flavor_of(m) == "sqlmodels"]),
+)
+def test_sqlmodel_validation(module, bug):  # B9
+    run_check("sqlmodel_validation", module, known_bug=bug)
+
+
+def test_package_import_keeps_global_sqlmodel_metadata_clean():  # B3
+    run_check("package_import")
 
 
 def test_bare_package_import_needs_no_extras():
