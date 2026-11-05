@@ -10,6 +10,8 @@ dependencies = [
     "pg8000>=1.30",
     "pydantic-settings>=2.0",
     "requests>=2.28",
+    # Formats the generated models. Pinned like sqlacodegen: a new version may change the output.
+    "ruff==0.17.3",
 ]
 
 [project.scripts]

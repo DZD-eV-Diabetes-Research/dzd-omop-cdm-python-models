@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import ast
+import dataclasses
+import inspect
 import io
+import itertools
+import re
 import zipfile
 from pathlib import Path
 
@@ -17,8 +22,9 @@ from omop_codegen.enrich import (
     format_comment,
     mark_candidate_keys,
 )
-from omop_codegen.generate import pluralize, render
+from omop_codegen.generate import pluralize, render, ruff_format
 from omop_codegen.omop_policy import CANDIDATE_KEYS
+from omop_codegen.text import WIDTH, docstring, string_literal
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -152,6 +158,8 @@ def test_add_comments(tmp_path):
     assert person.comment == "DESC: People."
     assert person.c.person_id.comment == "USER GUIDANCE: Id."
     assert person.c.undocumented.comment is None
+    assert person.info["doc"] == {"DESC": "People."}
+    assert person.c.person_id.info["doc"] == {"USER GUIDANCE": "Id."}
 
 
 # --------------------------------------------------------------------------- candidate keys
@@ -315,11 +323,16 @@ def test_multi_fk_relationship_names():
 @pytest.mark.parametrize("flavor", ["declarative", "dataclasses", "sqlmodels"])
 def test_candidate_key_is_mapper_primary_key(flavor):
     source = _render(_mini_omop(), flavor)
-    assert (
-        "__mapper_args__ = {'primary_key': ['concept_id_1', 'concept_id_2', 'relationship_id']}"
-        in source
-    )
     assert "tmp_pk_candiate_key" not in source  # no constraint in the database
+    ns = _load_declarative(source)
+    try:
+        cr = ns["ConceptRelationship"]
+        assert cr.__mapper_args__ == {
+            "primary_key": ["concept_id_1", "concept_id_2", "relationship_id"]
+        }
+        assert not cr.__table__.primary_key.columns
+    finally:
+        clear_mappers()
 
 
 @_FK_CYCLE
@@ -341,11 +354,12 @@ def test_candidate_key_columns_stay_not_null():
 @_FK_CYCLE
 def test_tables_flavor_names():
     source = _render(_mini_omop(), "tables")
-    assert "\nperson = Table(" in source  # no t_ prefix
-    assert "\nmetadata_table = Table(\n    'metadata', metadata," in source  # B1
     namespace: dict = {}
     exec(compile(source, "generated.py", "exec", dont_inherit=True), namespace)
+    assert namespace["person"].name == "person"  # no t_ prefix
+    assert namespace["metadata_table"].name == "metadata"  # B1
     assert isinstance(namespace["metadata"], MetaData)
+    assert namespace["person"].metadata is namespace["metadata"]
 
 
 @_FK_CYCLE
@@ -355,3 +369,193 @@ def test_module_header(flavor):
     assert source.startswith('"""OMOP CDM 5.4 models, ' + flavor + " flavor.")
     assert "release v0" in source
     assert "SPDX-License-Identifier: MIT" in source
+
+
+# --------------------------------------------------------------------------- S05: usability
+
+_ALL_FLAVORS = ["tables", "declarative", "dataclasses", "sqlmodels"]
+_URL = re.compile(r"https?://")
+
+
+def _documented_person() -> MetaData:
+    """person + care_site with docs, the way enrich.add_comments() leaves them."""
+    metadata = MetaData()
+    Table(
+        "care_site",
+        metadata,
+        Column("care_site_id", Integer, primary_key=True),
+        Column("care_site_name", String(255)),
+    )
+    person = Table(
+        "person",
+        metadata,
+        Column("person_id", Integer, primary_key=True),
+        Column("year_of_birth", Integer, nullable=False),
+        Column("month_of_birth", Integer),
+        Column("care_site_id", Integer, ForeignKey("care_site.care_site_id")),
+    )
+    person.info["doc"] = {"DESC": "All the people.", "ETL CONVENTIONS": "One row per person."}
+    person.c.person_id.info["doc"] = {"USER GUIDANCE": "The id."}
+    person.c.year_of_birth.info["doc"] = {"ETL CONVENTIONS": "From the date of birth. " * 9}
+    person.c.year_of_birth.comment = "ETL CONVENTIONS: From the date of birth. " * 9
+    return metadata
+
+
+def _docstrings(source: str) -> dict[str, str]:
+    """``{"Class": doc, "Class.attribute": doc, "variable": doc}`` from the source."""
+    docs: dict[str, str] = {}
+
+    def attribute_docs(body: list[ast.stmt], prefix: str) -> None:
+        for statement, following in itertools.pairwise(body):
+            target = getattr(statement, "target", None) or getattr(statement, "targets", [None])[0]
+            if (
+                isinstance(target, ast.Name)
+                and isinstance(following, ast.Expr)
+                and isinstance(following.value, ast.Constant)
+            ):
+                docs[prefix + target.id] = inspect.cleandoc(following.value.value)
+
+    tree = ast.parse(source)
+    attribute_docs(tree.body, "")
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            if doc := ast.get_docstring(node, clean=True):
+                docs[node.name] = doc
+            attribute_docs(node.body, node.name + ".")
+    return docs
+
+
+@pytest.mark.parametrize("flavor", ["declarative", "dataclasses", "sqlmodels"])
+def test_class_and_attribute_docstrings(flavor):
+    docs = _docstrings(_render(_documented_person(), flavor))
+    assert docs["Person"] == "All the people.\n\nETL conventions:\n    One row per person."
+    assert docs["Person.person_id"] == "The id."
+    assert docs["Person.year_of_birth"].startswith("ETL conventions: From the date")
+    assert "Person.month_of_birth" not in docs  # no docs, no docstring
+    assert "CareSite" not in docs
+
+
+def test_tables_flavor_docstrings():
+    docs = _docstrings(_render(_documented_person(), "tables"))
+    assert docs["person"] == "All the people.\n\nETL conventions:\n    One row per person."
+
+
+@pytest.mark.parametrize("flavor", _ALL_FLAVORS)
+def test_output_is_formatted(flavor):
+    """ruff format ran: running it again changes nothing, and only URLs make long lines."""
+    source = _render(_documented_person(), flavor)
+    assert ruff_format(source) == source
+    long_lines = [line for line in source.splitlines() if len(line) > WIDTH]
+    assert all(_URL.search(line) for line in long_lines), long_lines
+
+
+@pytest.mark.parametrize("flavor", _ALL_FLAVORS)
+def test_long_comment_keeps_its_text(flavor):
+    namespace = _load_declarative(_render(_documented_person(), flavor))
+    try:
+        table = namespace["metadata"].tables["person"]
+        assert table.c.year_of_birth.comment == "ETL CONVENTIONS: From the date of birth. " * 9
+    finally:
+        clear_mappers()
+
+
+@pytest.mark.parametrize("flavor", _ALL_FLAVORS)
+def test_module_variables(flavor):
+    namespace = _load_declarative(_render(_documented_person(), flavor))
+    try:
+        assert namespace["CDM_VERSION"] == "5.4"
+        assert namespace["CDM_RELEASE"] == "v0"
+        names = namespace["__all__"]
+        assert names == sorted(names)
+        assert {"CDM_VERSION", "CDM_RELEASE", "metadata"} <= set(names)
+        assert all(name in namespace for name in names)
+        assert set(namespace["metadata"].tables) == {"person", "care_site"}
+        if flavor != "tables":
+            assert {"Base", "Person", "CareSite"} <= set(names)
+            assert namespace["Base"].metadata is namespace["metadata"]
+    finally:
+        clear_mappers()
+
+
+def test_dataclass_defaults():  # B2
+    ns = _load_declarative(_render(_documented_person(), "dataclasses"))
+    try:
+        fields = {f.name: f for f in dataclasses.fields(ns["Person"])}
+        assert fields["year_of_birth"].default is dataclasses.MISSING  # NOT NULL: required
+        assert fields["month_of_birth"].default is not dataclasses.MISSING  # None (2.1: DONT_SET)
+        assert fields["care_site"].init is False  # many-to-one: set after __init__
+        person = ns["Person"](person_id=1, year_of_birth=1985, care_site_id=5)
+        assert person.month_of_birth is None
+        assert person.care_site_id == 5
+        assert ns["CareSite"](care_site_id=5).persons == []
+    finally:
+        clear_mappers()
+
+
+def test_sqlmodel_has_own_metadata():  # B4
+    from sqlmodel import SQLModel
+
+    before = set(SQLModel.metadata.tables)
+    ns = _load_declarative(_render(_documented_person(), "sqlmodels"))
+    try:
+        assert set(SQLModel.metadata.tables) == before
+        assert issubclass(ns["Person"], ns["Base"])
+        assert ns["Person"].__table__.metadata is ns["metadata"]
+    finally:
+        clear_mappers()
+
+
+def test_two_sqlmodel_modules_in_one_process():  # B4
+    first = _load_declarative(_render(_documented_person(), "sqlmodels"))
+    second = _load_declarative(_render(_documented_person(), "sqlmodels"))
+    try:
+        assert first["metadata"] is not second["metadata"]
+        assert first["Person"].care_site.property.mapper.class_ is first["CareSite"]
+        assert second["Person"].care_site.property.mapper.class_ is second["CareSite"]
+    finally:
+        clear_mappers()
+
+
+# --------------------------------------------------------------------------- text
+
+
+def test_docstring_sections_and_wrapping():
+    text = "word " * 40
+    doc = docstring({"DESC": text, "ETL CONVENTIONS": "Conv."}, plain="DESC", indent=4)
+    lines = doc.splitlines()
+    assert lines[0].startswith('"""word word')
+    assert all(len(line) + 4 <= WIDTH for line in lines)
+    assert lines[-3:] == ["ETL conventions:", "    Conv.", '"""']
+    assert ast.literal_eval(doc).split() == text.split() + ["ETL", "conventions:", "Conv."]
+
+
+def test_docstring_one_line_and_empty():
+    assert docstring({"USER GUIDANCE": "Short."}, plain="USER GUIDANCE", indent=4) == (
+        '"""Short."""'
+    )
+    assert docstring({}, plain="DESC", indent=0) is None
+
+
+@pytest.mark.parametrize("text", ['Ends with a "quote"', 'Has """ inside', "Back\\slash"])
+def test_docstring_escapes(text):
+    doc = docstring({"DESC": text}, plain="DESC", indent=0)
+    assert ast.literal_eval(doc).strip() == text
+
+
+def test_docstring_keeps_links_and_list_items():
+    text = "x " * 30 + "[Accepted gender concepts](https://example.org/" + "q" * 60 + ")"
+    doc = docstring({"DESC": text + "\n- item " + "y " * 50}, plain="DESC", indent=0)
+    assert "[Accepted gender concepts](https://example.org/" in doc
+    item_lines = doc.split("- item ")[1].splitlines()
+    assert item_lines[1].startswith("  y")  # hanging indent under the item text
+
+
+def test_string_literal():
+    assert string_literal("short") == "'short'"
+    text = "A long comment with 'quotes' and a\nnew line. " * 5
+    literal = string_literal(text)
+    assert literal.startswith("(")
+    assert ast.literal_eval(literal) == text
+    chunks = re.findall(r"'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"", literal)
+    assert len(chunks) > 1
+    assert all(len(chunk) <= 76 for chunk in chunks)

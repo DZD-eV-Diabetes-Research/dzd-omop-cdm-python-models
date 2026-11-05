@@ -28,14 +28,23 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
+def doc_parts(row: dict[str, str], parts: Iterable[tuple[str, str]]) -> dict[str, str]:
+    """``{label: text}`` for the non-empty parts, in order."""
+    texts = ((label, (row.get(key) or "").strip()) for label, key in parts)
+    return {label: text for label, text in texts if text}
+
+
 def format_comment(row: dict[str, str], parts: Iterable[tuple[str, str]]) -> str | None:
     """``"LABEL: text | LABEL: text"`` from the non-empty parts, ``None`` if all are empty."""
-    texts = [(label, (row.get(key) or "").strip()) for label, key in parts]
-    return " | ".join(f"{label}: {text}" for label, text in texts if text) or None
+    texts = doc_parts(row, parts)
+    return " | ".join(f"{label}: {text}" for label, text in texts.items()) or None
 
 
 def add_comments(metadata: MetaData, table_csv: Path, field_csv: Path) -> None:
-    """Set ``table.comment`` and ``column.comment`` from the CDM's CSV specs."""
+    """Set ``table.comment`` and ``column.comment`` from the CDM's CSV specs.
+
+    The parts also go to ``info["doc"]`` (``{label: text}``), for the docstrings.
+    """
     tables = {row["cdmTableName"].lower(): row for row in read_csv(table_csv)}
     fields = {
         (row["cdmTableName"].lower(), row["cdmFieldName"].strip('"').lower()): row
@@ -47,6 +56,7 @@ def add_comments(metadata: MetaData, table_csv: Path, field_csv: Path) -> None:
             log.warning("No description for table %s in %s", table.name, table_csv.name)
         else:
             table.comment = format_comment(row, TABLE_COMMENT_PARTS)
+            table.info["doc"] = doc_parts(row, TABLE_COMMENT_PARTS)
         for column in table.columns:
             row = fields.get((table.name.lower(), column.name.lower()))
             if row is None:
@@ -55,6 +65,7 @@ def add_comments(metadata: MetaData, table_csv: Path, field_csv: Path) -> None:
                 )
                 continue
             column.comment = format_comment(row, COLUMN_COMMENT_PARTS)
+            column.info["doc"] = doc_parts(row, COLUMN_COMMENT_PARTS)
 
 
 def mark_candidate_keys(metadata: MetaData, candidate_keys: dict[str, tuple[str, ...]]) -> None:
