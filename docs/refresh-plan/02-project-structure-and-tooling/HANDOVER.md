@@ -60,7 +60,7 @@ No change from S01.
 - Tests: `uv run pytest` → `26 passed, 11 xfailed` (Python 3.14.7 / SQLAlchemy 2.1.8 and Python 3.10.20 / SQLAlchemy 2.0.57)
   - S01 had 21 passed / 9 xfailed. New: 5 passed (bare import, 4 × import without extras), 2 xfailed (B1: `tables` import without extras)
   - `test-lowest` (Python 3.10, SQLAlchemy 2.0.14, sqlmodel 0.0.22, pg8000 1.30.1, tqdm 4.60.0): `26 passed, 11 xfailed`
-- CI: test jobs green on 3.10–3.14 and lowest. Lint went green after the docs commit, see the last run on `update-sqlcodegen`.
+- CI: all 7 jobs green (lint, 3.10–3.14, lowest), run 41996036925 on `0dad096`
 - Baseline diff: empty
 - Pushed: yes
 
