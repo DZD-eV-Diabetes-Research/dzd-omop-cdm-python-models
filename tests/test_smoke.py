@@ -39,6 +39,14 @@ def test_insert_person_and_care_site(module, bug):
     run_check("insert_person", module, known_bug=bug)
 
 
+ORM_MODULES = [m for m in MODULES if flavor_of(m) != "tables"]
+
+
+@pytest.mark.parametrize(("module", "bug"), params("vocabulary", ORM_MODULES))
+def test_concept_vocabulary_relationship(module, bug):
+    run_check("vocabulary", module, known_bug=bug)
+
+
 @pytest.mark.parametrize(("flavor", "bug"), params("import_together", FLAVORS, flavor=lambda f: f))
 def test_two_cdm_versions_in_one_process(flavor, bug):
     modules = [m for m in MODULES if flavor_of(m) == flavor]

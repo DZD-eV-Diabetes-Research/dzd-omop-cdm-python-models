@@ -1,6 +1,6 @@
 """OMOP CDM 5.3 models, tables flavor.
 
-Generated from the OMOP CDM release v5.4.1 (https://github.com/OHDSI/CommonDataModel)
+Generated from the OMOP CDM release v5.5.0 (https://github.com/OHDSI/CommonDataModel)
 with sqlacodegen 4.0.4. Don't edit this file, change the generator instead.
 
 Copyright (c) 2024 Deutsche Zentrum für Diabetesforschung e.V.
@@ -24,7 +24,7 @@ from sqlalchemy import (
 )
 
 CDM_VERSION = "5.3"
-CDM_RELEASE = "v5.4.1"
+CDM_RELEASE = "v5.5.0"
 
 __all__ = [
     "CDM_RELEASE",
@@ -91,20 +91,50 @@ cdm_source = Table(
     Column(
         "source_description", Text, comment="USER GUIDANCE: The description of the CDM instance."
     ),
-    Column("source_documentation_reference", String(255)),
+    Column(
+        "source_documentation_reference",
+        String(255),
+        comment=(
+            "USER GUIDANCE: Refers to a publication or web resource describing the "
+            "source data, e.g. a data dictionary."
+        ),
+    ),
     Column(
         "cdm_etl_reference",
         String(255),
-        comment="ETL CONVENTIONS: Put the link to the CDM version used.",
+        comment=("USER GUIDANCE: Version of the ETL script used. e.g. link to the Git release"),
     ),
     Column(
-        "source_release_date", Date, comment="USER GUIDANCE: The release date of the source data."
+        "source_release_date",
+        Date,
+        comment=(
+            "USER GUIDANCE: The date the data was extracted from the source system. In "
+            "some systems that is the same as the date the ETL was run. Typically the "
+            "latest even date in the source is on the source_release_date."
+        ),
     ),
     Column(
-        "cdm_release_date", Date, comment="USER GUIDANCE: The release data of the CDM instance."
+        "cdm_release_date",
+        Date,
+        comment=(
+            "USER GUIDANCE: The date the ETL script was completed. Typically this is "
+            "after the source_release_date."
+        ),
     ),
-    Column("cdm_version", String(10)),
-    Column("vocabulary_version", String(20)),
+    Column(
+        "cdm_version",
+        String(10),
+        comment="USER GUIDANCE: Version of the OMOP CDM used as string. e.g. v5.4",
+    ),
+    Column(
+        "vocabulary_version",
+        String(20),
+        comment=(
+            "USER GUIDANCE: Version of the OMOP standardised vocabularies loaded | ETL "
+            "CONVENTIONS: You can find the version of your Vocabulary using the query: "
+            "`SELECT vocabulary_version from vocabulary  where vocabulary_id = 'None'`"
+        ),
+    ),
     PrimaryKeyConstraint(
         "cdm_source_name", "cdm_source_abbreviation", name="tmp_pk_candiate_key_cdm_source"
     ),
@@ -138,8 +168,8 @@ concept = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: A foreign key to the "
-            "[DOMAIN](https://ohdsi.github.io/CommonDataModel/cdm531.html#domain) "
-            "table the Concept belongs to."
+            "[DOMAIN](https://ohdsi.github.io/CommonDataModel/cdm53.html#domain) table "
+            "the Concept belongs to."
         ),
     ),
     Column(
@@ -148,7 +178,7 @@ concept = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: A foreign key to the "
-            "[VOCABULARY](https://ohdsi.github.io/CommonDataModel/cdm531.html#vocabulary)\n"
+            "[VOCABULARY](https://ohdsi.github.io/CommonDataModel/cdm53.html#vocabulary)\n"
             "table indicating from which source the\n"
             "Concept has been adapted."
         ),
@@ -236,7 +266,7 @@ concept = Table(
     Index("idx_concept_code", "concept_code"),
     Index("idx_concept_concept_id", "concept_id"),
     Index("idx_concept_domain_id", "domain_id"),
-    Index("idx_concept_vocabluary_id", "vocabulary_id"),
+    Index("idx_concept_vocabulary_id", "vocabulary_id"),
     comment=(
         "DESC: The Standardized Vocabularies contains records, or Concepts, that "
         "uniquely identify each fundamental unit of meaning used to express "
@@ -245,19 +275,24 @@ concept = Table(
         "domain (e.g. conditions, drugs, procedures) through the use of codes and "
         "associated descriptions. Some Concepts are designated Standard Concepts, "
         "meaning these Concepts can be used as normative expressions of a clinical "
-        "entity within the OMOP Common Data Model and within standardized "
-        "analytics. Each Standard Concept belongs to one domain, which defines the "
-        "location where the Concept would be expected to occur within data tables "
-        "of the CDM.\n\n"
-        "Concepts can represent broad categories (like 'Cardiovascular disease'), "
+        "entity within the OMOP Common Data Model and standardized analytics. Each "
+        "Standard Concept belongs to one Domain, which defines the location where "
+        "the Concept would be expected to occur within the data tables of the CDM. "
+        "Concepts can represent broad categories ('Cardiovascular disease'), "
         "detailed clinical elements ('Myocardial infarction of the anterolateral "
-        "wall') or modifying characteristics and attributes that define Concepts "
+        "wall'), or modifying characteristics and attributes that define Concepts "
         "at various levels of detail (severity of a disease, associated "
-        "morphology, etc.).\n\n"
-        "Records in the Standardized Vocabularies tables are derived from national "
-        "or international vocabularies such as SNOMED-CT, RxNorm, and LOINC, or "
-        "custom Concepts defined to cover various aspects of observational data "
-        "analysis."
+        "morphology, etc.). Records in the Standardized Vocabularies tables are "
+        "derived from national or international vocabularies such as SNOMED-CT, "
+        "RxNorm, and LOINC, or custom OMOP Concepts defined to cover various "
+        "aspects of observational data analysis. | USER GUIDANCE: The primary "
+        "purpose of the CONCEPT table is to provide a standardized representation "
+        "of medical Concepts, allowing for consistent querying and analysis across "
+        "the healthcare databases.\n"
+        "Users can join the CONCEPT table with other tables in the CDM to enrich "
+        "clinical data with standardized Concept information or use the CONCEPT "
+        "table as a reference for mapping clinical data from source terminologies "
+        "to Standard Concepts."
     ),
 )
 """The Standardized Vocabularies contains records, or Concepts, that uniquely identify each
@@ -265,17 +300,21 @@ fundamental unit of meaning used to express clinical information in all domain t
 Concepts are derived from vocabularies, which represent clinical information across a domain (e.g.
 conditions, drugs, procedures) through the use of codes and associated descriptions. Some Concepts
 are designated Standard Concepts, meaning these Concepts can be used as normative expressions of a
-clinical entity within the OMOP Common Data Model and within standardized analytics. Each Standard
-Concept belongs to one domain, which defines the location where the Concept would be expected to
-occur within data tables of the CDM.
+clinical entity within the OMOP Common Data Model and standardized analytics. Each Standard Concept
+belongs to one Domain, which defines the location where the Concept would be expected to occur
+within the data tables of the CDM. Concepts can represent broad categories ('Cardiovascular
+disease'), detailed clinical elements ('Myocardial infarction of the anterolateral wall'), or
+modifying characteristics and attributes that define Concepts at various levels of detail (severity
+of a disease, associated morphology, etc.). Records in the Standardized Vocabularies tables are
+derived from national or international vocabularies such as SNOMED-CT, RxNorm, and LOINC, or custom
+OMOP Concepts defined to cover various aspects of observational data analysis.
 
-Concepts can represent broad categories (like 'Cardiovascular disease'), detailed clinical elements
-('Myocardial infarction of the anterolateral wall') or modifying characteristics and attributes that
-define Concepts at various levels of detail (severity of a disease, associated morphology, etc.).
-
-Records in the Standardized Vocabularies tables are derived from national or international
-vocabularies such as SNOMED-CT, RxNorm, and LOINC, or custom Concepts defined to cover various
-aspects of observational data analysis.
+User guidance:
+    The primary purpose of the CONCEPT table is to provide a standardized representation of medical
+    Concepts, allowing for consistent querying and analysis across the healthcare databases.
+    Users can join the CONCEPT table with other tables in the CDM to enrich clinical data with
+    standardized Concept information or use the CONCEPT table as a reference for mapping clinical
+    data from source terminologies to Standard Concepts.
 """
 
 concept_class = Table(
@@ -310,15 +349,27 @@ concept_class = Table(
     PrimaryKeyConstraint("concept_class_id", name="xpk_concept_class"),
     Index("idx_concept_class_class_id", "concept_class_id"),
     comment=(
-        "DESC: The CONCEPT_CLASS table is a reference table, which includes a list "
-        "of the classifications used to differentiate Concepts within a given "
-        "Vocabulary. This reference table is populated with a single record for "
-        "each Concept Class."
+        "DESC: The CONCEPT_CLASS table includes semantic categories that reference "
+        "the source structure of each Vocabulary. Concept Classes represent "
+        "so-called horizontal (e.g. MedDRA, RxNorm) or vertical levels (e.g. "
+        "SNOMED) of the vocabulary structure. Vocabularies without any Concept "
+        "Classes, such as HCPCS, use the vocabulary_id as the Concept Class. This "
+        "reference table is populated with a single record for each Concept Class, "
+        "which includes a Concept Class ID and a fully specified Concept Class "
+        "name. | USER GUIDANCE: Users can utilize the CONCEPT_CLASS table to "
+        "explore the different classes or categories of concepts within the OHDSI "
+        "vocabularies."
     ),
 )
-"""The CONCEPT_CLASS table is a reference table, which includes a list of the classifications used
-to differentiate Concepts within a given Vocabulary. This reference table is populated with a single
-record for each Concept Class.
+"""The CONCEPT_CLASS table includes semantic categories that reference the source structure of each
+Vocabulary. Concept Classes represent so-called horizontal (e.g. MedDRA, RxNorm) or vertical levels
+(e.g. SNOMED) of the vocabulary structure. Vocabularies without any Concept Classes, such as HCPCS,
+use the vocabulary_id as the Concept Class. This reference table is populated with a single record
+for each Concept Class, which includes a Concept Class ID and a fully specified Concept Class name.
+
+User guidance:
+    Users can utilize the CONCEPT_CLASS table to explore the different classes or categories of
+    concepts within the OHDSI vocabularies.
 """
 
 domain = Table(
@@ -354,22 +405,34 @@ domain = Table(
     PrimaryKeyConstraint("domain_id", name="xpk_domain"),
     Index("idx_domain_domain_id", "domain_id"),
     comment=(
-        "DESC: The DOMAIN table includes a list of OMOP-defined Domains the "
-        "Concepts of the Standardized Vocabularies can belong to. A Domain defines "
-        "the set of allowable Concepts for the standardized fields in the CDM "
-        'tables. For example, the "Condition" Domain contains Concepts that '
-        "describe a condition of a patient, and these Concepts can only be stored "
-        "in the condition_concept_id field of the CONDITION_OCCURRENCE and "
-        "CONDITION_ERA tables. This reference table is populated with a single "
-        "record for each Domain and includes a descriptive name for the Domain."
+        "DESC: The DOMAIN table includes a list of OMOP-defined Domains to which "
+        "the Concepts of the Standardized Vocabularies can belong. A Domain "
+        "represents a clinical definition whereby we assign matching Concepts for "
+        "the standardized fields in the CDM tables. For example, the Condition "
+        "Domain contains Concepts that describe a patient condition, and these "
+        "Concepts can only be used in the condition_concept_id field of the "
+        "CONDITION_OCCURRENCE and CONDITION_ERA tables. This reference table is "
+        "populated with a single record for each Domain, including a Domain ID and "
+        "a descriptive name for every Domain. | USER GUIDANCE: Users can leverage "
+        "the DOMAIN table to explore the full spectrum of health-related data "
+        "Domains available in the Standardized Vocabularies. Also, the information "
+        "in the DOMAIN table may be used as a reference for mapping source data to "
+        "OMOP domains, facilitating data harmonization and interoperability."
     ),
 )
-"""The DOMAIN table includes a list of OMOP-defined Domains the Concepts of the Standardized
-Vocabularies can belong to. A Domain defines the set of allowable Concepts for the standardized
-fields in the CDM tables. For example, the "Condition" Domain contains Concepts that describe a
-condition of a patient, and these Concepts can only be stored in the condition_concept_id field of
-the CONDITION_OCCURRENCE and CONDITION_ERA tables. This reference table is populated with a single
-record for each Domain and includes a descriptive name for the Domain.
+"""The DOMAIN table includes a list of OMOP-defined Domains to which the Concepts of the
+Standardized Vocabularies can belong. A Domain represents a clinical definition whereby we assign
+matching Concepts for the standardized fields in the CDM tables. For example, the Condition Domain
+contains Concepts that describe a patient condition, and these Concepts can only be used in the
+condition_concept_id field of the CONDITION_OCCURRENCE and CONDITION_ERA tables. This reference
+table is populated with a single record for each Domain, including a Domain ID and a descriptive
+name for every Domain.
+
+User guidance:
+    Users can leverage the DOMAIN table to explore the full spectrum of health-related data Domains
+    available in the Standardized Vocabularies. Also, the information in the DOMAIN table may be
+    used as a reference for mapping source data to OMOP domains, facilitating data harmonization and
+    interoperability.
 """
 
 location = Table(
@@ -491,17 +554,28 @@ vocabulary = Table(
     PrimaryKeyConstraint("vocabulary_id", name="xpk_vocabulary"),
     Index("idx_vocabulary_vocabulary_id", "vocabulary_id"),
     comment=(
-        "DESC: The VOCABULARY table includes a list of the Vocabularies collected "
-        "from various sources or created de novo by the OMOP community. This "
-        "reference table is populated with a single record for each Vocabulary "
-        "source and includes a descriptive name and other associated attributes "
-        "for the Vocabulary."
+        "DESC: The VOCABULARY table includes a list of the Vocabularies integrated "
+        "from various sources or created de novo in OMOP CDM. This reference table "
+        "contains a single record for each Vocabulary and includes a descriptive "
+        "name and other associated attributes for the Vocabulary. | USER GUIDANCE: "
+        "The primary purpose of the VOCABULARY table is to provide explicit "
+        "information about specific vocabulary versions and the references to the "
+        "sources from which they are asserted. Users can identify the version of a "
+        "particular vocabulary used in the database, enabling consistency and "
+        "reproducibility in data analysis. Besides, users can check the vocabulary "
+        "release version in their CDM which refers to the vocabulary_id = 'None'."
     ),
 )
-"""The VOCABULARY table includes a list of the Vocabularies collected from various sources or
-created de novo by the OMOP community. This reference table is populated with a single record for
-each Vocabulary source and includes a descriptive name and other associated attributes for the
-Vocabulary.
+"""The VOCABULARY table includes a list of the Vocabularies integrated from various sources or
+created de novo in OMOP CDM. This reference table contains a single record for each Vocabulary and
+includes a descriptive name and other associated attributes for the Vocabulary.
+
+User guidance:
+    The primary purpose of the VOCABULARY table is to provide explicit information about specific
+    vocabulary versions and the references to the sources from which they are asserted. Users can
+    identify the version of a particular vocabulary used in the database, enabling consistency and
+    reproducibility in data analysis. Besides, users can check the vocabulary release version in
+    their CDM which refers to the vocabulary_id = 'None'.
 """
 
 attribute_definition = Table(
@@ -552,8 +626,9 @@ care_site = Table(
         Integer,
         primary_key=True,
         comment=(
-            "ETL CONVENTIONS: Assign an id to each unique combination of location_id "
-            "and place_of_service_source_value"
+            "ETL CONVENTIONS: Assign an ID to each combination of a location and "
+            "nature of the site - the latter could be the Place of Service, name or "
+            "another characteristic in your source data."
         ),
     ),
     Column(
@@ -574,7 +649,9 @@ care_site = Table(
             "place_of_service_concept_id should represent Inpatient. If information is "
             "present about a unique Care Site (e.g. Pharmacy) then a Care Site record "
             "should be created. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=2&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=2&pageSize=15&query=). "
+            "For information about how to populate this field please see the [THEMIS "
+            "Conventions](https://ohdsi.github.io/Themis/tag_place_of_service.html)."
         ),
     ),
     Column(
@@ -616,11 +693,12 @@ care_site = Table(
         "DESC: The CARE_SITE table contains a list of uniquely identified "
         "institutional (physical or organizational) units where healthcare "
         "delivery is practiced (offices, wards, hospitals, clinics, etc.). | ETL "
-        "CONVENTIONS: Care site is a unique combination of location_id and "
-        "place_of_service_source_value. Care site does not take into account the "
-        "provider (human) information such a specialty. Many source data do not "
-        "make a distinction between individual and institutional providers. The "
-        "CARE_SITE table contains the institutional providers. If the source, "
+        "CONVENTIONS: Care site is a unique combination of location_id and nature "
+        "of the site - the latter could be the place of service, name, or another "
+        "characteristic in your source data. Care site does not take into account "
+        "the provider (human) information such a specialty. Many source data do "
+        "not make a distinction between individual and institutional providers. "
+        "The CARE_SITE table contains the institutional providers. If the source, "
         "instead of uniquely identifying individual Care Sites, only provides "
         'limited information such as Place of Service, generic or "pooled" Care '
         "Site records are listed in the CARE_SITE table. There can be hierarchical "
@@ -628,7 +706,9 @@ care_site = Table(
         "belong to clinics or departments, which can in turn belong to hospitals, "
         "which in turn can belong to hospital systems, which in turn can belong to "
         "HMOs.The relationships between Care Sites are defined in the "
-        "FACT_RELATIONSHIP table."
+        "FACT_RELATIONSHIP table.<br><br>For additional detailed conventions on "
+        "how to populate this table, please refer to [THEMIS "
+        "repository](https://ohdsi.github.io/Themis/care_site.html)."
     ),
 )
 """The CARE_SITE table contains a list of uniquely identified institutional (physical or
@@ -636,15 +716,18 @@ organizational) units where healthcare delivery is practiced (offices, wards, ho
 etc.).
 
 ETL conventions:
-    Care site is a unique combination of location_id and place_of_service_source_value. Care site
-    does not take into account the provider (human) information such a specialty. Many source data
-    do not make a distinction between individual and institutional providers. The CARE_SITE table
-    contains the institutional providers. If the source, instead of uniquely identifying individual
-    Care Sites, only provides limited information such as Place of Service, generic or "pooled" Care
-    Site records are listed in the CARE_SITE table. There can be hierarchical and business
-    relationships between Care Sites. For example, wards can belong to clinics or departments, which
-    can in turn belong to hospitals, which in turn can belong to hospital systems, which in turn can
-    belong to HMOs.The relationships between Care Sites are defined in the FACT_RELATIONSHIP table.
+    Care site is a unique combination of location_id and nature of the site - the latter could be
+    the place of service, name, or another characteristic in your source data. Care site does not
+    take into account the provider (human) information such a specialty. Many source data do not
+    make a distinction between individual and institutional providers. The CARE_SITE table contains
+    the institutional providers. If the source, instead of uniquely identifying individual Care
+    Sites, only provides limited information such as Place of Service, generic or "pooled" Care Site
+    records are listed in the CARE_SITE table. There can be hierarchical and business relationships
+    between Care Sites. For example, wards can belong to clinics or departments, which can in turn
+    belong to hospitals, which in turn can belong to hospital systems, which in turn can belong to
+    HMOs.The relationships between Care Sites are defined in the FACT_RELATIONSHIP table.<br><br>For
+    additional detailed conventions on how to populate this table, please refer to
+    [THEMIS repository](https://ohdsi.github.io/Themis/care_site.html).
 """
 
 cohort_definition = Table(
@@ -914,7 +997,8 @@ condition_era = Table(
     comment=(
         "DESC: A Condition Era is defined as a span of time when the Person is "
         "assumed to have a given condition. Similar to Drug Eras, Condition Eras "
-        "are chronological periods of Condition Occurrence. Combining individual "
+        "are chronological periods of Condition Occurrence and every Condition "
+        "Occurrence record should be part of a Condition Era. Combining individual "
         "Condition Occurrences into a single Condition Era serves two purposes:\n\n"
         "- It allows aggregation of chronic conditions that require frequent "
         "ongoing care, instead of treating each Condition Occurrence as an "
@@ -944,8 +1028,9 @@ condition_era = Table(
     ),
 )
 """A Condition Era is defined as a span of time when the Person is assumed to have a given
-condition. Similar to Drug Eras, Condition Eras are chronological periods of Condition Occurrence.
-Combining individual Condition Occurrences into a single Condition Era serves two purposes:
+condition. Similar to Drug Eras, Condition Eras are chronological periods of Condition Occurrence
+and every Condition Occurrence record should be part of a Condition Era. Combining individual
+Condition Occurrences into a single Condition Era serves two purposes:
 
 - It allows aggregation of chronic conditions that require frequent ongoing care, instead of
   treating each Condition Occurrence as an independent event.
@@ -974,40 +1059,248 @@ ETL conventions:
 cost = Table(
     "cost",
     metadata,
-    Column("cost_id", Integer, primary_key=True),
-    Column("cost_event_id", Integer, nullable=False),
-    Column("cost_domain_id", String(20), nullable=False),
-    Column("cost_type_concept_id", Integer, nullable=False),
-    Column("currency_concept_id", Integer),
-    Column("total_charge", Numeric),
-    Column("total_cost", Numeric),
-    Column("total_paid", Numeric),
-    Column("paid_by_payer", Numeric),
-    Column("paid_by_patient", Numeric),
-    Column("paid_patient_copay", Numeric),
-    Column("paid_patient_coinsurance", Numeric),
-    Column("paid_patient_deductible", Numeric),
-    Column("paid_by_primary", Numeric),
-    Column("paid_ingredient_cost", Numeric),
-    Column("paid_dispensing_fee", Numeric),
-    Column("payer_plan_period_id", Integer),
-    Column("amount_allowed", Numeric),
-    Column("revenue_code_concept_id", Integer),
+    Column(
+        "cost_id",
+        Integer,
+        primary_key=True,
+        comment="ETL CONVENTIONS: A unique identifier for each COST record.",
+    ),
+    Column(
+        "cost_event_id",
+        Integer,
+        nullable=False,
+        comment=(
+            "ETL CONVENTIONS: A foreign key identifier to the event (e.g. Measurement, "
+            "Procedure, Visit, Drug Exposure, etc) record for which cost data are "
+            "recorded."
+        ),
+    ),
+    Column(
+        "cost_domain_id",
+        String(20),
+        nullable=False,
+        comment=(
+            "ETL CONVENTIONS: The concept representing the domain of the cost event, "
+            "from which the corresponding table can be inferred that contains the "
+            "entity for which cost information is recorded."
+        ),
+    ),
+    Column(
+        "cost_type_concept_id",
+        Integer,
+        nullable=False,
+        comment=(
+            "USER GUIDANCE: The concept referenced in this field defines the source of "
+            "the cost information, and therefore the perspective. It could be from the "
+            "perspective of the payer, or the perspective of the provider. Therefore, "
+            "cost really means either cost or revenue, and the direction of funds "
+            "(incoming and outgoing) as well as the modus of its calculation is "
+            "defined by this field. | ETL CONVENTIONS: A foreign key identifier to a "
+            "concept in the CONCEPT table for the provenance or the source of the COST "
+            "data: Calculated from insurance claim information, provider revenue, "
+            "calculated from cost-to-charge ratio, reported from accounting database, "
+            "etc."
+        ),
+    ),
+    Column(
+        "currency_concept_id",
+        Integer,
+        comment=(
+            "ETL CONVENTIONS: A foreign key identifier to the concept representing the "
+            "3-letter code used to delineate international currencies, such as USD for "
+            "US Dollar."
+        ),
+    ),
+    Column(
+        "total_charge",
+        Numeric,
+        comment=(
+            "ETL CONVENTIONS: The total amount charged by some provider of goods or "
+            "services (e.g. hospital, physician pharmacy, dme provider) to payers "
+            "(insurance companies, the patient)."
+        ),
+    ),
+    Column(
+        "total_cost",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: The cost of the goods or services the provider provides is "
+            "often not known directly, but derived from the hospital charges "
+            "multiplied by an average cost-to-charge ratio. This data is currently "
+            "available for NIS datasets, or any other HCUP datasets. | ETL "
+            "CONVENTIONS: The cost of the goods or services the provider provides is "
+            "often not known directly, but derived from the hospital charges "
+            "multiplied by an average cost-to-charge ratio. This data is currently "
+            "available for NIS datasets, or any other HCUP datasets."
+        ),
+    ),
+    Column(
+        "total_paid",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: This field is calculated using the following formula: "
+            "paid_by_payer + paid_by_patient + paid_by_primary. In claims data, this "
+            "field is considered the calculated field the payer expects the provider "
+            "to get reimbursed for goods and services, based on the payer's "
+            "contractual obligations. | ETL CONVENTIONS: The total amount actually "
+            "paid from all payers for goods or services of the provider."
+        ),
+    ),
+    Column(
+        "paid_by_payer",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: In claims data, generally there is one field representing "
+            "the total payment from the payer for the service/device/drug. However, "
+            "this field could be a calculated field if the source data provides "
+            "separate payment information for the ingredient cost and the dispensing "
+            "fee in case of prescription benefits. If there is more than one Payer in "
+            "the source data, several cost records indicate that fact. The Payer "
+            "reporting this reimbursement should be indicated under the payer_plan_id "
+            "field. | ETL CONVENTIONS: The amount paid by the Payer for the goods or "
+            "services."
+        ),
+    ),
+    Column(
+        "paid_by_patient",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: This field is most often used in claims data to report the "
+            "contracted amount the patient is responsible for reimbursing the provider "
+            "for the goods and services she received. This is a calculated field using "
+            "the following formula: paid_patient_copay + paid_patient_coinsurance + "
+            "paid_patient_deductible. | ETL CONVENTIONS: The total amount paid by the "
+            "Person as a share of the expenses."
+        ),
+    ),
+    Column(
+        "paid_patient_copay",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: The paid_patient_copay field is only used for reporting a "
+            "patient's copay amount reported on an insurance claim. This field "
+            "contributes to the paid_by_patient variable. | ETL CONVENTIONS: The "
+            "amount paid by the Person as a fixed contribution to the expenses."
+        ),
+    ),
+    Column(
+        "paid_patient_coinsurance",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: The paid_patient_coinsurance field is only used for "
+            "reporting a patient's coinsurance amount reported on an insurance claim. "
+            "This field contributes to the paid_by_patient variable. | ETL "
+            "CONVENTIONS: The amount paid by the Person as a joint assumption of risk. "
+            "Typically, this is a percentage of the expenses defined by the Payer Plan "
+            "after the Person's deductible is exceeded."
+        ),
+    ),
+    Column(
+        "paid_patient_deductible",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: The paid_patient_deductible field is only used for "
+            "reporting a patient's deductible amount reported on an insurance claim. "
+            "This field contributes to the paid_by_patient variable. | ETL "
+            "CONVENTIONS: The amount paid by the Person that is counted toward the "
+            "deductible defined by the Payer Plan. paid_patient_deductible does "
+            "contribute to the paid_by_patient variable."
+        ),
+    ),
+    Column(
+        "paid_by_primary",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: The paid_by_primary field is only used for reporting a "
+            "patient's primary insurance payment amount reported on the secondary "
+            "payer insurance claim. If the source data has actual primary insurance "
+            "payments, then the primary insurance payment should have its own cost "
+            "record with a payer_plan_id set to the applicable payer. | ETL "
+            "CONVENTIONS: The amount paid by a primary Payer through the coordination "
+            "of benefits."
+        ),
+    ),
+    Column(
+        "paid_ingredient_cost",
+        Numeric,
+        comment=(
+            "ETL CONVENTIONS: Drug costs are composed of ingredient cost (the amount "
+            "charged by the wholesale distributor or manufacturer), the dispensing fee "
+            "(the amount charged by the pharmacy) and the sales tax."
+        ),
+    ),
+    Column(
+        "paid_dispensing_fee",
+        Numeric,
+        comment=(
+            "ETL CONVENTIONS: Drug costs are composed of ingredient cost (the amount "
+            "charged by the wholesale distributor or manufacturer), the dispensing fee "
+            "(the amount charged by the pharmacy) and the sales tax."
+        ),
+    ),
+    Column(
+        "payer_plan_period_id",
+        Integer,
+        comment=(
+            "ETL CONVENTIONS: A foreign key to the PAYER_PLAN_PERIOD table, where the "
+            "details of the Payer, Plan and Family are stored. Record the "
+            "payer_plan_id that relates to the payer who contributed to the "
+            "paid_by_payer field."
+        ),
+    ),
+    Column(
+        "amount_allowed",
+        Numeric,
+        comment=(
+            "USER GUIDANCE: This information is generally available in claims data. "
+            "This is similar to the total_paid amount in that it shows what the payer "
+            "expects the provider to be reimbursed after the payer and patient pay. "
+            "This differs from the total_paid amount in that it is not a calculated "
+            "field, but a field available directly in claims data. The field is "
+            "payer-specific and the payer should be indicated by the payer_plan_id "
+            "field. | ETL CONVENTIONS: The contracted amount agreed between the payer "
+            "and provider."
+        ),
+    ),
+    Column(
+        "revenue_code_concept_id",
+        Integer,
+        comment=(
+            "USER GUIDANCE: Revenue codes are a method to charge for a class of "
+            "procedures and conditions in the U.S. hospital system. | ETL CONVENTIONS: "
+            "A foreign key referring to a Standard Concept ID in the Standardized "
+            "Vocabularies for Revenue codes."
+        ),
+    ),
     Column(
         "revenue_code_source_value",
         String(50),
         comment=(
             "USER GUIDANCE: Revenue codes are a method to charge for a class of "
-            "procedures and conditions in the U.S. hospital system."
+            "procedures and conditions in the U.S. hospital system. | ETL CONVENTIONS: "
+            "The source code for the Revenue code as it appears in the source data, "
+            "stored here for reference."
         ),
     ),
-    Column("drg_concept_id", Integer),
+    Column(
+        "drg_concept_id",
+        Integer,
+        comment=(
+            "USER GUIDANCE: DRG is a system to classify hospital cases into one of "
+            "approximately 500 groups for reimbursement purposes. They have been used "
+            "in the United States since 1983. | ETL CONVENTIONS: A foreign key "
+            "referring to a Standard Concept ID in the Standardized Vocabularies for "
+            "DRG codes."
+        ),
+    ),
     Column(
         "drg_source_value",
         String(3),
         comment=(
             "USER GUIDANCE: Diagnosis Related Groups are US codes used to classify "
-            "hospital cases into one of approximately 500 groups."
+            "hospital cases into one of approximately 500 groups. | ETL CONVENTIONS: "
+            "The source code for the 3-digit DRG source code as it appears in the "
+            "source data, stored here for reference."
         ),
     ),
     ForeignKeyConstraint(["cost_domain_id"], ["domain.domain_id"], name="fpk_cost_cost_domain_id"),
@@ -1506,8 +1799,7 @@ relationship = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: A foreign key that refers to an identifier in\n"
-            "the "
-            "[CONCEPT](https://ohdsi.github.io/CommonDataModel/cdm531.html#concept) "
+            "the [CONCEPT](https://ohdsi.github.io/CommonDataModel/cdm53.html#concept) "
             "table for the unique\n"
             "relationship concept."
         ),
@@ -1719,15 +2011,33 @@ concept_relationship = Table(
     Index("idx_concept_relationship_id_2", "concept_id_2"),
     Index("idx_concept_relationship_id_3", "relationship_id"),
     comment=(
-        "DESC: The CONCEPT_RELATIONSHIP table contains records that define direct "
+        "DESC: The CONCEPT_RELATIONSHIP table contains records that define "
         "relationships between any two Concepts and the nature or type of the "
-        "relationship. Each type of a relationship is defined in the RELATIONSHIP "
-        "table."
+        "relationship. This table captures various types of relationships, "
+        "including hierarchical, associative, and other semantic connections, "
+        "enabling comprehensive analysis and interpretation of clinical concepts. "
+        "Every kind of relationship is defined in the RELATIONSHIP table. | USER "
+        "GUIDANCE: The CONCEPT_RELATIONSHIP table can be used to explore "
+        "hierarchical or attribute relationships between concepts to understand "
+        "the hierarchical structure of clinical concepts and uncover implicit "
+        "connections and associations within healthcare data. For example, users "
+        "can utilize mapping relationships ('Maps to') to harmonize data from "
+        "different sources and terminologies, enabling interoperability and data "
+        "integration across disparate datasets."
     ),
 )
-"""The CONCEPT_RELATIONSHIP table contains records that define direct relationships between any two
-Concepts and the nature or type of the relationship. Each type of a relationship is defined in the
-RELATIONSHIP table.
+"""The CONCEPT_RELATIONSHIP table contains records that define relationships between any two
+Concepts and the nature or type of the relationship. This table captures various types of
+relationships, including hierarchical, associative, and other semantic connections, enabling
+comprehensive analysis and interpretation of clinical concepts. Every kind of relationship is
+defined in the RELATIONSHIP table.
+
+User guidance:
+    The CONCEPT_RELATIONSHIP table can be used to explore hierarchical or attribute relationships
+    between concepts to understand the hierarchical structure of clinical concepts and uncover
+    implicit connections and associations within healthcare data. For example, users can utilize
+    mapping relationships ('Maps to') to harmonize data from different sources and terminologies,
+    enabling interoperability and data integration across disparate datasets.
 """
 
 provider = Table(
@@ -1749,9 +2059,11 @@ provider = Table(
         "provider_name",
         String(255),
         comment=(
-            "ETL CONVENTIONS: This field is not necessary as it is not necessary to "
-            "have the actual identity of the Provider. Rather, the idea is to uniquely "
-            "and anonymously identify providers of care across the database."
+            "USER GUIDANCE: This field contains information that describes a "
+            "healthcare provider. | ETL CONVENTIONS: This field is not required for "
+            "identifying the Provider's actual identity. Instead, its purpose is to "
+            "uniquely and/or anonymously identify providers of care across the "
+            "database."
         ),
     ),
     Column(
@@ -1825,13 +2137,16 @@ provider = Table(
         "specialty_source_value",
         String(50),
         comment=(
-            "USER GUIDANCE: This is the kind of provider or specialty as it appears in "
-            "the source data. This includes physician specialties such as internal "
-            "medicine, emergency medicine, etc. and allied health professionals such "
-            "as nurses, midwives, and pharmacists. | ETL CONVENTIONS: Put the kind of "
-            "provider as it appears in the source data. This field is up to the "
-            "discretion of the ETL-er as to whether this should be the coded value "
-            "from the source or the text description of the lookup value."
+            "USER GUIDANCE: This refers to the specific type of healthcare provider or "
+            "field of expertise listed in the source data, encompassing physician "
+            "specialties like internal medicine, emergency medicine, etc., as well as "
+            "allied health professionals such as nurses, midwives, and pharmacists. It "
+            "covers medical specialties like surgery, internal medicine, and "
+            "radiology, while other services like prosthetics, acupuncture, and "
+            "physical therapy fall under the domain of \\Service.\\ | ETL CONVENTIONS: "
+            "The type of provider and their specialty should be entered as they appear "
+            "in the source data. The decision to use either the coded value or the "
+            "text description is left to the discretion of the ETL-er."
         ),
     ),
     Column(
@@ -1887,25 +2202,25 @@ provider = Table(
     Index("idx_provider_id_1", "provider_id"),
     comment=(
         "DESC: The PROVIDER table contains a list of uniquely identified "
-        "healthcare providers. These are individuals providing hands-on healthcare "
-        "to patients, such as physicians, nurses, midwives, physical therapists "
-        "etc. | USER GUIDANCE: Many sources do not make a distinction between "
-        "individual and institutional providers. The PROVIDER table contains the "
-        "individual providers. If the source, instead of uniquely identifying "
-        "individual providers, only provides limited information such as "
-        "specialty, generic or 'pooled' Provider records are listed in the "
-        "PROVIDER table."
+        "healthcare providers; duplication is not allowed. These are individuals "
+        "providing hands-on healthcare to patients, such as physicians, nurses, "
+        "midwives, physical therapists etc. | USER GUIDANCE: Many sources do not "
+        "make a distinction between individual and institutional providers. The "
+        "PROVIDER table contains the individual providers. If the source only "
+        "provides limited information such as specialty instead of uniquely "
+        "identifying individual providers, generic or 'pooled' Provider records "
+        "are listed in the PROVIDER table."
     ),
 )
-"""The PROVIDER table contains a list of uniquely identified healthcare providers. These are
-individuals providing hands-on healthcare to patients, such as physicians, nurses, midwives,
-physical therapists etc.
+"""The PROVIDER table contains a list of uniquely identified healthcare providers; duplication is
+not allowed. These are individuals providing hands-on healthcare to patients, such as physicians,
+nurses, midwives, physical therapists etc.
 
 User guidance:
     Many sources do not make a distinction between individual and institutional providers. The
-    PROVIDER table contains the individual providers. If the source, instead of uniquely identifying
-    individual providers, only provides limited information such as specialty, generic or 'pooled'
-    Provider records are listed in the PROVIDER table.
+    PROVIDER table contains the individual providers. If the source only provides limited
+    information such as specialty instead of uniquely identifying individual providers, generic or
+    'pooled' Provider records are listed in the PROVIDER table.
 """
 
 person = Table(
@@ -1934,9 +2249,12 @@ person = Table(
             "issues. | ETL CONVENTIONS: Use the gender or sex value present in the "
             "data under the assumption that it is the biological sex at birth. If the "
             "source data captures gender identity it should be stored in the "
-            "[OBSERVATION](https://ohdsi.github.io/CommonDataModel/cdm531.html#observation) "
+            "[OBSERVATION](https://ohdsi.github.io/CommonDataModel/cdm53.html#observation) "
             "table. [Accepted gender "
-            "concepts](http://athena.ohdsi.org/search-terms/terms?domain=Gender&standardConcept=Standard&page=1&pageSize=15&query=)"
+            "concepts](http://athena.ohdsi.org/search-terms/terms?domain=Gender&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "Please refer to the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/tag_gender_concept_id.html) "
+            "for detailed conventions on how to populate this field."
         ),
     ),
     Column(
@@ -1945,9 +2263,11 @@ person = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: Compute age using year_of_birth. | ETL CONVENTIONS: For "
-            "data sources with date of birth, the year should be extracted. For data "
-            "sources where the year of birth is not available, the approximate year of "
-            "birth could be derived based on age group categorization, if available."
+            "data sources with date of birth, the year should be extracted. If no year "
+            "of birth is available all the person's data should be dropped from the "
+            "CDM instance. For additional information on how to populate this field, "
+            "please refer to the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/tag_year_of_birth.html)."
         ),
     ),
     Column(
@@ -1972,14 +2292,9 @@ person = Table(
         comment=(
             "ETL CONVENTIONS: This field is not required but highly encouraged. For "
             "data sources that provide the precise datetime of birth, that value "
-            "should be stored in this field. If birth_datetime is not provided in the "
-            "source, use the following logic to infer the date: If day_of_birth is "
-            "null and month_of_birth is not null then use the first of the month in "
-            "that year. If month_of_birth is null or if day_of_birth AND "
-            "month_of_birth are both null and the person has records during their year "
-            "of birth then use the date of the earliest record, otherwise use the 15th "
-            "of June of that year. If time of birth is not given use midnight "
-            "(00:00:0000)."
+            "should be stored in this field. For more information on how to populate "
+            "this field, please refer to the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/person.html)."
         ),
     ),
     Column(
@@ -2004,8 +2319,8 @@ person = Table(
         comment=(
             "USER GUIDANCE: This field captures Ethnicity as defined by the Office of "
             "Management and Budget (OMB) of the US Government: it distinguishes only "
-            'between "Hispanic" and "Not Hispanic". Races and ethnic backgrounds are '
-            "not stored here. | ETL CONVENTIONS: Only use this field if you have "
+            "between \\Hispanic\\ and \\Not Hispanic\\. Races and ethnic backgrounds "
+            "are not stored here. | ETL CONVENTIONS: Only use this field if you have "
             "US-based data and a source of this information. Do not attempt to infer "
             "Ethnicity from the race or ethnic background of the Person. [Accepted "
             "ethnicity "
@@ -2019,13 +2334,11 @@ person = Table(
             "USER GUIDANCE: The location refers to the physical address of the person. "
             "This field should capture the last known location of the person. | ETL "
             "CONVENTIONS: Put the location_id from the "
-            "[LOCATION](https://ohdsi.github.io/CommonDataModel/cdm531.html#location) "
+            "[LOCATION](https://ohdsi.github.io/CommonDataModel/cdm53.html#location) "
             "table here that represents the most granular location information for the "
-            "person. This could represent anything from postal code or parts thereof, "
-            "state, or county for example. Since many databases contain deidentified "
-            "data, it is common that the precision of the location is reduced to "
-            "prevent re-identification. This field should capture the last known "
-            "location."
+            "person. For additional information on how to populate this field, please "
+            "refer to the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/populate_person_location_id.html)."
         ),
     ),
     Column(
@@ -2035,7 +2348,7 @@ person = Table(
             "USER GUIDANCE: The Provider refers to the last known primary care "
             "provider (General Practitioner). | ETL CONVENTIONS: Put the provider_id "
             "from the "
-            "[PROVIDER](https://ohdsi.github.io/CommonDataModel/cdm531.html#provider) "
+            "[PROVIDER](https://ohdsi.github.io/CommonDataModel/cdm53.html#provider) "
             "table of the last known general practitioner of the person. If there are "
             "multiple providers, it is up to the ETL to decide which to put here."
         ),
@@ -2066,8 +2379,8 @@ person = Table(
         comment=(
             "USER GUIDANCE: This field is used to store the biological sex of the "
             "person from the source data. It is not intended for use in standard "
-            "analytics but for reference only. | ETL CONVENTIONS: Put the biological "
-            "sex of the person as it appears in the source data."
+            "analytics but for reference only. | ETL CONVENTIONS: Put the assigned sex "
+            "at birth of the person as it appears in the source data."
         ),
     ),
     Column(
@@ -2075,7 +2388,7 @@ person = Table(
         Integer,
         comment=(
             "USER GUIDANCE: Due to the small number of options, this tends to be zero. "
-            "| ETL CONVENTIONS: If the source data codes biological sex in a "
+            "| ETL CONVENTIONS: If the source data codes assigned sex at birth in a "
             "non-standard vocabulary, store the concept_id here."
         ),
     ),
@@ -2105,8 +2418,8 @@ person = Table(
             "USER GUIDANCE: This field is used to store the ethnicity of the person "
             "from the source data. It is not intended for use in standard analytics "
             "but for reference only. | ETL CONVENTIONS: If the person has an ethnicity "
-            'other than the OMB standard of "Hispanic" or "Not Hispanic" store that '
-            "value from the source data here."
+            "other than the OMB standard of \\Hispanic\\ or \\Not Hispanic\\ store "
+            "that value from the source data here."
         ),
     ),
     Column(
@@ -2159,7 +2472,9 @@ person = Table(
         "contributes Events to the database, Persons must be reconciled, if "
         "possible, across the sources to create one single record per Person. The "
         "content of the BIRTH_DATETIME must be equivalent to the content of "
-        "BIRTH_DAY, BIRTH_MONTH and BIRTH_YEAR."
+        "BIRTH_DAY, BIRTH_MONTH and BIRTH_YEAR.<br><br>For detailed conventions "
+        "for how to populate this table, please refer to the [THEMIS "
+        "repository](https://ohdsi.github.io/Themis/person.html)."
     ),
 )
 """This table serves as the central identity management for all Persons in the database. It contains
@@ -2173,7 +2488,9 @@ ETL conventions:
     requirements specified in the ETL. Persons with no Events should have a record nonetheless. If
     more than one data source contributes Events to the database, Persons must be reconciled, if
     possible, across the sources to create one single record per Person. The content of the
-    BIRTH_DATETIME must be equivalent to the content of BIRTH_DAY, BIRTH_MONTH and BIRTH_YEAR.
+    BIRTH_DATETIME must be equivalent to the content of BIRTH_DAY, BIRTH_MONTH and
+    BIRTH_YEAR.<br><br>For detailed conventions for how to populate this table, please refer to the
+    [THEMIS repository](https://ohdsi.github.io/Themis/person.html).
 """
 
 death = Table(
@@ -2188,13 +2505,18 @@ death = Table(
             "USER GUIDANCE: The date the person was deceased. | ETL CONVENTIONS: If "
             "the precise date include day or month is not known or not allowed, "
             "December is used as the default month, and the last day of the month the "
-            "default day."
+            "default day. For additional conventions related to this field, please "
+            "refer to the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/tag_death_date.html)."
         ),
     ),
     Column(
         "death_datetime",
         DateTime,
-        comment="ETL CONVENTIONS: If not available set time to midnight (00:00:00)",
+        comment=(
+            "ETL CONVENTIONS: If you have date and time of death, populate "
+            "death_datetime, otherwise leave NULL"
+        ),
     ),
     Column(
         "death_type_concept_id",
@@ -2204,8 +2526,11 @@ death = Table(
             "came from. It is possible that an administrative claims database would "
             "source death information from a government file so do not assume the "
             "Death Type is the same as the Visit Type, etc. | ETL CONVENTIONS: Use the "
-            "type concept that be reflects the source of the death record. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "type concept that reflects the source of the death record. [Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -2214,8 +2539,8 @@ death = Table(
         comment=(
             "USER GUIDANCE: This is the Standard Concept representing the Person's "
             "cause of death, if available. | ETL CONVENTIONS: There is no specified "
-            "domain for this concept, just choose the Standard Concept Id that best "
-            "represents the person's cause of death."
+            "domain for this concept, just choose the Standard Concept Id that the "
+            "Source Concept Id maps to."
         ),
     ),
     Column(
@@ -2231,8 +2556,8 @@ death = Table(
         Integer,
         comment=(
             "ETL CONVENTIONS: If the cause of death was coded using a Vocabulary "
-            "present in the OMOP Vocabularies put the CONCEPT_ID representing the "
-            "cause of death here."
+            "present in the OMOP Vocabularies (not necessarily a standard concept) put "
+            "the CONCEPT_ID representing the cause of death here."
         ),
     ),
     ForeignKeyConstraint(
@@ -2254,12 +2579,18 @@ death = Table(
         "Person dies. A person can have up to one record if the source system "
         "contains evidence about the Death, such as: Condition in an "
         "administrative claim, status of enrollment into a health plan, or "
-        "explicit record in EHR data."
+        "explicit record in EHR data. | ETL CONVENTIONS: For specific conventions "
+        "on how to populate this table, please refer to the [THEMIS "
+        "repository](https://ohdsi.github.io/Themis/death.html)."
     ),
 )
 """The death domain contains the clinical event for how and when a Person dies. A person can have up
 to one record if the source system contains evidence about the Death, such as: Condition in an
 administrative claim, status of enrollment into a health plan, or explicit record in EHR data.
+
+ETL conventions:
+    For specific conventions on how to populate this table, please refer to the
+    [THEMIS repository](https://ohdsi.github.io/Themis/death.html).
 """
 
 dose_era = Table(
@@ -2347,7 +2678,11 @@ drug_era = Table(
         "drug_concept_id",
         Integer,
         nullable=False,
-        comment="USER GUIDANCE: The Concept Id representing the specific drug ingredient.",
+        comment=(
+            "USER GUIDANCE: The drug_concept_id should conform to the concept class "
+            "'ingredient' as the drug_era is an era of time where a person is exposed "
+            "to a particular drug ingredient."
+        ),
     ),
     Column(
         "drug_era_start_date",
@@ -2380,21 +2715,28 @@ drug_era = Table(
             "considered to be merged into a single Drug Era."
         ),
     ),
-    Column("drug_exposure_count", Integer),
+    Column(
+        "drug_exposure_count",
+        Integer,
+        comment=(
+            "USER GUIDANCE: The count of grouped DRUG_EXPOSURE records that were "
+            "included in the DRUG_ERA row"
+        ),
+    ),
     Column(
         "gap_days",
         Integer,
         comment=(
             "ETL CONVENTIONS: The Gap Days determine how many total drug-free days are "
             "observed between all Drug Exposure events that contribute to a DRUG_ERA "
-            'record. It is assumed that the drugs are "not stockpiled" by the patient, '
-            "i.e. that if a new drug prescription or refill is observed (a new "
-            "DRUG_EXPOSURE record is written), the remaining supply from the previous "
-            "events is abandoned.   The difference between Persistence Window and Gap "
-            "Days is that the former is the maximum drug-free time allowed between two "
-            "subsequent DRUG_EXPOSURE records, while the latter is the sum of actual "
-            "drug-free days for the given Drug Era under the above assumption of "
-            "non-stockpiling."
+            "record. It is assumed that the drugs are \\not stockpiled\\ by the "
+            "patient, i.e. that if a new drug prescription or refill is observed (a "
+            "new DRUG_EXPOSURE record is written), the remaining supply from the "
+            "previous events is abandoned.   The difference between Persistence Window "
+            "and Gap Days is that the former is the maximum drug-free time allowed "
+            "between two subsequent DRUG_EXPOSURE records, while the latter is the sum "
+            "of actual drug-free days for the given Drug Era under the above "
+            "assumption of non-stockpiling."
         ),
     ),
     ForeignKeyConstraint(
@@ -2410,15 +2752,17 @@ drug_era = Table(
         "same as a Drug Exposure: Exposures are individual records corresponding "
         "to the source when Drug was delivered to the Person, while successive "
         "periods of Drug Exposures are combined under certain rules to produce "
-        "continuous Drug Eras. | ETL CONVENTIONS: The SQL script for generating "
-        "DRUG_ERA records can be found "
+        "continuous Drug Eras. Every record in the DRUG_EXPOSURE table should be "
+        "part of a drug era based on the dates of exposure. | ETL CONVENTIONS: The "
+        "SQL script for generating DRUG_ERA records can be found "
         "[here](https://ohdsi.github.io/CommonDataModel/sqlScripts.html#drug_eras)."
     ),
 )
 """A Drug Era is defined as a span of time when the Person is assumed to be exposed to a particular
 active ingredient. A Drug Era is not the same as a Drug Exposure: Exposures are individual records
 corresponding to the source when Drug was delivered to the Person, while successive periods of Drug
-Exposures are combined under certain rules to produce continuous Drug Eras.
+Exposures are combined under certain rules to produce continuous Drug Eras. Every record in the
+DRUG_EXPOSURE table should be part of a drug era based on the dates of exposure.
 
 ETL conventions:
     The SQL script for generating DRUG_ERA records can be found
@@ -2461,7 +2805,7 @@ observation_period = Table(
             "can be considered as the time period the Person is enrolled with a payer. "
             "If a Person switches plans but stays with the same payer, and therefore "
             "capturing of data continues, that change would be captured in "
-            "[PAYER_PLAN_PERIOD](https://ohdsi.github.io/CommonDataModel/cdm531.html#payer_plan_period)."
+            "[PAYER_PLAN_PERIOD](https://ohdsi.github.io/CommonDataModel/cdm53.html#payer_plan_period)."
         ),
     ),
     Column(
@@ -2488,7 +2832,10 @@ observation_period = Table(
             "insurance enrollment file, EHR healthcare encounters, or other sources. | "
             "ETL CONVENTIONS: Choose the observation_period_type_concept_id that best "
             "represents how the period was determined. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     ForeignKeyConstraint(
@@ -2504,7 +2851,7 @@ observation_period = Table(
     comment=(
         "DESC: This table contains records which define spans of time during which "
         "two conditions are expected to hold: (i) Clinical Events that happened to "
-        "the Person are recorded in the Event tables, and (ii) absense of records "
+        "the Person are recorded in the Event tables, and (ii) absence of records "
         "indicate such Events did not occur during this span of time. | USER "
         "GUIDANCE: For each Person, one or more OBSERVATION_PERIOD records may be "
         "present, but they will not overlap or be back to back to each other. "
@@ -2541,7 +2888,7 @@ observation_period = Table(
 )
 """This table contains records which define spans of time during which two conditions are expected
 to hold: (i) Clinical Events that happened to the Person are recorded in the Event tables, and (ii)
-absense of records indicate such Events did not occur during this span of time.
+absence of records indicate such Events did not occur during this span of time.
 
 User guidance:
     For each Person, one or more OBSERVATION_PERIOD records may be present, but they will not
@@ -2611,12 +2958,13 @@ payer_plan_period = Table(
         comment=(
             "USER GUIDANCE: This field represents the organization who reimburses the "
             "provider which administers care to the Person. | ETL CONVENTIONS: Map the "
-            "Payer directly to a standard CONCEPT_ID. If one does not exists please "
-            "contact the vocabulary team. There is no global controlled vocabulary "
-            "available for this information. The point is to stratify on this "
-            "information and identify if Persons have the same payer, though the name "
-            "of the Payer is not necessary. [Accepted "
-            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Payer&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "payer directly to a standard CONCEPT_ID with the domain_id of 'Payer' "
+            "([Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Payer&standardConcept=Standard&page=1&pageSize=15&query=)). "
+            "This vocabulary is not exhaustive so if there is a value missing, please "
+            "see the [custom "
+            "concepts](https://ohdsi.github.io/CommonDataModel/customConcepts.html) "
+            "page."
         ),
     ),
     Column(
@@ -2638,12 +2986,12 @@ payer_plan_period = Table(
         comment=(
             "USER GUIDANCE: This field represents the specific health benefit Plan the "
             "Person is enrolled in. | ETL CONVENTIONS: Map the Plan directly to a "
-            "standard CONCEPT_ID. If one does not exists please contact the vocabulary "
-            "team. There is no global controlled vocabulary available for this "
-            "information. The point is to stratify on this information and identify if "
-            "Persons have the same health benefit Plan though the name of the Plan is "
-            "not necessary. [Accepted "
-            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Plan&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "standard CONCEPT_ID in the 'Plan' vocabulary ([Accepted "
+            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Plan&standardConcept=Standard&page=1&pageSize=15&query=)). "
+            "This vocabulary is not exhaustive so if there is a value missing, please "
+            "see the [custom "
+            "concepts](https://ohdsi.github.io/CommonDataModel/customConcepts.html) "
+            "page."
         ),
     ),
     Column(
@@ -2669,12 +3017,12 @@ payer_plan_period = Table(
             "USER GUIDANCE: This field represents the sponsor of the Plan who finances "
             "the Plan. This includes self-insured, small group health plan and large "
             "group health plan. | ETL CONVENTIONS: Map the sponsor directly to a "
-            "standard CONCEPT_ID. If one does not exists please contact the vocabulary "
-            "team. There is no global controlled vocabulary available for this "
-            "information. The point is to stratify on this information and identify if "
-            "Persons have the same sponsor though the name of the sponsor is not "
-            "necessary. [Accepted "
-            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Sponsor&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "standard CONCEPT_ID with the domain_id of 'Sponsor' ([Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Sponsor&standardConcept=Standard&page=1&pageSize=15&query=)). "
+            "This vocabulary is not exhaustive so if there is a value missing, please "
+            "see the [custom "
+            "concepts](https://ohdsi.github.io/CommonDataModel/customConcepts.html) "
+            "page."
         ),
     ),
     Column(
@@ -2705,10 +3053,11 @@ payer_plan_period = Table(
         comment=(
             "USER GUIDANCE: This field represents the reason the Person left the Plan, "
             "if known. | ETL CONVENTIONS: Map the stop reason directly to a standard "
-            "CONCEPT_ID. If one does not exists please contact the vocabulary team. "
-            "There is no global controlled vocabulary available for this information. "
-            "[Accepted "
-            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Plan+Stop+Reason&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "CONCEPT_ID with a domain of 'Plan Stop Reason' ([Accepted "
+            "Concepts](http://athena.ohdsi.org/search-terms/terms?domain=Plan+Stop+Reason&standardConcept=Standard&page=1&pageSize=15&query=)). "
+            "If one does not exist visit the [Custom "
+            "Concepts](https://ohdsi.github.io/CommonDataModel/customConcepts.html) "
+            "pate for more information."
         ),
     ),
     Column(
@@ -2837,10 +3186,12 @@ procedure_occurrence = Table(
             "USER GUIDANCE: The PROCEDURE_CONCEPT_ID field is recommended for primary "
             "use in analyses, and must be used for network studies. This is the "
             "standard concept mapped from the source value which represents a "
-            "procedure | ETL CONVENTIONS: The CONCEPT_ID that the "
-            "PROCEDURE_SOURCE_VALUE maps to. Only records whose source values map to "
-            'standard concepts with a domain of "Procedure" should go in this table. '
-            "[Accepted "
+            "procedure | ETL CONVENTIONS: The standard CONCEPT_ID that represents the "
+            "PROCEDURE_SOURCE_VALUE. The concept id should be derived either from "
+            "mapping from the source concept id or by picking the procedure concept "
+            "representing the most amount of detail you have. Only records whose "
+            "source values map to standard concepts with a domain of \\Procedure\\ "
+            "should go in this table. [Accepted "
             "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Procedure&standardConcept=Standard&page=1&pageSize=15&query=)."
         ),
     ),
@@ -2849,20 +3200,19 @@ procedure_occurrence = Table(
         Date,
         nullable=False,
         comment=(
-            "USER GUIDANCE: Use this date to determine the date the procedure "
-            "occurred. | ETL CONVENTIONS: If a procedure lasts more than a day, then "
-            "it should be recorded as a separate record for each day the procedure "
-            "occurred, this logic is in lieu of the procedure_end_date, which will be "
-            "added in a future version of the CDM."
+            "USER GUIDANCE: Use this date to determine the date the procedure started. "
+            "| ETL CONVENTIONS: This is meant to be the **start date** of the "
+            "procedure. It will be renamed in a future version to "
+            "**PROCEDURE_START_DATE**."
         ),
     ),
     Column(
         "procedure_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: This is not required, though it is in v6. If a source "
-            "does not specify datetime the convention is to set the time to midnight "
-            "(00:00:0000)"
+            "ETL CONVENTIONS: If the procedure has a start time in the native date, "
+            "use this field to house that information. This will be renamed in a "
+            "future version to **PROCEDURE_START_DATETIME**."
         ),
     ),
     Column(
@@ -2877,7 +3227,10 @@ procedure_occurrence = Table(
             "record, for example whether it came from an EHR record or billing claim. "
             "If a procedure is recorded as an EHR encounter, the "
             "PROCEDURE_TYPE_CONCEPT would be 'EHR encounter record'. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -2973,8 +3326,9 @@ procedure_occurrence = Table(
         "modifier_source_value",
         String(50),
         comment=(
-            "ETL CONVENTIONS: The original modifier code from the source is stored "
-            "here for reference."
+            "USER GUIDANCE: This field houses the verbatim value from the source data "
+            "representing the modifier code for the procedure that occurred. | ETL "
+            "CONVENTIONS: The value stored here is mapped to a MODIFIER_CONCEPT_ID."
         ),
     ),
     ForeignKeyConstraint(
@@ -3077,7 +3431,10 @@ specimen = Table(
         comment=(
             "ETL CONVENTIONS: Put the source of the specimen record, as in an EHR "
             "system. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -3099,7 +3456,11 @@ specimen = Table(
             "USER GUIDANCE: The unit for the quantity of the specimen. | ETL "
             "CONVENTIONS: Map the UNIT_SOURCE_VALUE to a Standard Concept in the Unit "
             "domain. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Unit&standardConcept=Standard&page=1&pageSize=15&query=)"
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Unit&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "If the source unit is NULL (applicable to cases when there's no numerical "
+            "value or when it doesn't require a unit), keep unit_concept_id NULL as "
+            "well. If there's no mapping of a source unit, populate unit_concept_id "
+            "with 0."
         ),
     ),
     Column(
@@ -3202,11 +3563,11 @@ visit_occurrence = Table(
             "visit, like inpatient or outpatient. All concepts in this field should be "
             "standard and belong to the Visit domain. | ETL CONVENTIONS: Populate this "
             "field based on the kind of visit that took place for the person. For "
-            'example this could be "Inpatient Visit", "Outpatient Visit", "Ambulatory '
-            'Visit", etc. This table will contain standard concepts in the Visit '
-            "domain. These concepts are arranged in a hierarchical structure to "
-            "facilitate cohort definitions by rolling up to generally familiar Visits "
-            "adopted in most healthcare systems worldwide. [Accepted "
+            "example this could be \\Inpatient Visit\\, \\Outpatient Visit\\, "
+            "\\Ambulatory Visit\\, etc. This table will contain standard concepts in "
+            "the Visit domain. These concepts are arranged in a hierarchical structure "
+            "to facilitate cohort definitions by rolling up to generally familiar "
+            "Visits adopted in most healthcare systems worldwide. [Accepted "
             "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=)."
         ),
     ),
@@ -3221,15 +3582,15 @@ visit_occurrence = Table(
             "think about the patient experience to make decisions on how to define "
             "visits. In the case of an inpatient visit this should be the date the "
             "patient was admitted to the hospital or institution. In all other cases "
-            "this should be the date of the patient-provider interaction."
+            "this should be the date of the patient-provider interaction.  If this "
+            "information is not available the record should be dropped."
         ),
     ),
     Column(
         "visit_start_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: If no time is given for the start date of a visit, set "
-            "it to midnight (00:00:0000)."
+            "ETL CONVENTIONS: If no time is given for the start date of a visit, set to NULL."
         ),
     ),
     Column(
@@ -3238,9 +3599,11 @@ visit_occurrence = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: For inpatient visits the end date is typically the "
-            "discharge date. | ETL CONVENTIONS: Visit end dates are mandatory. If end "
-            "dates are not provided in the source there are three ways in which to "
-            "derive them:\n"
+            "discharge date.  If a Person is still an inpatient in the hospital at the "
+            "time of the data extract and does not have a visit_end_date, then set the "
+            "visit_end_date to the date of the data pull. | ETL CONVENTIONS: Visit end "
+            "dates are mandatory. If end dates are not provided in the source there "
+            "are three ways in which to derive them:\n\n"
             "- Outpatient Visit: visit_end_datetime = visit_start_datetime\n"
             "- Emergency Room Visit: visit_end_datetime = visit_start_datetime\n"
             "- Inpatient Visit: Usually there is information about discharge. If not, "
@@ -3249,9 +3612,8 @@ visit_occurrence = Table(
             "- Non-hospital institution Visits: Particularly for claims data, if end "
             "dates are not provided assume the visit is for the duration of month that "
             "it occurs.\n"
-            "For Inpatient Visits ongoing at the date of ETL, put date of processing "
-            "the data into visit_end_datetime and visit_type_concept_id with 32220 "
-            '"Still patient" to identify the visit as incomplete.\n'
+            "- For Inpatient Visits ongoing at the date of ETL, put date of processing "
+            "the data into visit_end_datetime \n"
             "- All other Visits: visit_end_datetime = visit_start_datetime. If this is "
             "a one-day visit the end date should match the start date."
         ),
@@ -3260,8 +3622,10 @@ visit_occurrence = Table(
         "visit_end_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: If no time is given for the end date of a visit, set it "
-            "to midnight (00:00:0000)."
+            "USER GUIDANCE: If a Person is still an inpatient in the hospital at the "
+            "time of the data extract and does not have a visit_end_datetime, then set "
+            "the visit_end_datetime to the datetime of the data pull. | ETL "
+            "CONVENTIONS: If no time is given for the end date of a visit, set to NULL."
         ),
     ),
     Column(
@@ -3273,7 +3637,10 @@ visit_occurrence = Table(
             "record, or where the record comes from. | ETL CONVENTIONS: Populate this "
             "field based on the provenance of the visit record, as in whether it came "
             "from an EHR record or billing claim. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -3288,7 +3655,7 @@ visit_occurrence = Table(
             "table. | ETL CONVENTIONS: If there are multiple providers associated with "
             "a visit, you will need to choose which one to put here. The additional "
             "providers can be stored in the "
-            "[VISIT_DETAIL](https://ohdsi.github.io/CommonDataModel/cdm531.html#visit_detail) "
+            "[VISIT_DETAIL](https://ohdsi.github.io/CommonDataModel/cdm53.html#visit_detail) "
             "table."
         ),
     ),
@@ -3330,10 +3697,10 @@ visit_occurrence = Table(
             "USER GUIDANCE: Use this field to determine where the patient was admitted "
             "from. This concept is part of the visit domain and can indicate if a "
             "patient was admitted to the hospital from a long-term care facility, for "
-            "example. | ETL CONVENTIONS: If available, map the "
-            "admitted_from_source_value to a standard concept in the visit domain. "
-            "[Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "example. | ETL CONVENTIONS: If available, map the admitting_source_value "
+            "to a standard concept in the visit domain. [Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "If a person was admitted from home or was self-referred, set this to 0."
         ),
     ),
     Column(
@@ -3379,7 +3746,7 @@ visit_occurrence = Table(
             "person prior to the given visit. There could be a few days or a few years "
             "in between. | ETL CONVENTIONS: This field can be used to link a visit "
             "immediately preceding the current visit. Note this is not symmetrical, "
-            'and there is no such thing as a "following_visit_id".'
+            "and there is no such thing as a \\following_visit_id\\."
         ),
     ),
     ForeignKeyConstraint(
@@ -3597,11 +3964,12 @@ visit_detail = Table(
             "visit detail, like inpatient or outpatient. All concepts in this field "
             "should be standard and belong to the Visit domain. | ETL CONVENTIONS: "
             "Populate this field based on the kind of visit that took place for the "
-            'person. For example this could be "Inpatient Visit", "Outpatient Visit", '
-            '"Ambulatory Visit", etc. This table will contain standard concepts in the '
-            "Visit domain. These concepts are arranged in a hierarchical structure to "
-            "facilitate cohort definitions by rolling up to generally familiar Visits "
-            "adopted in most healthcare systems worldwide. [Accepted "
+            "person. For example this could be \\Inpatient Visit\\, \\Outpatient "
+            "Visit\\, \\Ambulatory Visit\\, etc. This table will contain standard "
+            "concepts in the Visit domain. These concepts are arranged in a "
+            "hierarchical structure to facilitate cohort definitions by rolling up to "
+            "generally familiar Visits adopted in most healthcare systems worldwide. "
+            "[Accepted "
             "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=)."
         ),
     ),
@@ -3622,8 +3990,7 @@ visit_detail = Table(
         "visit_detail_start_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: If no time is given for the start date of a visit, set "
-            "it to midnight (00:00:0000)."
+            "ETL CONVENTIONS: If no time is given for the start date of a visit, set to NULL."
         ),
     ),
     Column(
@@ -3631,10 +3998,12 @@ visit_detail = Table(
         Date,
         nullable=False,
         comment=(
-            "USER GUIDANCE: This the end date of the patient-provider interaction. | "
-            "ETL CONVENTIONS: Visit Detail end dates are mandatory. If end dates are "
-            "not provided in the source there are three ways in which to derive "
-            "them:<br>\n"
+            "USER GUIDANCE: This the end date of the patient-provider interaction.  If "
+            "a Person is still an inpatient in the hospital at the time of the data "
+            "extract and does not have a visit_end_date, then set the visit_end_date "
+            "to the date of the data pull. | ETL CONVENTIONS: Visit Detail end dates "
+            "are mandatory. If end dates are not provided in the source there are "
+            "three ways in which to derive them:<br>\n"
             "- Outpatient Visit Detail: visit_detail_end_datetime = "
             "visit_detail_start_datetime\n"
             "- Emergency Room Visit Detail: visit_detail_end_datetime = "
@@ -3647,7 +4016,7 @@ visit_detail = Table(
             "month that it occurs.<br>\n"
             "For Inpatient Visit Details ongoing at the date of ETL, put date of "
             "processing the data into visit_detai_end_datetime and "
-            'visit_detail_type_concept_id with 32220 "Still patient" to identify the '
+            "visit_detail_type_concept_id with 32220 \\Still patient\\ to identify the "
             "visit as incomplete.\n"
             "All other Visits Details: visit_detail_end_datetime = "
             "visit_detail_start_datetime."
@@ -3657,8 +4026,10 @@ visit_detail = Table(
         "visit_detail_end_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: If no time is given for the end date of a visit, set it "
-            "to midnight (00:00:0000)."
+            "USER GUIDANCE: If a Person is still an inpatient in the hospital at the "
+            "time of the data extract and does not have a visit_end_datetime, then set "
+            "the visit_end_datetime to the datetime of the data pull. | ETL "
+            "CONVENTIONS: If no time is given for the end date of a visit, set to NULL."
         ),
     ),
     Column(
@@ -3670,7 +4041,10 @@ visit_detail = Table(
             "detail record, or where the record comes from. | ETL CONVENTIONS: "
             "Populate this field based on the provenance of the visit detail record, "
             "as in whether it came from an EHR record or billing claim. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -3737,10 +4111,10 @@ visit_detail = Table(
             "USER GUIDANCE: Use this field to determine where the patient was admitted "
             "from. This concept is part of the visit domain and can indicate if a "
             "patient was admitted to the hospital from a long-term care facility, for "
-            "example. | ETL CONVENTIONS: If available, map the "
-            "admitted_from_source_value to a standard concept in the visit domain. "
-            "[Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "example. | ETL CONVENTIONS: If available, map the admitting_source_value "
+            "to a standard concept in the visit domain. [Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "If a person was admitted from home or was self-referred, set this to 0."
         ),
     ),
     Column(
@@ -3776,7 +4150,7 @@ visit_detail = Table(
             "days or a few years in between. | ETL CONVENTIONS: The "
             "PRECEDING_VISIT_DETAIL_ID can be used to link a visit immediately "
             "preceding the current Visit Detail. Note this is not symmetrical, and "
-            'there is no such thing as a "following_visit_id".'
+            "there is no such thing as a \\following_visit_id\\."
         ),
     ),
     Column(
@@ -3946,9 +4320,12 @@ condition_occurrence = Table(
             "USER GUIDANCE: The CONDITION_CONCEPT_ID field is recommended for primary "
             "use in analyses, and must be used for network studies. This is the "
             "standard concept mapped from the source value which represents a "
-            "condition | ETL CONVENTIONS: The CONCEPT_ID that the "
-            "CONDITION_SOURCE_VALUE maps to. Only records whose source values map to "
-            'concepts with a domain of "Condition" should go in this table. [Accepted '
+            "condition | ETL CONVENTIONS: The standard CONCEPT_ID that represents the "
+            "CONDITION_SOURCE_VALUE. The concept id should be derived either from "
+            "mapping from the source concept id or by picking the condition concept "
+            "representing the most amount of detail you have. Only records whose "
+            "source values map to concepts with a domain of \\Condition\\ should go in "
+            "this table. [Accepted "
             "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Condition&standardConcept=Standard&page=1&pageSize=15&query=)."
         ),
     ),
@@ -3969,7 +4346,7 @@ condition_occurrence = Table(
         DateTime,
         comment=(
             "ETL CONVENTIONS: If a source does not specify datetime the convention is "
-            "to set the time to midnight (00:00:0000)"
+            "to set to NULL."
         ),
     ),
     Column(
@@ -3988,7 +4365,7 @@ condition_occurrence = Table(
         DateTime,
         comment=(
             "ETL CONVENTIONS: If a source does not specify datetime the convention is "
-            "to set the time to midnight (00:00:0000)"
+            "to set to NULL."
         ),
     ),
     Column(
@@ -4001,7 +4378,10 @@ condition_occurrence = Table(
             "insurance claim, registry, or other sources. | ETL CONVENTIONS: Choose "
             "the CONDITION_TYPE_CONCEPT_ID that best represents the provenance of the "
             "record. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -4244,7 +4624,11 @@ device_exposure = Table(
             "in analyses, and must be used for network studies. This is the standard "
             "concept mapped from the source concept id which represents a foreign "
             "object or instrument the person was exposed to. | ETL CONVENTIONS: The "
-            "CONCEPT_ID that the DEVICE_SOURCE_VALUE maps to."
+            "standard CONCEPT_ID that represents the DEVICE_SOURCE_VALUE. The concept "
+            "id should be derived either from mapping from the source concept id or by "
+            "picking the device concept representing the most amount of detail you "
+            "have. [Accepted "
+            "concepts](https://athena.ohdsi.org/search-terms/terms?domain=Device%2FDrug&domain=Device&domain=Device%2FProcedure&page=1&pageSize=15&query=)"
         ),
     ),
     Column(
@@ -4258,15 +4642,7 @@ device_exposure = Table(
             "or the date of device administration."
         ),
     ),
-    Column(
-        "device_exposure_start_datetime",
-        DateTime,
-        comment=(
-            "ETL CONVENTIONS: This is not required, though it is in v6. If a source "
-            "does not specify datetime the convention is to set the time to midnight "
-            "(00:00:0000)"
-        ),
-    ),
+    Column("device_exposure_start_datetime", DateTime),
     Column(
         "device_exposure_end_date",
         Date,
@@ -4277,14 +4653,7 @@ device_exposure = Table(
             "blank if unavailable."
         ),
     ),
-    Column(
-        "device_exposure_end_datetime",
-        DateTime,
-        comment=(
-            "ETL CONVENTIONS: If a source does not specify datetime the convention is "
-            "to set the time to midnight (00:00:0000)"
-        ),
-    ),
+    Column("device_exposure_end_datetime", DateTime),
     Column(
         "device_type_concept_id",
         Integer,
@@ -4292,25 +4661,33 @@ device_exposure = Table(
         comment=(
             "USER GUIDANCE: You can use the TYPE_CONCEPT_ID to denote the provenance "
             "of the record, as in whether the record is from administrative claims or "
-            "EHR. | ETL CONVENTIONS: Choose the drug_type_concept_id that best "
-            "represents the provenance of the record, for example whether it came from "
-            "a record of a prescription written or physician administered drug. "
-            "[Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "EHR. | ETL CONVENTIONS: Choose the device_type_concept_id that best "
+            "represents the provenance of the record. [Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
         "unique_device_id",
         String(50),
         comment=(
-            "USER GUIDANCE: This is the Unique Device Identification number for "
-            "devices regulated by the FDA, if given. | ETL CONVENTIONS: For medical "
-            "devices that are regulated by the FDA, a Unique Device Identification "
-            "(UDI) is provided if available in the data source and is recorded in the "
-            "UNIQUE_DEVICE_ID field."
+            "USER GUIDANCE: This is the Unique Device Identification (UDI-DI) number "
+            "for devices regulated by the FDA, if given. | ETL CONVENTIONS: For "
+            "medical devices that are regulated by the FDA, a Unique Device "
+            "Identification (UDI) is provided if available in the data source and is "
+            "recorded in the UNIQUE_DEVICE_ID field."
         ),
     ),
-    Column("quantity", Integer),
+    Column(
+        "quantity",
+        Integer,
+        comment=(
+            "ETL CONVENTIONS: If there is a record of device exposure in the source "
+            "but no quantity value, then set to 1."
+        ),
+    ),
     Column(
         "provider_id",
         Integer,
@@ -4470,21 +4847,21 @@ drug_exposure = Table(
             "information is relevant in the context of quantity and administration "
             "information in the subsequent fields plus strength information from the "
             "DRUG_STRENGTH table, provided as part of the standard vocabulary "
-            "download. | ETL CONVENTIONS: The CONCEPT_ID that the DRUG_SOURCE_VALUE "
-            "maps to. The concept id should be derived either from mapping from the "
-            "source concept id or by picking the drug concept representing the most "
-            "amount of detail you have. Records whose source values map to standard "
-            "concepts with a domain of Drug should go in this table. When the Drug "
-            "Source Value of the code cannot be translated into Standard Drug Concept "
-            "IDs, a Drug exposure entry is stored with only the corresponding "
+            "download. | ETL CONVENTIONS: The standard CONCEPT_ID that represents the "
+            "DRUG_SOURCE_VALUE. The concept id should be derived either from mapping "
+            "from the source concept id or by picking the drug concept representing "
+            "the most amount of detail you have. Records whose source values map to "
+            "standard concepts with a domain of Drug should go in this table. When the "
+            "Drug Source Value of the code cannot be translated into Standard Drug "
+            "Concept IDs, a Drug exposure entry is stored with only the corresponding "
             "SOURCE_CONCEPT_ID and DRUG_SOURCE_VALUE and a DRUG_CONCEPT_ID of 0. The "
             "Drug Concept with the most detailed content of information is preferred "
             "during the mapping process. These are indicated in the CONCEPT_CLASS_ID "
             "field of the Concept and are recorded in the following order of "
-            "precedence: 'Branded Pack', 'Clinical Pack', 'Branded Drug', 'Clinical "
-            "Drug', 'Branded Drug Component', 'Clinical Drug Component', 'Branded Drug "
-            "Form', 'Clinical Drug Form', and only if no other information is "
-            "available 'Ingredient'. Note: If only the drug class is known, the "
+            "precedence: Marketed Product, Branded Pack, Clinical Pack, Branded Drug, "
+            "Clinical Drug, Branded Drug Component, Clinical Drug Component, Branded "
+            "Drug Form, Clinical Drug Form, and only if no other information is "
+            "available Ingredient. Note: If only the drug class is known, the "
             "DRUG_CONCEPT_ID field should contain 0. [Accepted "
             "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Drug&standardConcept=Standard&page=1&pageSize=15&query=)."
         ),
@@ -4505,9 +4882,8 @@ drug_exposure = Table(
         "drug_exposure_start_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: This is not required, though it is in v6. If a source "
-            "does not specify datetime the convention is to set the time to midnight "
-            "(00:00:0000)"
+            "ETL CONVENTIONS: This is not required. If a source does not specify "
+            "datetime the convention is to set to NULL."
         ),
     ),
     Column(
@@ -4517,31 +4893,18 @@ drug_exposure = Table(
         comment=(
             "USER GUIDANCE: The DRUG_EXPOSURE_END_DATE denotes the day the drug "
             "exposure ended for the patient. | ETL CONVENTIONS: If this information is "
-            "not explicitly available in the data, infer the end date using the "
-            "following methods:<br><br> 1. Start first with duration or days supply "
-            "using the calculation drug start date + days supply -1 day. 2. Use "
-            "quantity divided by daily dose that you may obtain from the sig or a "
-            "source field (or assumed daily dose of 1) for solid, indivisibile, drug "
-            "products. If quantity represents ingredient amount, quantity divided by "
-            "daily dose * concentration (from drug_strength) drug concept id tells you "
-            "the dose form. 3. If it is an administration record, set drug end date "
-            "equal to drug start date. If the record is a written prescription then "
-            "set end date to start date + 29. If the record is a mail-order "
-            "prescription set end date to start date + 89. The end date must be equal "
-            "to or greater than the start date. Ibuprofen 20mg/mL oral solution "
-            "concept tells us this is oral solution. Calculate duration as quantity "
-            "(200 example) * daily dose (5mL) /concentration (20mg/mL) 200*5/20 = 50 "
-            "days. [Examples by dose "
-            "form](https://ohdsi.github.io/CommonDataModel/drug_dose.html)"
+            "not explicitly available in the data, infer the end date from start date "
+            "and duration.<br>For detailed conventions for how to populate this field, "
+            "please see the [THEMIS "
+            "repository](https://ohdsi.github.io/Themis/tag_drug_exposure.html)."
         ),
     ),
     Column(
         "drug_exposure_end_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: This is not required, though it is in v6. If a source "
-            "does not specify datetime the convention is to set the time to midnight "
-            "(00:00:0000)"
+            "ETL CONVENTIONS: This is not required. If a source does not specify "
+            "datetime the convention is to set to NULL."
         ),
     ),
     Column(
@@ -4565,7 +4928,10 @@ drug_exposure = Table(
             "drug_type_concept_id that best represents the provenance of the record, "
             "for example whether it came from a record of a prescription written or "
             "physician administered drug. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -4615,10 +4981,10 @@ drug_exposure = Table(
         "days_supply",
         Integer,
         comment=(
-            "ETL CONVENTIONS: Days supply of the drug. This should be the verbatim "
-            "days_supply as given on the prescription. If the drug is physician "
-            "administered use duration end date if given or set to 1 as default if "
-            "duration is not available."
+            "ETL CONVENTIONS: The number of days of supply of the medication as "
+            "recorded in the original prescription or dispensing record. Days supply "
+            "can differ from actual drug duration (i.e. prescribed days supply vs "
+            "actual exposure).\\"
         ),
     ),
     Column(
@@ -4635,10 +5001,19 @@ drug_exposure = Table(
         Integer,
         comment=(
             "ETL CONVENTIONS: The standard CONCEPT_ID that the ROUTE_SOURCE_VALUE maps "
-            "to in the route domain."
+            "to in the route domain. This is meant to represent the route of "
+            "administration of the drug. [Accepted "
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Route&standardConcept=Standard&page=1&pageSize=15&query=)"
         ),
     ),
-    Column("lot_number", String(50)),
+    Column(
+        "lot_number",
+        String(50),
+        comment=(
+            "USER GUIDANCE: An identifier assigned to a particular quantity or lot of "
+            "drug product from the manufacturer."
+        ),
+    ),
     Column(
         "provider_id",
         Integer,
@@ -4720,8 +5095,8 @@ drug_exposure = Table(
             "representing the dose unit of the drug given. | ETL CONVENTIONS: This "
             "information may be called something different in the source data but the "
             "field is meant to contain a value indicating the unit of dosage of drug "
-            "given to the patient. This is an older column and will be deprecated in "
-            "an upcoming version."
+            "given to the patient. **This is an older column and will be deprecated in "
+            "an upcoming version.**"
         ),
     ),
     ForeignKeyConstraint(
@@ -4783,7 +5158,10 @@ drug_exposure = Table(
         "for prescriptions dispensed. If a patient has multiple records on the "
         "same day for the same drug or procedures the ETL should not de-dupe them "
         "unless there is probable reason to believe the item is a true data "
-        "duplicate. Take note on how to handle refills for prescriptions written."
+        "duplicate. Take note on how to handle refills for prescriptions "
+        "written.<br><br>For detailed conventions on how to populate this table, "
+        "please refer to the [THEMIS "
+        "repository](https://ohdsi.github.io/Themis/drug_exposure.html)."
     ),
 )
 """This table captures records about the exposure to a Drug ingested or otherwise introduced into
@@ -4809,7 +5187,9 @@ ETL conventions:
     may have a separate meaning from quantity for prescriptions dispensed. If a patient has multiple
     records on the same day for the same drug or procedures the ETL should not de-dupe them unless
     there is probable reason to believe the item is a true data duplicate. Take note on how to
-    handle refills for prescriptions written.
+    handle refills for prescriptions written.<br><br>For detailed conventions on how to populate
+    this table, please refer to the
+    [THEMIS repository](https://ohdsi.github.io/Themis/drug_exposure.html).
 """
 
 measurement = Table(
@@ -4845,10 +5225,14 @@ measurement = Table(
         nullable=False,
         comment=(
             "USER GUIDANCE: The MEASUREMENT_CONCEPT_ID field is recommended for "
-            "primary use in analyses, and must be used for network studies. | ETL "
-            "CONVENTIONS: The CONCEPT_ID that the MEASUREMENT_SOURCE_CONCEPT_ID maps "
-            "to. Only records whose SOURCE_CONCEPT_IDs map to Standard Concepts with a "
-            'domain of "Measurement" should go in this table.'
+            "primary use in analyses, and must be used for network studies. This is "
+            "the standard concept mapped from the source value which represents a "
+            "measurement. | ETL CONVENTIONS: The standard CONCEPT_ID that represents "
+            "the MEASUREMENT_SOURCE_VALUE. The concept id should be derived either "
+            "from mapping from the source concept id or by picking the measurement "
+            "concept representing the most amount of detail you have. Only records "
+            "whose source values map to concepts with a domain of Measurement should "
+            "go in this table."
         ),
     ),
     Column(
@@ -4867,9 +5251,8 @@ measurement = Table(
         "measurement_datetime",
         DateTime,
         comment=(
-            "ETL CONVENTIONS: This is not required, though it is in v6. If a source "
-            "does not specify datetime the convention is to set the time to midnight "
-            "(00:00:0000)"
+            "ETL CONVENTIONS: This is not required. If a source does not specify "
+            "datetime the convention is to set to NULL."
         ),
     ),
     Column(
@@ -4891,7 +5274,10 @@ measurement = Table(
             "the MEASUREMENT_TYPE_CONCEPT_ID that best represents the provenance of "
             "the record, for example whether it came from an EHR record or billing "
             "claim. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -4905,7 +5291,10 @@ measurement = Table(
             "forget testing for the content of this field for values different from =. "
             "| ETL CONVENTIONS: Operators are <, <=, =, >=, > and these concepts "
             "belong to the 'Meas Value Operator' domain. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Meas+Value+Operator&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Meas+Value+Operator&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "The operator_concept_id explictly refers to the value of the measurement. "
+            "Leave it NULL if there's an exact numeric value given (instead of putting "
+            "'=') or there's no numeric value at all."
         ),
     ),
     Column(
@@ -4915,22 +5304,8 @@ measurement = Table(
             "USER GUIDANCE: This is the numerical value of the Result of the "
             "Measurement, if available. Note that measurements such as blood pressures "
             "will be split into their component parts i.e. one record for systolic, "
-            "one record for diastolic. | ETL CONVENTIONS: If there is a negative value "
-            "coming from the source, set the VALUE_AS_NUMBER to NULL, with the "
-            "exception of the following Measurements (listed as LOINC codes):<br>-  "
-            "[1925-7](https://athena.ohdsi.org/search-terms/terms/3003396) Base excess "
-            "in Arterial blood by calculation - "
-            "[1927-3](https://athena.ohdsi.org/search-terms/terms/3002032) Base excess "
-            "in Venous blood by calculation - "
-            "[8632-2](https://athena.ohdsi.org/search-terms/terms/3006277) QRS-Axis - "
-            "[11555-0](https://athena.ohdsi.org/search-terms/terms/3012501) Base "
-            "excess in Blood by calculation - "
-            "[1926-5](https://athena.ohdsi.org/search-terms/terms/3003129) Base excess "
-            "in Capillary blood by calculation - "
-            "[28638-5](https://athena.ohdsi.org/search-terms/terms/3004959) Base "
-            "excess in Arterial cord blood by calculation "
-            "[28639-3](https://athena.ohdsi.org/search-terms/terms/3007435) Base "
-            "excess in Venous cord blood by calculation"
+            "one record for diastolic. | ETL CONVENTIONS: [Convention for negative "
+            "values](https://ohdsi.github.io/Themis/negative_value_as_number.html)"
         ),
     ),
     Column(
@@ -4938,27 +5313,28 @@ measurement = Table(
         Integer,
         comment=(
             "USER GUIDANCE: If the raw data gives a categorial result for measurements "
-            "those values are captured and mapped to standard concepts in the 'Meas "
-            "Value' domain. | ETL CONVENTIONS: If the raw data provides categorial "
-            "results as well as continuous results for measurements, it is a valid ETL "
-            "choice to preserve both values. The continuous value should go in the "
-            "VALUE_AS_NUMBER field and the categorical value should be mapped to a "
-            "standard concept in the 'Meas Value' domain and put in the "
-            "VALUE_AS_CONCEPT_ID field. This is also the destination for the 'Maps to "
-            "value' relationship."
+            "those values are captured and mapped to standard concepts. This can be "
+            "done manually or using the \\Maps to value\\ relationship in the "
+            "vocabulary. | ETL CONVENTIONS: If there is no categorial result in the "
+            "source data, set VALUE_AS_CONCEPT_ID to NULL, if there is a categorial "
+            "result in a source data but without mapping, set VALUE_AS_CONCEPT_ID to "
+            "0, else map to a CONCEPT_ID. These are also mapped using the \\Maps to "
+            "value\\ relationship in the vocabulary."
         ),
     ),
     Column(
         "unit_concept_id",
         Integer,
         comment=(
-            "USER GUIDANCE: There is currently no recommended unit for individual "
-            "measurements, i.e. it is not mandatory to represent Hemoglobin a1C "
-            "measurements as a percentage. UNIT_SOURCE_VALUES should be mapped to a "
-            "Standard Concept in the Unit domain that best represents the unit as "
-            "given in the source data. | ETL CONVENTIONS: There is no standardization "
-            "requirement for units associated with MEASUREMENT_CONCEPT_IDs, however, "
-            "it is the responsibility of the ETL to choose the most plausible unit."
+            "USER GUIDANCE: At present, there isn't a prescribed unit for individual "
+            "measurements, such as Hemoglobin A1C, meaning it's not obligatory to "
+            "express these measurements as a percentage. UNIT_SOURCE_VALUES should be "
+            "linked to a Standard Concept within the Unit domain that most accurately "
+            "reflects the unit provided in the source data. | ETL CONVENTIONS: If the "
+            "source data does not include units, set UNIT_CONCEPT_ID to NULL. If units "
+            "are provided but not mapped, set UNIT_CONCEPT_ID to 0. Otherwise, map the "
+            "units to a CONCEPT_ID. Remember that units are case-sensitive in "
+            "vocabulary."
         ),
     ),
     Column(
@@ -5029,11 +5405,12 @@ measurement = Table(
         "measurement_source_value",
         String(50),
         comment=(
-            "USER GUIDANCE: This field houses the verbatim value from the source data "
-            "representing the Measurement that occurred. For example, this could be an "
-            "ICD10 or Read code. | ETL CONVENTIONS: This code is mapped to a Standard "
-            "Measurement Concept in the Standardized Vocabularies and the original "
-            "code is stored here for reference."
+            "USER GUIDANCE: This field contains the exact value from the source data "
+            "that represents the measurement that occurred. | ETL CONVENTIONS: This "
+            "value corresponds to a standardized CONCEPT_ID found in "
+            "MEASUREMENT_CONCEPT_ID and in the 'Measurement' domain within the "
+            "Standardized Vocabularies. The original code is retained here for "
+            "reference purposes."
         ),
     ),
     Column(
@@ -5049,19 +5426,19 @@ measurement = Table(
             "case. Consider using MEASUREMENT_CONCEPT_ID instead to enable "
             "standardized analytics that can be consistent across the network. | ETL "
             "CONVENTIONS: If the MEASUREMENT_SOURCE_VALUE is coded in the source data "
-            "using an OMOP supported vocabulary put the concept id representing the "
-            "source value here."
+            "using a vocabulary supported by OMOP Standardized Vocabularies, insert "
+            "the CONCEPT_ID representing the source value here."
         ),
     ),
     Column(
         "unit_source_value",
         String(50),
         comment=(
-            "USER GUIDANCE: This field houses the verbatim value from the source data "
-            "representing the unit of the Measurement that occurred. | ETL "
-            "CONVENTIONS: This code is mapped to a Standard Condition Concept in the "
-            "Standardized Vocabularies and the original code is stored here for "
-            "reference."
+            "USER GUIDANCE: This field contains the exact value from the source data "
+            "that represents the unit of measurement used. | ETL CONVENTIONS: This "
+            "value corresponds to a standardized CONCEPT_ID found in UNIT_CONCEPT_ID "
+            "and in the 'Unit' domain within the Standardized Vocabularies. The "
+            "original code is retained here for reference purposes."
         ),
     ),
     Column(
@@ -5208,7 +5585,7 @@ note = Table(
     Column(
         "note_datetime",
         DateTime,
-        comment="ETL CONVENTIONS: If time is not given set the time to midnight.",
+        comment="ETL CONVENTIONS: If time is not given set the time to NULL.",
     ),
     Column(
         "note_type_concept_id",
@@ -5218,7 +5595,10 @@ note = Table(
             "USER GUIDANCE: The provenance of the note. Most likely this will be EHR. "
             "| ETL CONVENTIONS: Put the source system of the note, as in EHR record. "
             "[Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?standardConcept=Standard&domain=Type+Concept&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -5401,11 +5781,13 @@ observation = Table(
         comment=(
             "USER GUIDANCE: The OBSERVATION_CONCEPT_ID field is recommended for "
             "primary use in analyses, and must be used for network studies. | ETL "
-            "CONVENTIONS: The CONCEPT_ID that the OBSERVATION_SOURCE_CONCEPT_ID maps "
-            "to. There is no specified domain that the Concepts in this table must "
-            "adhere to. The only rule is that records with Concepts in the Condition, "
-            "Procedure, Drug, Measurement, or Device domains MUST go to the "
-            "corresponding table."
+            "CONVENTIONS: The standard CONCEPT_ID that represents the "
+            "OBSERVATION_SOURCE_VALUE. The concept id should be derived either from "
+            "mapping from the source concept id or by picking the concept representing "
+            "the most amount of detail you have. There is no specified domain that the "
+            "Concepts in this table must adhere to. The only rule is that records with "
+            "Concepts in the Condition, Procedure, Drug, Measurement, or Device "
+            "domains MUST go to the corresponding table."
         ),
     ),
     Column(
@@ -5413,17 +5795,17 @@ observation = Table(
         Date,
         nullable=False,
         comment=(
-            "USER GUIDANCE: The date of the Observation. Depending on what the "
-            "Observation represents this could be the date of a lab test, the date of "
-            "a survey, or the date a patient's family history was taken. | ETL "
-            "CONVENTIONS: For some observations the ETL may need to make a choice as "
-            "to which date to choose."
+            "USER GUIDANCE: The date of when the Observation was obtained. Depending "
+            "on what the Observation represents this could be the date of a lab test, "
+            "the date of a survey, or the date a patient's family history was taken. | "
+            "ETL CONVENTIONS: For some observations the ETL may need to make a choice "
+            "as to which date to choose."
         ),
     ),
     Column(
         "observation_datetime",
         DateTime,
-        comment="ETL CONVENTIONS: If no time is given set to midnight (00:00:00).",
+        comment="ETL CONVENTIONS: If no time is given set to NULL.",
     ),
     Column(
         "observation_type_concept_id",
@@ -5436,7 +5818,10 @@ observation = Table(
             "the OBSERVATION_TYPE_CONCEPT_ID that best represents the provenance of "
             "the record, for example whether it came from an EHR record or billing "
             "claim. [Accepted "
-            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=)."
+            "Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=15&query=). "
+            "A more detailed explanation of each Type Concept can be found on the "
+            "[vocabulary "
+            "wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT)."
         ),
     ),
     Column(
@@ -5480,7 +5865,9 @@ observation = Table(
             "[4167217](https://athena.ohdsi.org/search-terms/terms/4167217) 'Family "
             "history of clinical finding' as well as a 'Maps to value' record to "
             "[134057](https://athena.ohdsi.org/search-terms/terms/134057) 'Disorder of "
-            "cardiovascular system'."
+            "cardiovascular system'. If there's no categorial result in a source_data, "
+            "set value_as_concept_id to NULL, if there is a categorial result in a "
+            "source_data but without mapping, set value_as_concept_id to 0."
         ),
     ),
     Column(
@@ -5504,7 +5891,10 @@ observation = Table(
             "Concept in the Unit domain that best represents the unit as given in the "
             "source data. | ETL CONVENTIONS: There is no standardization requirement "
             "for units associated with OBSERVATION_CONCEPT_IDs, however, it is the "
-            "responsibility of the ETL to choose the most plausible unit."
+            "responsibility of the ETL to choose the most plausible unit. If the "
+            "source unit is NULL (applicable to cases when there's no numerical value "
+            "or when it doesn't require a unit), keep unit_concept_id NULL as well. If "
+            "there's no mapping of a source unit, populate unit_concept_id with 0."
         ),
     ),
     Column(
@@ -5581,7 +5971,7 @@ observation = Table(
         comment=(
             "USER GUIDANCE: This field houses the verbatim value from the source data "
             "representing the unit of the Observation that occurred. | ETL "
-            "CONVENTIONS: This code is mapped to a Standard Condition Concept in the "
+            "CONVENTIONS: This code is mapped to a Standard Concept in the "
             "Standardized Vocabularies and the original code is stored here for "
             "reference."
         ),
@@ -5592,7 +5982,7 @@ observation = Table(
         comment=(
             "USER GUIDANCE: This field houses the verbatim value from the source data "
             "representing the qualifier of the Observation that occurred. | ETL "
-            "CONVENTIONS: This code is mapped to a Standard Condition Concept in the "
+            "CONVENTIONS: This code is mapped to a Standard Concept in the "
             "Standardized Vocabularies and the original code is stored here for "
             "reference."
         ),
@@ -5656,20 +6046,26 @@ observation = Table(
         "MEASUREMENT table. If the clinical fact observed determines a sign, "
         "symptom, diagnosis of a disease or other medical condition, it is "
         "recorded in the CONDITION_OCCURRENCE table. Valid Observation Concepts "
-        "are not enforced to be from any domain though they still should be "
-        "Standard Concepts. | ETL CONVENTIONS: Records whose Source Values map to "
-        "any domain besides Condition, Procedure, Drug, Measurement or Device "
-        "should be stored in the Observation table. Observations can be stored as "
-        "attribute value pairs, with the attribute as the Observation Concept and "
-        "the value representing the clinical fact. This fact can be a Concept "
-        "(stored in VALUE_AS_CONCEPT), a numerical value (VALUE_AS_NUMBER), a "
-        "verbatim string (VALUE_AS_STRING), or a datetime (VALUE_AS_DATETIME). "
-        "Even though Observations do not have an explicit result, the clinical "
-        "fact can be stated separately from the type of Observation in the "
-        "VALUE_AS_* fields. It is recommended for Observations that are suggestive "
-        "statements of positive assertion should have a value of 'Yes' "
-        "(concept_id=4188539), recorded, even though the null value is the "
-        "equivalent."
+        "are not enforced to be from any domain but they must not belong to the "
+        "Condition, Procedure, Drug, Device, Specimen, or Measurement domains and "
+        "they must be Standard Concepts. <br><br>The observation table usually "
+        "records the date or datetime of when the observation was obtained, not "
+        "the date of the observation starting. For example, if the patient reports "
+        "that they had a heart attack when they were 50, the observation date or "
+        "datetime is the date of the report, the heart attack observation can have "
+        "a value_as_concept which captures how long ago the observation applied to "
+        "the patient. | ETL CONVENTIONS: Records whose Source Values map to any "
+        "domain besides Condition, Procedure, Drug, Specimen, Measurement or "
+        "Device should be stored in the Observation table. Observations can be "
+        "stored as attribute value pairs, with the attribute as the Observation "
+        "Concept and the value representing the clinical fact. This fact can be a "
+        "Concept (stored in VALUE_AS_CONCEPT), a numerical value (VALUE_AS_NUMBER) "
+        "or a verbatim string (VALUE_AS_STRING). Even though Observations do not "
+        "have an explicit result, the clinical fact can be stated separately from "
+        "the type of Observation in the VALUE_AS_* fields. It is recommended for "
+        "Observations that are suggestive statements of positive assertion should "
+        "have a value of 'Yes' (concept_id=4188539), recorded, even though the "
+        "null value is the equivalent."
     ),
 )
 """The OBSERVATION table captures clinical facts about a Person obtained in the context of
@@ -5684,17 +6080,22 @@ User guidance:
     testing such as lab testing or imaging and leads to a standardized result, the data item is
     recorded in the MEASUREMENT table. If the clinical fact observed determines a sign, symptom,
     diagnosis of a disease or other medical condition, it is recorded in the CONDITION_OCCURRENCE
-    table. Valid Observation Concepts are not enforced to be from any domain though they still
-    should be Standard Concepts.
+    table. Valid Observation Concepts are not enforced to be from any domain but they must not
+    belong to the Condition, Procedure, Drug, Device, Specimen, or Measurement domains and they must
+    be Standard Concepts. <br><br>The observation table usually records the date or datetime of when
+    the observation was obtained, not the date of the observation starting. For example, if the
+    patient reports that they had a heart attack when they were 50, the observation date or datetime
+    is the date of the report, the heart attack observation can have a value_as_concept which
+    captures how long ago the observation applied to the patient.
 
 ETL conventions:
-    Records whose Source Values map to any domain besides Condition, Procedure, Drug, Measurement or
-    Device should be stored in the Observation table. Observations can be stored as attribute value
-    pairs, with the attribute as the Observation Concept and the value representing the clinical
-    fact. This fact can be a Concept (stored in VALUE_AS_CONCEPT), a numerical value
-    (VALUE_AS_NUMBER), a verbatim string (VALUE_AS_STRING), or a datetime (VALUE_AS_DATETIME). Even
-    though Observations do not have an explicit result, the clinical fact can be stated separately
-    from the type of Observation in the VALUE_AS_* fields. It is recommended for Observations that
-    are suggestive statements of positive assertion should have a value of 'Yes'
-    (concept_id=4188539), recorded, even though the null value is the equivalent.
+    Records whose Source Values map to any domain besides Condition, Procedure, Drug, Specimen,
+    Measurement or Device should be stored in the Observation table. Observations can be stored as
+    attribute value pairs, with the attribute as the Observation Concept and the value representing
+    the clinical fact. This fact can be a Concept (stored in VALUE_AS_CONCEPT), a numerical value
+    (VALUE_AS_NUMBER) or a verbatim string (VALUE_AS_STRING). Even though Observations do not have
+    an explicit result, the clinical fact can be stated separately from the type of Observation in
+    the VALUE_AS_* fields. It is recommended for Observations that are suggestive statements of
+    positive assertion should have a value of 'Yes' (concept_id=4188539), recorded, even though the
+    null value is the equivalent.
 """

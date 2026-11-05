@@ -34,6 +34,8 @@ _SQLMODEL_BACKREFS = (
     "sqlmodels gets the back-references declarative already has. The SQLModel-only "
     "hotfix worked around missing foreign_keys in sqlacodegen 3"
 )
+_UPSTREAM_INDEX = "upstream: index name typo fixed (vocabluary -> vocabulary)"
+_UPSTREAM_FK = "upstream: new foreign key (episode.episode_parent_id, note_nlp.note_id)"
 ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     # B8: comment format fixed (labels, empty parts, quotes)
     ("OMOP_5_*", "tables.*.comment", "B8"),
@@ -86,6 +88,14 @@ ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     # sqlacodegen 4: `'Concept'` instead of `Optional['Concept']` for NOT NULL foreign keys,
     # like the declarative flavor (Tim, S04)
     ("OMOP_5_*_sqlmodels", "classes.*.relationships.*.python_type", "sqlacodegen 4 types"),
+    # Upstream DDL changes between the releases v5.4.1 and v5.5.0 (S06)
+    ("OMOP_5_[34]_*", "tables.concept.indexes.idx_concept_vocabluary_id", _UPSTREAM_INDEX),
+    ("OMOP_5_[34]_*", "tables.concept.indexes.idx_concept_vocabulary_id", _UPSTREAM_INDEX),
+    ("OMOP_5_4_*", "tables.episode.foreign_keys.fpk_episode_episode_parent_id", _UPSTREAM_FK),
+    ("OMOP_5_4_*", "classes.Episode.relationships.episode_parent", _UPSTREAM_FK),
+    ("OMOP_5_4_*", "tables.note_nlp.foreign_keys.fpk_note_nlp_note_id", _UPSTREAM_FK),
+    ("OMOP_5_4_*", "classes.Note.relationships.note_nlps", _UPSTREAM_FK),
+    ("OMOP_5_4_*", "classes.NoteNlp.relationships.note", _UPSTREAM_FK),
 ]
 
 

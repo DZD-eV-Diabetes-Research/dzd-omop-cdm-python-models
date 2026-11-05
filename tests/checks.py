@@ -121,6 +121,38 @@ def check_insert_person(name: str) -> None:
         assert person.gender_concept.concept_name == "No matching concept"
 
 
+# Athena's "version row": vocabulary_id is the string 'None'. Concept 0 points at it.
+VOCABULARY_NONE = dict(
+    vocabulary_id="None",
+    vocabulary_name="OMOP Standardized Vocabularies",
+    vocabulary_reference="OMOP generated",  # NOT NULL in 5.3
+    vocabulary_version="v5.0 01-OCT-26",
+    vocabulary_concept_id=0,
+)
+
+
+def check_vocabulary(name: str) -> None:
+    """Load Concept.vocabulary and Vocabulary.concepts through the ORM.
+
+    5.5 has no primary key on vocabulary (a UNIQUE instead), so the class is mapped
+    through a candidate key, like the tables without a primary key.
+    """
+    from sqlalchemy.orm import Session
+
+    module = import_model(name)
+    engine = sqlite_engine()
+    module.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add(module.Vocabulary(**VOCABULARY_NONE))
+        session.add(module.Concept(**CONCEPT_0))
+        session.commit()
+    with Session(engine) as session:
+        concept = session.get(module.Concept, 0)
+        assert concept.vocabulary.vocabulary_version == VOCABULARY_NONE["vocabulary_version"]
+        vocabulary = session.get(module.Vocabulary, "None")
+        assert [c.concept_id for c in vocabulary.concepts] == [0]
+
+
 def _insert_person_core(module: ModuleType, engine) -> None:
     from sqlalchemy import insert, select
 
@@ -225,6 +257,7 @@ def check_import_without_extras(name: str) -> None:
 CHECKS = {
     "create_all": check_create_all,
     "insert_person": check_insert_person,
+    "vocabulary": check_vocabulary,
     "import_together": check_import_together,
     "module_variables": check_module_variables,
     "docstrings": check_docstrings,
