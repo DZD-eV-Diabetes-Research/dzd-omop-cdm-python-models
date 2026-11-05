@@ -2,29 +2,56 @@
 
 ## How it works
 
+The generator is the `omop-codegen` package in [`generator/`](generator/src/omop_codegen):
 
-All the code for the OMOP Data Class Generator can be found in [`generator/OMOPSQLModelGen`](generator/OMOPSQLModelGen) in this repo
+```
+download ─▶ deploy DDL to Postgres ─▶ reflect MetaData ─▶ enrich ─▶ sqlacodegen ─▶ write
+```
 
-The Code Generator does following steps:
+| Step | Module | What it does |
+| ---- | ------ | ------------ |
+| download | [`download.py`](generator/src/omop_codegen/download.py) | Fetches an [OHDSI/CommonDataModel](https://github.com/OHDSI/CommonDataModel/releases) release archive, cached by tag in `OMOP_CDM_DOWNLOAD_DIR` |
+| deploy | [`database.py`](generator/src/omop_codegen/database.py) | Drops and recreates `POSTGRESQL_SCHEMA`, runs the 4 official DDL scripts of one CDM version ([`cdm_versions.py`](generator/src/omop_codegen/cdm_versions.py)) |
+| reflect | [`database.py`](generator/src/omop_codegen/database.py) | `MetaData().reflect(engine)` |
+| enrich | [`enrich.py`](generator/src/omop_codegen/enrich.py) | Table and column comments from the CSV specs. Candidate keys from [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py) for tables without a primary key |
+| generate | [`generate.py`](generator/src/omop_codegen/generate.py) | [sqlacodegen](https://github.com/agronholm/sqlacodegen), called as a library, one generator per flavor |
+| write | [`cli.py`](generator/src/omop_codegen/cli.py) | Writes `OMOP_<version>_<flavor>.py` to a staging folder, moves them into `DATAMODEL_OUTPUT_DIR` only when everything succeeded |
 
-* Download OMOP Schema releases from github https://github.com/OHDSI/CommonDataModel/releases according to [`OMOPSQLModelGen/sources.py`](generator/OMOPSQLModelGen/sources.py)
-* Deploy the SQL Schema to a running PostgresSQL Database
-* Do some adjustments to the schema as defined in [`OMOPSQLModelGen/pre_gen_sql`](generator/OMOPSQLModelGen/pre_gen_sql) (e.g. Add temporary Primary Keys for example to be compatible with SQLAlchemy ORM)
-* Run [sqlacodegen](https://github.com/agronholm/sqlacodegen) against the Postgres Database to generate python data classes
-* Run some adjustments on the generated code as defined in [`OMOPSQLModelGen/post_processing_funcs`](generator/OMOPSQLModelGen/post_processing_funcs)
+## Settings
 
-## How can you run it
+Env vars or a `.env` file in the working directory ([`config.py`](generator/src/omop_codegen/config.py)):
 
-### With docker
+| Variable | Default |
+| -------- | ------- |
+| `POSTGRESQL_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `_DATABASE` | `localhost` / `5432` / `omop` / `omop` / `omop` |
+| `POSTGRESQL_SCHEMA` | `public`. **Dropped and recreated on every run.** |
+| `OMOP_CDM_RELEASE_TAG` | `v5.4.1` |
+| `OMOP_CDM_DOWNLOAD_DIR` | `downloads` |
+| `FORCE_REDOWNLOAD_OMOP_CDM_RELEASE` | `false` |
+| `CDM_VERSIONS` | `["5.3", "5.4"]` (JSON list) |
+| `FLAVORS` | `["tables", "declarative", "dataclasses", "sqlmodels"]` (JSON list) |
+| `DATAMODEL_OUTPUT_DIR` | `build/omopmodel` |
+| `LOG_LEVEL` | `INFO` |
 
-requirements:
-* Linux environment
-* [Docker](https://docs.docker.com/get-started/get-docker/) (with [`docker compose`](https://docs.docker.com/compose/install/))
+## How to run it
 
-just run [`run_codegen.sh`](run_codegen.sh) or have a look what it does.
-In a nutshell it does the following which you also run by yourself:
+### Against any Postgres
 
-`docker compose build`
-`docker compose up -d`
-`docker compose logs -f omopcodegen`
-`docker compose down`
+Use a throwaway database: the schema is dropped.
+
+```bash
+POSTGRESQL_HOST=localhost POSTGRESQL_PORT=5432 uv run omop-codegen
+uv run omop-codegen --cdm-version 5.4 --flavor sqlmodels -o /tmp/models   # just one module
+```
+
+### With Docker
+
+Requires [Docker](https://docs.docker.com/get-started/get-docker/) with `docker compose`.
+Run [`run_codegen.sh`](run_codegen.sh): it starts Postgres and the generator, and writes to
+`build/omopmodel/`.
+
+### Compare with the committed models
+
+```bash
+uv run python tools/baseline_diff.py --models-dir build/omopmodel --summary
+```

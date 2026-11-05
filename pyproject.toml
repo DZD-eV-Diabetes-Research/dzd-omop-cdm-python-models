@@ -19,7 +19,7 @@ dzdomop = { workspace = true }
 omop-codegen = { workspace = true }
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "generator/tests"]
 pythonpath = ["tests", "tools"]
 
 [tool.ruff]
@@ -29,8 +29,8 @@ extend-exclude = [
     # Generated models: formatted by the generator, never by hand.
     "packages/dzdomop/src/omopmodel/OMOP_*.py",
     # Legacy code that gets rewritten anyway. Remove each line with its rewrite.
-    "generator/OMOPSQLModelGen",
     "packages/dzdomop/src/omopmodel/vocabularies_loader.py",
+    "generator/legacy_post_processing",
 ]
 
 [tool.ruff.lint]

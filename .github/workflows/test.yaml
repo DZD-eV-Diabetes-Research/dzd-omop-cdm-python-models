@@ -44,4 +44,5 @@ jobs:
           uv pip install --resolution lowest-direct
           -e "packages/dzdomop[sqlmodel,pg8000,progress]" "pytest>=8"
       - run: uv pip list
-      - run: .venv/bin/python -m pytest
+      # Only the package tests: the generator (generator/tests) isn't installed here.
+      - run: .venv/bin/python -m pytest tests
