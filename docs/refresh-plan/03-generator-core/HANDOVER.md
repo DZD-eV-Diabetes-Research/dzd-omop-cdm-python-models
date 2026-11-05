@@ -86,6 +86,7 @@ From S01, plus (for when the regenerated models are committed):
 - Tests: `uv run pytest` → `41 passed, 11 xfailed` (Python 3.14.7 / SQLAlchemy 2.1.8 and Python 3.10 / SQLAlchemy 2.0.57). New: 15 generator tests.
 - Baseline diff (committed models): empty. Generator output: see table above, every kind explained.
 - ruff + pre-commit: clean
+- CI: all 7 jobs green (lint, 3.10–3.14, lowest), run 41999785932 on `f14e87f`
 - Pushed: yes
 
 ## For later (out of scope)
