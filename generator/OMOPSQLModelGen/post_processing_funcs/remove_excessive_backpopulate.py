@@ -96,8 +96,8 @@ def _hotfixes(line: str) -> str:
         if l.strip() == if_line.strip():
             return tabs + replace_with
         return l
-    
-    # 
+
+    #
 
     line = replace_line(
         l=line,

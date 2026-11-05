@@ -1,5 +1,5 @@
 # DZD - OMOP CDM Python SQL-ORM/Data Classes Tools
-A Python SQL-ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)   
+A Python SQL-ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)  
 This library also can also load [OMOP CDM Standardized Vocabularies](https://github.com/OHDSI/Vocabulary-v5.0) into a OMOP Postgres DB (from exported http://athena.ohdsi.org vocabulary files)
 
 Author/Maintainer: Tim Bleimehl  
@@ -35,7 +35,7 @@ Status: Alpha
 
 * This project uses sqlacodegen for the data class generation ❤️ Thanks for the great work of the community at https://github.com/agronholm/sqlacodegen
 * Thanks to the great communitiy at https://www.ohdsi.org/data-standardization/ and https://github.com/OHDSI/CommonDataModel for the OMOP data model
-* Thanks to the thousands of layers (we can not list here) of software dev shoulders we stand on as python devs ❤️ 
+* Thanks to the thousands of layers (we can not list here) of software dev shoulders we stand on as python devs ❤️
 
 # Whats in the package?
 
@@ -60,6 +60,16 @@ Also there is a tool onbard to load vocabularies from [athena.ohdsi.org](https:/
 ## how to install DZD OMOP Models
 
 `pip install dzdomop`
+
+The vocabulary loader and the `sqlmodels` flavor need extras:
+
+| Extra | Installs | Needed for |
+| ----- | -------- | ---------- |
+| `sqlmodel` | sqlmodel | `OMOP_5_x_sqlmodels`, `VocabulariesLoader` |
+| `pg8000` | pg8000 | `VocabulariesLoader` on Postgres |
+| `progress` | tqdm | `VocabulariesLoader` progress bar |
+
+`pip install "dzdomop[sqlmodel,pg8000,progress]"` installs everything.
 
 ## How to use this DZD OMOP Models
 
@@ -108,9 +118,11 @@ from sqlalchemy import create_engine
 from omopmodel import OMOP_5_4_declarative as omop54
 from omopmodel import VocabulariesLoader
 
-# Define the connection to our running postgresql database. 
+# Define the connection to our running postgresql database.
 # Please use the pg8000 driver as we use some features of it internaly
-engine = create_engine("postgresql+pg8000://my-db-user:my-db-password@localhost:5432/my-database-name")
+engine = create_engine(
+    "postgresql+pg8000://my-db-user:my-db-password@localhost:5432/my-database-name"
+)
 
 # Create the OMOP Schema on our database
 omop54.Base.metadata.create_all(engine)
@@ -124,7 +136,7 @@ v = VocabulariesLoader(
     authena_export_directory,
     database_engine=engine,
     omop_module=omop54,  # <- optional. default is OMOP CDM V5.4
-    truncate_vocabulary_tables_before_insert=True, # <- optional. Will delete existing vocabularies from the DB
+    truncate_vocabulary_tables_before_insert=True,  # <- optional. Will delete existing vocabularies from the DB
 )
 # Load the vocaablary from the CSV files into the database.
 # This will take some time, you will see some progress bars.
@@ -143,13 +155,13 @@ During the loading process which will take some time (some seconds up to multipl
 
 ## Data classes flavors
 
-There are different styles of data model represantation possible. This module covers four popular of them. They are all based on (or directly integrated in) https://www.sqlalchemy.org/ 
+There are different styles of data model represantation possible. This module covers four popular of them. They are all based on (or directly integrated in) https://www.sqlalchemy.org/
 sqlalchemy is the most common way to inetract with relational databases in python. Lets have an overview how the different styles are named, have a short explanation what they are and where you can find the respective omop representation:
 
-* `tables` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_tables.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_tables.py)): only basic `Table` objects that represant the OMOP CDM. No real ORM functionality. if you dont have a specific reason to use these, ignore it.
-* `declarative` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_declarative.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_declarative.py)): the default way to declare table based data classes in sqlalchemy; generates classes inheriting from `declarative_base()`. See https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models for more details behind the scenes. if you are an old sqlalchemy veteran, you may want to have a look at these.
-* `dataclasses` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_dataclasses.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_dataclasses.py)): The more modern (2.0) approach of sqlalchemy representation of ORM/data classes. https://docs.sqlalchemy.org/en/20/orm/dataclasses.html 
-* `sqlmodels` ([OMOP CDM 5.3](DZDOMOPModel/omopmodel/OMOP_5_3_sqlmodels.py), [OMOP CDM 5.4](DZDOMOPModel/omopmodel/OMOP_5_4_sqlmodels.py)): (Chef's recommendation 😘🤌 ) - [sqlmodel](https://sqlmodel.tiangolo.com/) is the new kid on the block. Its a project by the maker of [Pydantic](https://docs.pydantic.dev/latest/). It unites sqlalchemy and Pydantic. Two of the most beatiful and useful python module out there. My personal favorite!
+* `tables` ([OMOP CDM 5.3](packages/dzdomop/src/omopmodel/OMOP_5_3_tables.py), [OMOP CDM 5.4](packages/dzdomop/src/omopmodel/OMOP_5_4_tables.py)): only basic `Table` objects that represant the OMOP CDM. No real ORM functionality. if you dont have a specific reason to use these, ignore it.
+* `declarative` ([OMOP CDM 5.3](packages/dzdomop/src/omopmodel/OMOP_5_3_declarative.py), [OMOP CDM 5.4](packages/dzdomop/src/omopmodel/OMOP_5_4_declarative.py)): the default way to declare table based data classes in sqlalchemy; generates classes inheriting from `declarative_base()`. See https://docs.sqlalchemy.org/en/20/orm/quickstart.html#declare-models for more details behind the scenes. if you are an old sqlalchemy veteran, you may want to have a look at these.
+* `dataclasses` ([OMOP CDM 5.3](packages/dzdomop/src/omopmodel/OMOP_5_3_dataclasses.py), [OMOP CDM 5.4](packages/dzdomop/src/omopmodel/OMOP_5_4_dataclasses.py)): The more modern (2.0) approach of sqlalchemy representation of ORM/data classes. https://docs.sqlalchemy.org/en/20/orm/dataclasses.html
+* `sqlmodels` ([OMOP CDM 5.3](packages/dzdomop/src/omopmodel/OMOP_5_3_sqlmodels.py), [OMOP CDM 5.4](packages/dzdomop/src/omopmodel/OMOP_5_4_sqlmodels.py)): (Chef's recommendation 😘🤌 ) - [sqlmodel](https://sqlmodel.tiangolo.com/) is the new kid on the block. Its a project by the maker of [Pydantic](https://docs.pydantic.dev/latest/). It unites sqlalchemy and Pydantic. Two of the most beatiful and useful python module out there. My personal favorite!
 
 # FAQ
 
@@ -173,5 +185,4 @@ That's sounds fancy but lets at the real life impact ORM Classes can have for yo
 * **Data Validation**: Because ORM classes specify the datamodel, you can not enter wrong datatypes. You can immediate feedback where and what was entered on a wrong location (Or when required data is missing.)
 * **Integration with Data Analysis Libraries**: Python has powerful libraries for data analysis (like pandas and NumPy) that integrate well with ORMs. This allows you to easily query the OMOP CDM database and directly use the results for analysis.
 
-There are many more great and subtil advantages, but lets keep it short here. In summary, using ORM classes simplifies database management, makes your code more understandable, speeds up development, ensures data quality, and provides better tool support. 
-
+There are many more great and subtil advantages, but lets keep it short here. In summary, using ORM classes simplifies database management, makes your code more understandable, speeds up development, ensures data quality, and provides better tool support.

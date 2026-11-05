@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import importlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -30,8 +31,9 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PACKAGE_DIR = REPO_ROOT / "DZDOMOPModel"
 PACKAGE_NAME = "omopmodel"
+# The installed package (editable in the uv workspace). find_spec doesn't run __init__.py.
+MODULE_DIR = Path(importlib.util.find_spec(PACKAGE_NAME).origin).parent
 
 FLAVORS = ("tables", "declarative", "dataclasses", "sqlmodels")
 MODULE_RE = re.compile(r"^OMOP_(\d+)_(\d+)_(" + "|".join(FLAVORS) + r")$")
@@ -46,20 +48,16 @@ B1_NOTE = "B1: loaded with `metadata = Table(` renamed to `t_metadata = Table(` 
 
 def discover_modules() -> list[str]:
     """Names of all generated model modules, e.g. ``OMOP_5_4_sqlmodels``."""
-    return sorted(
-        p.stem for p in (PACKAGE_DIR / PACKAGE_NAME).glob("OMOP_*.py") if MODULE_RE.match(p.stem)
-    )
+    return sorted(p.stem for p in MODULE_DIR.glob("OMOP_*.py") if MODULE_RE.match(p.stem))
 
 
 def load_module(name: str) -> tuple[types.ModuleType, list[str]]:
     """Import a generated module. Returns the module and notes about how it was loaded."""
-    if str(PACKAGE_DIR) not in sys.path:
-        sys.path.insert(0, str(PACKAGE_DIR))
     full_name = f"{PACKAGE_NAME}.{name}"
     if not name.endswith("_tables"):
         return importlib.import_module(full_name), []
 
-    path = PACKAGE_DIR / PACKAGE_NAME / f"{name}.py"
+    path = MODULE_DIR / f"{name}.py"
     source = path.read_text(encoding="utf-8")
     notes = []
     if B1_PATTERN.search(source):
@@ -230,7 +228,9 @@ def snapshot_class(cls: type, module: types.ModuleType) -> dict[str, Any]:
         if isinstance(prop, ColumnProperty):
             attributes[prop.key] = {
                 "column": prop.columns[0].name,
-                "python_type": type_hint_str(own_hints[prop.key]) if prop.key in own_hints else None,
+                "python_type": type_hint_str(own_hints[prop.key])
+                if prop.key in own_hints
+                else None,
             }
         elif isinstance(prop, RelationshipProperty):
             relationships[prop.key] = {
@@ -238,12 +238,16 @@ def snapshot_class(cls: type, module: types.ModuleType) -> dict[str, Any]:
                 "direction": prop.direction.name,
                 "uselist": prop.uselist,
                 # Private, but it's the resolved FK set SQLAlchemy actually uses (2.0 and 2.1).
-                "foreign_keys": sorted(f"{c.table.name}.{c.name}" for c in prop._calculated_foreign_keys),
+                "foreign_keys": sorted(
+                    f"{c.table.name}.{c.name}" for c in prop._calculated_foreign_keys
+                ),
                 "back_populates": prop.back_populates,
                 "backref": None if prop.backref is None else str(prop.backref),
                 "viewonly": prop.viewonly,
                 "secondary": None if prop.secondary is None else prop.secondary.name,
-                "python_type": type_hint_str(own_hints[prop.key]) if prop.key in own_hints else None,
+                "python_type": type_hint_str(own_hints[prop.key])
+                if prop.key in own_hints
+                else None,
             }
 
     mapper_args = getattr(cls, "__mapper_args__", None)
@@ -346,7 +350,9 @@ def snapshot_in_subprocess(name: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("module", nargs="?", help="e.g. OMOP_5_4_sqlmodels")
     parser.add_argument("--all", action="store_true", help="snapshot every generated module")
     parser.add_argument("-o", "--output", type=Path, help="output file, or directory with --all")
@@ -356,7 +362,9 @@ def main() -> None:
         out_dir = args.output or REPO_ROOT / "tests" / "baseline"
         out_dir.mkdir(parents=True, exist_ok=True)
         for name in discover_modules():
-            (out_dir / f"{name}.json").write_text(dump(snapshot_in_subprocess(name)), encoding="utf-8")
+            (out_dir / f"{name}.json").write_text(
+                dump(snapshot_in_subprocess(name)), encoding="utf-8"
+            )
             print(f"wrote {out_dir / f'{name}.json'}", file=sys.stderr)
         return
     if not args.module:

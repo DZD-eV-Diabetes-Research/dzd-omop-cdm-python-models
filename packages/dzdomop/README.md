@@ -13,6 +13,16 @@ Just install the python module from pypi.org
 
 `python -m pip install --upgrade dzdomop`
 
+The vocabulary loader and the `sqlmodels` flavor need extras:
+
+| Extra | Installs | Needed for |
+| ----- | -------- | ---------- |
+| `sqlmodel` | sqlmodel | `OMOP_5_x_sqlmodels`, `VocabulariesLoader` |
+| `pg8000` | pg8000 | `VocabulariesLoader` on Postgres |
+| `progress` | tqdm | `VocabulariesLoader` progress bar |
+
+`pip install "dzdomop[sqlmodel,pg8000,progress]"` installs everything.
+
 # How to use
 
 
@@ -47,4 +57,3 @@ with Session(engine) as session:
     session.add(person)
     session.commit()
 ```
-

@@ -1,0 +1,17 @@
+[project]
+name = "omop-codegen"
+version = "0"
+description = "Generates the dzdomop models from the official OMOP CDM DDL (not published)"
+requires-python = ">=3.10"
+dependencies = [
+    "sqlacodegen==4.0.4",
+    "sqlalchemy>=2.0.4,<2.2",
+    "sqlmodel>=0.0.22",
+    "pg8000>=1.30",
+    "pydantic-settings>=2.0",
+    "requests>=2.28",
+]
+
+[tool.uv]
+# Still a set of scripts (run from generator/OMOPSQLModelGen/), not an installable package.
+package = false

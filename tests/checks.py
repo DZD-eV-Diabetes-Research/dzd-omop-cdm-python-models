@@ -17,7 +17,9 @@ from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BASELINE_DIR = REPO_ROOT / "tests" / "baseline"
-sys.path.insert(0, str(REPO_ROOT / "DZDOMOPModel"))
+
+# Dependencies that only come with an extra (`dzdomop[sqlmodel,pg8000,progress]`).
+EXTRAS_MODULES = ("sqlmodel", "pg8000", "tqdm")
 
 
 def import_model(name: str) -> ModuleType:
@@ -139,8 +141,8 @@ def check_import_together(*names: str) -> None:
 
 
 def check_package_import_keeps_global_metadata_clean() -> None:
-    """``import omopmodel`` must not add tables to the global ``SQLModel.metadata``."""
-    importlib.import_module("omopmodel")
+    """Importing the vocabulary loader must not add tables to the global ``SQLModel.metadata``."""
+    from omopmodel import VocabulariesLoader  # noqa: F401
     from sqlmodel import SQLModel
 
     assert not SQLModel.metadata.tables, (
@@ -148,11 +150,27 @@ def check_package_import_keeps_global_metadata_clean() -> None:
     )
 
 
+def check_bare_package_import() -> None:
+    """``import omopmodel`` alone must not pull in any optional dependency."""
+    importlib.import_module("omopmodel")
+    loaded = [m for m in EXTRAS_MODULES if m in sys.modules]
+    assert not loaded, f"`import omopmodel` imported optional dependencies {loaded}"
+
+
+def check_import_without_extras(name: str) -> None:
+    """A non-SQLModel model module must import with only the core dependencies."""
+    for module in EXTRAS_MODULES:
+        sys.modules[module] = None  # makes `import <module>` raise ImportError
+    import_model(name)
+
+
 CHECKS = {
     "create_all": check_create_all,
     "insert_person": check_insert_person,
     "import_together": check_import_together,
     "package_import": check_package_import_keeps_global_metadata_clean,
+    "bare_package_import": check_bare_package_import,
+    "import_without_extras": check_import_without_extras,
 }
 
 

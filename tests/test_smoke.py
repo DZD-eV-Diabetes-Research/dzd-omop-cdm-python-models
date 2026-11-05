@@ -17,6 +17,7 @@ KNOWN_BUGS = {
     ("insert_person", "dataclasses"): "B2",
     ("import_together", "tables"): "B1",
     ("import_together", "sqlmodels"): "B4",
+    ("import_without_extras", "tables"): "B1",
 }
 
 FLAVORS = sorted({m.rsplit("_", 1)[1] for m in MODULES})
@@ -55,3 +56,15 @@ def test_two_cdm_versions_in_one_process(flavor, bug):
 @pytest.mark.xfail(raises=KnownBug, strict=True, reason="B3")
 def test_package_import_keeps_global_sqlmodel_metadata_clean():
     run_check("package_import", known_bug="B3")
+
+
+def test_bare_package_import_needs_no_extras():
+    run_check("bare_package_import")
+
+
+@pytest.mark.parametrize(
+    ("module", "bug"),
+    params("import_without_extras", [m for m in MODULES if flavor_of(m) != "sqlmodels"]),
+)
+def test_import_without_extras(module, bug):
+    run_check("import_without_extras", module, known_bug=bug)

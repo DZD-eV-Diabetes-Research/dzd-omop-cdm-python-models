@@ -1,7 +1,7 @@
 /*
  Some tables in the OMOP CDM do not have a primary key. We can not identifiy a row unambiguous by one or multiple columns on a technical level.
  But on a logical level there are one or multiple columns that can identify a row in these tables. so called https://en.wikipedia.org/wiki/Candidate_key
- sqlalchemy's ORM feature does need to have a primary key to create a table class. 
+ sqlalchemy's ORM feature does need to have a primary key to create a table class.
  https://github.com/OHDSI/CommonDataModel/issues/494#issuecomment-2133446980
  We add primary keys here to force sqlcodegen to generate
  */

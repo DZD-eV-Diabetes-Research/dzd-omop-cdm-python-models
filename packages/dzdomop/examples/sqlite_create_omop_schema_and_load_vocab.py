@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine
 from omopmodel import OMOP_5_4_declarative as omop54
 from omopmodel import VocabulariesLoader
+from sqlalchemy import create_engine
 
 # Define the connection to our sqlite database.
 # if it does not exists, it will created on the fly

@@ -1,0 +1,38 @@
+[project]
+name = "dzd-omop-workspace"
+version = "0"
+description = "Workspace root: dev tools and tests. Not published."
+requires-python = ">=3.10"
+dependencies = ["dzdomop[sqlmodel,pg8000,progress]", "omop-codegen"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.17", "pre-commit>=4"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/dzdomop", "generator"]
+
+[tool.uv.sources]
+dzdomop = { workspace = true }
+omop-codegen = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests", "tools"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    # Generated models: formatted by the generator, never by hand.
+    "packages/dzdomop/src/omopmodel/OMOP_*.py",
+    # Legacy code that gets rewritten anyway. Remove each line with its rewrite.
+    "generator/OMOPSQLModelGen",
+    "packages/dzdomop/src/omopmodel/vocabularies_loader.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]

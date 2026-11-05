@@ -5,10 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "tools"))
-
-from snapshot_models import discover_modules  # noqa: E402
+from snapshot_models import discover_modules
 
 CHECKS_SCRIPT = Path(__file__).resolve().parent / "checks.py"
 MODULES = discover_modules()

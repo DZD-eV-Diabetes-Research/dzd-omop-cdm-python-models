@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine
 from omopmodel import OMOP_5_4_declarative as omop54
 from omopmodel import VocabulariesLoader
+from sqlalchemy import create_engine
 
 # Define the connection to our running postgresql database
 engine = create_engine("postgresql+pg8000://ps:ps@localhost/ps")

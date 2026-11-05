@@ -11,9 +11,10 @@ Refresh a baseline only on purpose (e.g. a new CDM version)::
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from fnmatch import fnmatchcase
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
 from helpers import MODULES
@@ -76,4 +77,6 @@ def test_snapshot_matches_baseline(module):
     if unexplained:
         lines = "\n".join(f"  {p}: {d}" for p, d in unexplained[:200])
         more = f"\n  ... and {len(unexplained) - 200} more" if len(unexplained) > 200 else ""
-        pytest.fail(f"{module}: {len(unexplained)} unexplained differences\n{lines}{more}", pytrace=False)
+        pytest.fail(
+            f"{module}: {len(unexplained)} unexplained differences\n{lines}{more}", pytrace=False
+        )

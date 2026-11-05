@@ -79,7 +79,7 @@ def fix_sql_model(
         if line.startswith("class ") and currently_in_concept_class:
             # we are leaving the lines of Concept class
             currently_in_concept_class = False
-        """    
+        """
 
         new_file_content += line + "\n"
 
