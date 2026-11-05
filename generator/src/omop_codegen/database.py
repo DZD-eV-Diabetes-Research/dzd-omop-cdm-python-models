@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from sqlalchemy import Engine, MetaData, create_engine, event
@@ -35,18 +36,33 @@ def make_engine(url, schema: str) -> Engine:
     return engine
 
 
-def deploy_ddl(engine: Engine, schema: str, ddl_files: list[Path]) -> None:
-    """Drop and recreate ``schema``, then run the DDL scripts in order."""
+def deploy_ddl(
+    engine: Engine,
+    schema: str,
+    ddl_files: Mapping[str, Path],
+    patches: Mapping[str, Sequence[str]] | None = None,
+) -> None:
+    """Drop and recreate ``schema``, then run the DDL scripts in order.
+
+    ``patches`` (``{part: statements}``) run right after the script of that part.
+    """
     quoted = engine.dialect.identifier_preparer.quote_schema(schema)
+    patches = patches or {}
+    unknown = patches.keys() - ddl_files.keys()
+    if unknown:
+        raise ValueError(f"Patches for unknown DDL parts {sorted(unknown)}")
     log.info("Recreating schema %s on %s", schema, engine.url)
     with engine.begin() as conn:
         conn.exec_driver_sql(f"DROP SCHEMA IF EXISTS {quoted} CASCADE")
         conn.exec_driver_sql(f"CREATE SCHEMA {quoted}")
-        for path in ddl_files:
+        for part, path in ddl_files.items():
             log.info("Running %s", path.name)
             conn.exec_driver_sql(
                 path.read_text(encoding="utf-8").replace(SCHEMA_PLACEHOLDER, quoted)
             )
+            for sql in patches.get(part, ()):
+                log.info("Patching %s: %s", part, sql)
+                conn.exec_driver_sql(sql.replace(SCHEMA_PLACEHOLDER, quoted))
 
 
 def reflect(engine: Engine) -> MetaData:

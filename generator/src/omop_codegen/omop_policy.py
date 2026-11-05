@@ -27,6 +27,23 @@ SELF_REFERENCE_REVERSE_RELATIONSHIPS = False
 # a name the module needs: ``metadata`` is the MetaData object (bug B1).
 TABLE_VARIABLE_NAMES: dict[str, str] = {"metadata": "metadata_table"}
 
+# --------------------------------------------------------------------------- DDL patches
+
+# SQL that runs right after one part of the official DDL ("ddl", "primary_keys", "indices",
+# "constraints"), per CDM version. Only for upstream bugs that stop the scripts on Postgres.
+DDL_PATCHES: dict[str, dict[str, tuple[str, ...]]] = {
+    "5.4": {
+        # Release v5.4.3 dropped the primary key of vocabulary (upstream commit 2ccb893,
+        # "Closes #697"), but kept the foreign keys to vocabulary.vocabulary_id. Postgres
+        # rejects those without a unique key. Same key as up to v5.4.2.
+        # https://github.com/OHDSI/CommonDataModel/pull/820
+        "primary_keys": (
+            "ALTER TABLE @cdmDatabaseSchema.vocabulary"
+            " ADD CONSTRAINT xpk_vocabulary PRIMARY KEY (vocabulary_id);",
+        ),
+    },
+}
+
 # --------------------------------------------------------------------------- candidate keys
 
 # Candidate keys for tables that have no primary key in the official DDL.
@@ -73,6 +90,18 @@ _CANDIDATE_KEYS_5_X: dict[str, tuple[str, ...]] = {
     "death": ("person_id",),
 }
 
+_CANDIDATE_KEYS_5_4: dict[str, tuple[str, ...]] = {
+    **_CANDIDATE_KEYS_5_X,
+    "cdm_source": (
+        "cdm_source_abbreviation",
+        "cdm_holder",
+        "cdm_version_concept_id",
+        "vocabulary_version",
+    ),
+    "cohort": ("cohort_definition_id", "subject_id", "cohort_start_date", "cohort_end_date"),
+    "episode_event": ("episode_id", "event_id", "episode_event_field_concept_id"),
+}
+
 CANDIDATE_KEYS: dict[str, dict[str, tuple[str, ...]]] = {
     "5.3": {
         **_CANDIDATE_KEYS_5_X,
@@ -80,15 +109,17 @@ CANDIDATE_KEYS: dict[str, dict[str, tuple[str, ...]]] = {
         "attribute_definition": ("attribute_definition_id", "attribute_type_concept_id"),
         "metadata": ("metadata_concept_id", "metadata_type_concept_id", "name"),
     },
-    "5.4": {
-        **_CANDIDATE_KEYS_5_X,
-        "cdm_source": (
-            "cdm_source_abbreviation",
-            "cdm_holder",
-            "cdm_version_concept_id",
-            "vocabulary_version",
-        ),
-        "cohort": ("cohort_definition_id", "subject_id", "cohort_start_date", "cohort_end_date"),
-        "episode_event": ("episode_id", "event_id", "episode_event_field_concept_id"),
+    "5.4": _CANDIDATE_KEYS_5_4,
+    "5.5": {
+        **_CANDIDATE_KEYS_5_4,
+        # 5.5 swapped the primary key for a UNIQUE on a nullable column, to allow one
+        # "version row" with vocabulary_id NULL (https://github.com/OHDSI/CommonDataModel/pull/803).
+        # Like every candidate key, the column becomes NOT NULL: the ORM can't load a row with a
+        # NULL key, Athena's version row has vocabulary_id 'None', and the open upstream fix
+        # makes it required again (https://github.com/OHDSI/CommonDataModel/pull/820).
+        "vocabulary": ("vocabulary_id",),
+        "concept_metadata": ("concept_id",),
+        "concept_relationship_metadata": ("concept_id_1", "concept_id_2", "relationship_id"),
+        "pack_content": ("pack_concept_id", "drug_concept_id"),
     },
 }

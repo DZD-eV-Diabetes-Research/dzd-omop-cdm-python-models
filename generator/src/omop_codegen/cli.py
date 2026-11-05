@@ -19,7 +19,7 @@ from omop_codegen.database import deploy_ddl, make_engine, reflect
 from omop_codegen.download import fetch_release
 from omop_codegen.enrich import add_comments, mark_candidate_keys
 from omop_codegen.generate import render
-from omop_codegen.omop_policy import CANDIDATE_KEYS
+from omop_codegen.omop_policy import CANDIDATE_KEYS, DDL_PATCHES
 
 log = logging.getLogger("omop_codegen")
 
@@ -44,7 +44,12 @@ def run(settings: Settings) -> list[Path]:
     try:
         for name in settings.CDM_VERSIONS:
             version = CDM_VERSIONS[name]
-            deploy_ddl(engine, settings.POSTGRESQL_SCHEMA, version.ddl_files(release_dir))
+            deploy_ddl(
+                engine,
+                settings.POSTGRESQL_SCHEMA,
+                version.ddl_files(release_dir),
+                DDL_PATCHES.get(name),
+            )
             for flavor in settings.FLAVORS:
                 module = f"{version.module_prefix}_{flavor}"
                 log.info("Generating %s", module)

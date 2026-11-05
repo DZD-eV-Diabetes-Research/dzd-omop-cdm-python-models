@@ -21,6 +21,9 @@ COLUMN_COMMENT_PARTS = (
     ("USER GUIDANCE", "userGuidance"),
     ("ETL CONVENTIONS", "etlConventions"),
 )
+# Since release v5.4.3 the CSV specs say "NA" (R's missing value) where older ones left the
+# cell empty.
+MISSING = frozenset({"", "NA"})
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -31,7 +34,7 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 def doc_parts(row: dict[str, str], parts: Iterable[tuple[str, str]]) -> dict[str, str]:
     """``{label: text}`` for the non-empty parts, in order."""
     texts = ((label, (row.get(key) or "").strip()) for label, key in parts)
-    return {label: text for label, text in texts if text}
+    return {label: text for label, text in texts if text not in MISSING}
 
 
 def format_comment(row: dict[str, str], parts: Iterable[tuple[str, str]]) -> str | None:

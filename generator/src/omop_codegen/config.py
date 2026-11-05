@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"] = "INFO"
 
     OMOP_CDM_RELEASE_TAG: str = Field(
-        default="v5.4.1",
+        default="v5.5.0",
         description="Tag of an OHDSI/CommonDataModel release on GitHub. "
         "Its source archive holds the DDL and the CSV specs for every CDM version we generate.",
     )
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     )
 
     CDM_VERSIONS: list[str] = Field(
-        default=["5.3", "5.4"], description="CDM versions to generate (see cdm_versions.py)."
+        default=["5.3", "5.4", "5.5"], description="CDM versions to generate (see cdm_versions.py)."
     )
     FLAVORS: list[Flavor] = Field(
         default=list(FLAVORS), description="Model flavors (sqlacodegen generators) to generate."

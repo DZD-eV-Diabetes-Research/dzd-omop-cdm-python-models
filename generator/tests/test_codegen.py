@@ -13,8 +13,9 @@ from pathlib import Path
 
 import pytest
 from omop_codegen import download
-from omop_codegen.cdm_versions import CDM_VERSIONS, CdmVersion
+from omop_codegen.cdm_versions import CDM_VERSIONS, DDL_PARTS, CdmVersion
 from omop_codegen.config import Settings
+from omop_codegen.database import deploy_ddl
 from omop_codegen.enrich import (
     COLUMN_COMMENT_PARTS,
     TABLE_COMMENT_PARTS,
@@ -23,7 +24,7 @@ from omop_codegen.enrich import (
     mark_candidate_keys,
 )
 from omop_codegen.generate import pluralize, render, ruff_format
-from omop_codegen.omop_policy import CANDIDATE_KEYS
+from omop_codegen.omop_policy import CANDIDATE_KEYS, DDL_PATCHES
 from omop_codegen.text import WIDTH, docstring, string_literal
 from sqlalchemy import (
     Column,
@@ -52,22 +53,77 @@ def test_sql_url_uses_port(monkeypatch):  # B7
 
 
 def test_cdm_versions():  # B10: no 6.0 stub
-    assert sorted(CDM_VERSIONS) == ["5.3", "5.4"]
+    assert sorted(CDM_VERSIONS) == ["5.3", "5.4", "5.5"]
+    assert sorted(Settings(_env_file=None).CDM_VERSIONS) == sorted(CDM_VERSIONS)
     assert CDM_VERSIONS.keys() == CANDIDATE_KEYS.keys()
+    assert DDL_PATCHES.keys() <= CDM_VERSIONS.keys()
+    for parts in DDL_PATCHES.values():
+        assert parts.keys() <= set(DDL_PARTS)
 
 
 def test_cdm_version_paths():
     v = CdmVersion("5.4")
     root = Path("CommonDataModel-5.4.1")
     assert v.module_prefix == "OMOP_5_4"
-    assert [p.name for p in v.ddl_files(root)] == [
+    files = v.ddl_files(root)
+    assert list(files) == ["ddl", "primary_keys", "indices", "constraints"]  # run order
+    assert [p.name for p in files.values()] == [
         "OMOPCDM_postgresql_5.4_ddl.sql",
         "OMOPCDM_postgresql_5.4_primary_keys.sql",
         "OMOPCDM_postgresql_5.4_indices.sql",
         "OMOPCDM_postgresql_5.4_constraints.sql",
     ]
-    assert v.ddl_files(root)[0].parent == root / "inst/ddl/5.4/postgresql"
+    assert files["ddl"].parent == root / "inst/ddl/5.4/postgresql"
     assert v.field_csv(root) == root / "inst/csv/OMOP_CDMv5.4_Field_Level.csv"
+
+
+class _RecordingEngine:
+    """Just enough of an ``Engine`` for ``deploy_ddl``: records the SQL it gets."""
+
+    def __init__(self):
+        self.sql: list[str] = []
+        self.url = "fake://"
+        self.dialect = create_engine("postgresql+pg8000://").dialect
+
+    def begin(self):
+        engine = self
+
+        class _Conn:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def exec_driver_sql(self, sql):
+                engine.sql.append(sql)
+
+        return _Conn()
+
+
+def test_deploy_ddl_runs_patches_after_their_part(tmp_path):
+    files = {}
+    for part in DDL_PARTS:
+        files[part] = tmp_path / f"{part}.sql"
+        files[part].write_text(f"-- {part} on @cdmDatabaseSchema", encoding="utf-8")
+    engine = _RecordingEngine()
+    deploy_ddl(engine, "cdm", files, {"primary_keys": ("ALTER TABLE @cdmDatabaseSchema.x;",)})
+    assert engine.sql == [
+        "DROP SCHEMA IF EXISTS cdm CASCADE",
+        "CREATE SCHEMA cdm",
+        "-- ddl on cdm",
+        "-- primary_keys on cdm",
+        "ALTER TABLE cdm.x;",
+        "-- indices on cdm",
+        "-- constraints on cdm",
+    ]
+
+
+def test_deploy_ddl_refuses_patch_for_unknown_part(tmp_path):
+    engine = _RecordingEngine()
+    with pytest.raises(ValueError, match="primary_key"):
+        deploy_ddl(engine, "cdm", {"ddl": tmp_path / "ddl.sql"}, {"primary_key": ("x",)})
+    assert engine.sql == []  # nothing dropped
 
 
 # --------------------------------------------------------------------------- download
@@ -127,6 +183,8 @@ def test_fetch_release_returns_path_when_cached(tmp_path, monkeypatch):  # B6
             "USER GUIDANCE: Guide. | ETL CONVENTIONS: Conv.",
         ),
         ({"userGuidance": "", "etlConventions": "Conv. "}, "ETL CONVENTIONS: Conv."),
+        ({"userGuidance": "NA", "etlConventions": "Conv."}, "ETL CONVENTIONS: Conv."),
+        ({"userGuidance": " NA ", "etlConventions": "NA"}, None),
         ({"userGuidance": "It's 'quoted'", "etlConventions": ""}, "USER GUIDANCE: It's 'quoted'"),
         ({"userGuidance": " ", "etlConventions": ""}, None),
     ],
