@@ -27,7 +27,61 @@ IGNORED_PATHS = ("snapshot_env", "snapshot_env.*")
 # (module glob, path glob, reason). Paths look like the ones in the diff output, e.g.
 #   ("OMOP_5_*_tables", "table_vars.t_metadata", "B1: ..."),
 # A path ending in " (order)" matches a change in key order only.
-ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = []
+_DEATH = (
+    "Death.person / Person.death: real one-to-one instead of the old inheritance glitch (Tim, S04)"
+)
+_SQLMODEL_BACKREFS = (
+    "sqlmodels gets the back-references declarative already has. The SQLModel-only "
+    "hotfix worked around missing foreign_keys in sqlacodegen 3"
+)
+ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
+    # B8: comment format fixed (labels, empty parts, quotes)
+    ("OMOP_5_*", "tables.*.comment", "B8"),
+    ("OMOP_5_*", "tables.*.columns.*.comment", "B8"),
+    # B1: the `metadata` table variable no longer overwrites the MetaData object
+    ("OMOP_5_*_tables", "notes", "B1: module imports without the in-memory rename"),
+    ("OMOP_5_*_tables", "table_vars.t_metadata", "B1: snapshot's in-memory name is gone"),
+    ("OMOP_5_*_tables", "module_objects.t_metadata", "B1: snapshot's in-memory name is gone"),
+    ("OMOP_5_*_tables", "table_vars.metadata_table", "B1: new name of the `metadata` table"),
+    ("OMOP_5_*_tables", "module_objects.metadata_table", "B1: new name of the `metadata` table"),
+    # Death <-> Person
+    ("OMOP_5_*", "classes.Death.relationships.person", _DEATH),
+    ("OMOP_5_*", "classes.Person.relationships.death", _DEATH),
+    ("OMOP_5_*_dataclasses", "classes.Death.init_required.person", _DEATH),
+    ("OMOP_5_*_dataclasses", "classes.Person.init_required.death", _DEATH),
+    # Both sides of ConceptClass.concept_class_concept <-> Concept.concept_classes now
+    # back-populate each other. Before, only Concept.concept_classes did (S04 plan).
+    (
+        "OMOP_5_*",
+        "classes.ConceptClass.relationships.concept_class_concept.back_populates",
+        "one-sided back_populates fixed",
+    ),
+    (
+        "OMOP_5_*_sqlmodels",
+        "classes.Concept.relationships.concept_classes.back_populates",
+        "one-sided back_populates fixed",
+    ),  # fmt: skip
+    ("OMOP_5_*_sqlmodels", "classes.Domain.relationships.concepts", _SQLMODEL_BACKREFS),
+    ("OMOP_5_*_sqlmodels", "classes.Vocabulary.relationships.concepts", _SQLMODEL_BACKREFS),
+    (
+        "OMOP_5_*_sqlmodels",
+        "classes.Concept.relationships.domain.back_populates",
+        _SQLMODEL_BACKREFS,
+    ),  # fmt: skip
+    (
+        "OMOP_5_*_sqlmodels",
+        "classes.Concept.relationships.vocabulary.back_populates",
+        _SQLMODEL_BACKREFS,
+    ),  # fmt: skip
+    # B11: NOT NULL columns were nullable in the SQLModel flavor
+    ("OMOP_5_*_sqlmodels", "tables.*.columns.*.nullable", "B11"),
+    # B12: self-references pointed the wrong way in the SQLModel flavor
+    ("OMOP_5_*_sqlmodels", "classes.VisitDetail.relationships.*.direction", "B12"),
+    ("OMOP_5_*_sqlmodels", "classes.VisitOccurrence.relationships.*.direction", "B12"),
+    # sqlacodegen 4: `'Concept'` instead of `Optional['Concept']` for NOT NULL foreign keys,
+    # like the declarative flavor (Tim, S04)
+    ("OMOP_5_*_sqlmodels", "classes.*.relationships.*.python_type", "sqlacodegen 4 types"),
+]
 
 
 def is_allowed(module: str, path: str) -> bool:

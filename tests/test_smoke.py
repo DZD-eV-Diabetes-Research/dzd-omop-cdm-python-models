@@ -12,12 +12,8 @@ from helpers import MODULES, KnownBug, run_check
 
 # (check, flavor) -> bug ID
 KNOWN_BUGS = {
-    ("create_all", "tables"): "B1",
-    ("insert_person", "tables"): "B1",
     ("insert_person", "dataclasses"): "B2",
-    ("import_together", "tables"): "B1",
     ("import_together", "sqlmodels"): "B4",
-    ("import_without_extras", "tables"): "B1",
 }
 
 FLAVORS = sorted({m.rsplit("_", 1)[1] for m in MODULES})

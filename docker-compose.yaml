@@ -14,9 +14,7 @@ services:
       POSTGRESQL_PORT: 5432
     user: ${UID:-1000}:${GID:-1000}
     volumes:
-      # Not packages/dzdomop/src/omopmodel yet: the output still differs from the
-      # committed models until the OMOP generator subclasses are in.
-      - ./build/omopmodel:/output
+      - ./packages/dzdomop/src/omopmodel:/output
       - ./downloads:/downloads
     depends_on:
       postgresql:

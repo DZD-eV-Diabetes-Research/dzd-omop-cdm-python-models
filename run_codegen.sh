@@ -1,7 +1,7 @@
 #!/bin/bash
 docker compose down --remove-orphans
 # Create the mounted folders as the current user, not as root
-mkdir -p build/omopmodel downloads
+mkdir -p downloads
 docker compose build
 
 # Start Docker Compose

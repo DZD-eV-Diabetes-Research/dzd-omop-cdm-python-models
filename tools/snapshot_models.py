@@ -40,13 +40,6 @@ MODULE_DIR = Path(importlib.util.find_spec(PACKAGE_NAME).origin).parent
 FLAVORS = ("tables", "declarative", "dataclasses", "sqlmodels")
 MODULE_RE = re.compile(r"^OMOP_(\d+)_(\d+)_(" + "|".join(FLAVORS) + r")$")
 
-# Bug B1: `metadata = Table('metadata', metadata, ...)` overwrites the MetaData object,
-# so the `tables` flavor can't be imported. To snapshot it anyway, the table variable is
-# renamed in memory to sqlacodegen's default name. The generated file is not touched.
-B1_PATTERN = re.compile(r"^metadata = Table\(", re.MULTILINE)
-B1_REPLACEMENT = "t_metadata = Table("
-B1_NOTE = "B1: loaded with `metadata = Table(` renamed to `t_metadata = Table(` in memory"
-
 
 def discover_modules(models_dir: Path | None = None) -> list[str]:
     """Names of all generated model modules, e.g. ``OMOP_5_4_sqlmodels``."""
@@ -55,21 +48,19 @@ def discover_modules(models_dir: Path | None = None) -> list[str]:
 
 
 def load_module(name: str, models_dir: Path | None = None) -> tuple[types.ModuleType, list[str]]:
-    """Import a generated module. Returns the module and notes about how it was loaded.
+    """Import a generated module. Returns the module and notes about how it was loaded
+    (none since B1 is fixed; the baselines still have the old B1 note).
 
     With ``models_dir``, the file is loaded from there but still registered as
     ``omopmodel.<name>``, so its snapshot can be diffed against the baseline.
     """
     full_name = f"{PACKAGE_NAME}.{name}"
-    if models_dir is None and not name.endswith("_tables"):
+    if models_dir is None:
         return importlib.import_module(full_name), []
 
     path = (models_dir or MODULE_DIR) / f"{name}.py"
     source = path.read_text(encoding="utf-8")
-    notes = []
-    if B1_PATTERN.search(source):
-        source = B1_PATTERN.sub(B1_REPLACEMENT, source)
-        notes.append(B1_NOTE)
+    notes: list[str] = []
     importlib.import_module(PACKAGE_NAME)
     module = types.ModuleType(full_name)
     module.__file__ = str(path)

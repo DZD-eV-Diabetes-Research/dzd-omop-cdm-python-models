@@ -13,7 +13,6 @@ MODULES = discover_modules()
 # How each known bug shows up in a traceback. A check marked with a bug only counts as
 # "expected failure" when the traceback matches, so a new, different error still fails.
 BUG_SIGNATURES = {
-    "B1": r"AttributeError: 'Table' object has no attribute 'tables'",
     "B2": r"TypeError: .*__init__\(\) missing \d+ required",
     "B3": r"AssertionError: B3: global SQLModel.metadata has tables",
     "B4": r"Table '\w+' is already defined for this MetaData instance",
