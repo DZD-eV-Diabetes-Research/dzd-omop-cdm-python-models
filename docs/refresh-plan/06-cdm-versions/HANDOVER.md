@@ -57,6 +57,7 @@
 - `./run_codegen.sh` (Docker) and the local run give byte-identical files (12 modules).
 - Examples `sqlite_insert_person.py` and `sqlite_insert_person_sqlmodel_wip.py` run.
 - ruff + pre-commit: clean
+- CI: all 7 jobs green (lint, 3.10–3.14, lowest), run 42054275456 on `1bd27fe`
 - Pushed: yes
 
 ## For later (out of scope)
