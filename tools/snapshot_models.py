@@ -10,6 +10,8 @@ Usage::
     python tools/snapshot_models.py OMOP_5_4_sqlmodels            # JSON to stdout
     python tools/snapshot_models.py OMOP_5_4_sqlmodels -o out.json
     python tools/snapshot_models.py --all -o tests/baseline/       # every module
+    python tools/snapshot_models.py --all --models-dir build/omopmodel -o /tmp/snap/
+                                    # modules from another folder, e.g. fresh generator output
 
 One module is loaded per process, because two SQLModel modules can't be imported
 into the same process (bug B4). ``--all`` runs one subprocess per module.
@@ -46,18 +48,23 @@ B1_REPLACEMENT = "t_metadata = Table("
 B1_NOTE = "B1: loaded with `metadata = Table(` renamed to `t_metadata = Table(` in memory"
 
 
-def discover_modules() -> list[str]:
+def discover_modules(models_dir: Path | None = None) -> list[str]:
     """Names of all generated model modules, e.g. ``OMOP_5_4_sqlmodels``."""
-    return sorted(p.stem for p in MODULE_DIR.glob("OMOP_*.py") if MODULE_RE.match(p.stem))
+    models_dir = models_dir or MODULE_DIR
+    return sorted(p.stem for p in models_dir.glob("OMOP_*.py") if MODULE_RE.match(p.stem))
 
 
-def load_module(name: str) -> tuple[types.ModuleType, list[str]]:
-    """Import a generated module. Returns the module and notes about how it was loaded."""
+def load_module(name: str, models_dir: Path | None = None) -> tuple[types.ModuleType, list[str]]:
+    """Import a generated module. Returns the module and notes about how it was loaded.
+
+    With ``models_dir``, the file is loaded from there but still registered as
+    ``omopmodel.<name>``, so its snapshot can be diffed against the baseline.
+    """
     full_name = f"{PACKAGE_NAME}.{name}"
-    if not name.endswith("_tables"):
+    if models_dir is None and not name.endswith("_tables"):
         return importlib.import_module(full_name), []
 
-    path = MODULE_DIR / f"{name}.py"
+    path = (models_dir or MODULE_DIR) / f"{name}.py"
     source = path.read_text(encoding="utf-8")
     notes = []
     if B1_PATTERN.search(source):
@@ -67,7 +74,8 @@ def load_module(name: str) -> tuple[types.ModuleType, list[str]]:
     module = types.ModuleType(full_name)
     module.__file__ = str(path)
     sys.modules[full_name] = module
-    exec(compile(source, str(path), "exec"), module.__dict__)
+    # dont_inherit: this file's `from __future__ import annotations` must not leak into the module.
+    exec(compile(source, str(path), "exec", dont_inherit=True), module.__dict__)
     return module, notes
 
 
@@ -275,7 +283,7 @@ def snapshot_class(cls: type, module: types.ModuleType) -> dict[str, Any]:
 # --------------------------------------------------------------------------- module
 
 
-def snapshot_module(name: str) -> dict[str, Any]:
+def snapshot_module(name: str, models_dir: Path | None = None) -> dict[str, Any]:
     import sqlalchemy
     from sqlalchemy import MetaData, Table
     from sqlalchemy.orm import DeclarativeBase, configure_mappers
@@ -285,7 +293,7 @@ def snapshot_module(name: str) -> dict[str, Any]:
         raise SystemExit(f"not a generated model module: {name}")
     major, minor, flavor = match.groups()
 
-    module, notes = load_module(name)
+    module, notes = load_module(name, models_dir)
 
     defined_here = {
         attr: obj
@@ -336,10 +344,11 @@ def dump(snapshot: dict[str, Any]) -> str:
     return json.dumps(snapshot, indent=1, ensure_ascii=False) + "\n"
 
 
-def snapshot_in_subprocess(name: str) -> dict[str, Any]:
+def snapshot_in_subprocess(name: str, models_dir: Path | None = None) -> dict[str, Any]:
     """Snapshot ``name`` in a fresh interpreter (see B4) and return the parsed JSON."""
+    extra = ["--models-dir", str(models_dir)] if models_dir else []
     result = subprocess.run(
-        [sys.executable, str(Path(__file__).resolve()), name],
+        [sys.executable, str(Path(__file__).resolve()), name, *extra],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -356,20 +365,25 @@ def main() -> None:
     parser.add_argument("module", nargs="?", help="e.g. OMOP_5_4_sqlmodels")
     parser.add_argument("--all", action="store_true", help="snapshot every generated module")
     parser.add_argument("-o", "--output", type=Path, help="output file, or directory with --all")
+    parser.add_argument(
+        "--models-dir",
+        type=Path,
+        help="load the modules from this folder, not the installed package",
+    )
     args = parser.parse_args()
 
     if args.all:
         out_dir = args.output or REPO_ROOT / "tests" / "baseline"
         out_dir.mkdir(parents=True, exist_ok=True)
-        for name in discover_modules():
+        for name in discover_modules(args.models_dir):
             (out_dir / f"{name}.json").write_text(
-                dump(snapshot_in_subprocess(name)), encoding="utf-8"
+                dump(snapshot_in_subprocess(name, args.models_dir)), encoding="utf-8"
             )
             print(f"wrote {out_dir / f'{name}.json'}", file=sys.stderr)
         return
     if not args.module:
         parser.error("give a module name or --all")
-    text = dump(snapshot_module(args.module))
+    text = dump(snapshot_module(args.module, args.models_dir))
     if args.output:
         args.output.write_text(text, encoding="utf-8")
     else:
