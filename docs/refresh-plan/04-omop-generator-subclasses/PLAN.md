@@ -5,8 +5,8 @@ policy file, applied by subclasses of the sqlacodegen generators.
 
 ## Tasks
 
-- [ ] Write `generator/omop_policy.py`. It holds plain data, no logic:
-  - `CANDIDATE_KEYS`: table → columns (moved from `pre_gen_sql/*.sql`)
+- [ ] Extend `generator/src/omop_codegen/omop_policy.py`. It holds plain data, no logic:
+  - `CANDIDATE_KEYS`: table → columns *(done in S03)*
   - `DROP_REVERSE_RELATIONSHIPS`: for example "no `List[...]` back-references on
     `Concept`, `Domain`, `Vocabulary`, `ConceptClass` except …"
   - `RELATIONSHIP_NAMES`: explicit names for ambiguous multi-FK cases
@@ -23,7 +23,7 @@ policy file, applied by subclasses of the sqlacodegen generators.
       `OmopDataclassGenerator`, `OmopSQLModelGenerator`.
 - [ ] Relationship names must match the baseline exactly (D4). Start with `nofknames` and add
       `RELATIONSHIP_NAMES` entries for whatever is left.
-- [ ] Delete `post_processing_funcs/` and `pre_gen_sql/`.
+- [ ] Delete `generator/legacy_post_processing/` (`pre_gen_sql/` is gone since S03).
 - [ ] Fix the inconsistency where `Concept.concept_classes` has `back_populates` but the
       other side doesn't.
 

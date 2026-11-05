@@ -44,6 +44,8 @@ allowed when a bug can't be fixed without it. Each one goes in the changelog.
 | B8 | Column comments | Comments start with `' \| ETLCONVENTIONS…'` when user guidance is empty. The labels are inconsistent (`ETL CONVENTIONS` vs `ETLCONVENTIONS`). Quotes are swapped for `"` instead of escaped. |
 | B9 | README | Says the models check data types. SQLModel `table=True` models (and SQLAlchemy models) **don't** check types: `Person(person_id="abc")` is accepted. |
 | B10 | `sources.py` | `omopcdm_6_0` is a copy of 5.4 left over from WIP. `from config import Config` only works when run from the generator folder. |
+| B11 | SQLModel flavor | NOT NULL columns are nullable: `sa_column=Column(...)` has no `nullable=False` (152 columns in 5.4). `create_all` makes them NULL-able. Fixed by sqlacodegen 4 *(found in S03)*. |
+| B12 | SQLModel flavor | Self-references `VisitDetail.parent_visit_detail` / `preceding_visit_detail` and `VisitOccurrence.preceding_visit_occurrence` point the wrong way (one-to-many without `remote_side`). Fixed by sqlacodegen 4 *(found in S03)*. |
 
 ### Hacks that the new tools can replace
 
@@ -163,8 +165,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 00 | Planning ([handover](00-planning/HANDOVER.md)) | This plan | ✅ done |
 | 01 | Baseline & safety net ([plan](01-baseline-and-safety-net/PLAN.md), [handover](01-baseline-and-safety-net/HANDOVER.md)) | Snapshot of today's model surface + smoke tests | ✅ done |
 | 02 | Project structure & tooling ([plan](02-project-structure-and-tooling/PLAN.md), [handover](02-project-structure-and-tooling/HANDOVER.md)) | uv workspace, pyproject, ruff, CI | ✅ done |
-| 03 | [Generator core rewrite](03-generator-core/PLAN.md) | Library-based pipeline, no post-processing yet | ⏳ next |
-| 04 | [OMOP generator subclasses](04-omop-generator-subclasses/PLAN.md) | Policy file replaces all text hacks. Diff to baseline = intended only. | – |
+| 03 | Generator core rewrite ([plan](03-generator-core/PLAN.md), [handover](03-generator-core/HANDOVER.md)) | Library-based pipeline, no post-processing yet | ✅ done |
+| 04 | [OMOP generator subclasses](04-omop-generator-subclasses/PLAN.md) | Policy file replaces all text hacks. Diff to baseline = intended only. | ⏳ next |
 | 05 | [Model usability](05-model-usability/PLAN.md) | Docstrings, formatting, flavor fixes (B1–B4) | – |
 | 06 | [CDM 5.5 & version update](06-cdm-versions/PLAN.md) | 5.3 / 5.4.x / 5.5 models | – |
 | 07 | [Vocabulary loader refresh](07-vocabulary-loader/PLAN.md) | Bug fixes, psycopg 3, tests | – |

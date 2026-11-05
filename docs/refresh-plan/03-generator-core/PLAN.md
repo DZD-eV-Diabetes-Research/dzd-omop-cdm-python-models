@@ -11,24 +11,24 @@ download ─▶ deploy DDL to Postgres ─▶ reflect MetaData ─▶ enrich ─
 
 ## Tasks
 
-- [ ] `config.py`:
+- [x] `config.py`:
   - Make it the single source of settings, created once and passed down. No module-level `Config()` calls.
   - Build the URL with `sqlalchemy.URL.create(...)`, using port and schema (fixes B7)
   - Fix the `descricption` typo
-- [ ] Downloader: always returns the extracted path (fixes B6). Cache by release tag. Uses a
+- [x] Downloader: always returns the extracted path (fixes B6). Cache by release tag. Uses a
       temp dir instead of `/tmp/omop_downloaded.zip`.
-- [ ] `sources.py` → `cdm_versions.py`: a plain list of `CdmVersion(name, ddl_dir, csv_prefix)`.
+- [x] `sources.py` → `cdm_versions.py`: a plain list of `CdmVersion(name, ddl_dir, csv_prefix)`.
       Derive the paths from the version instead of repeating 6 paths per version. Remove the
       6.0 stub (fixes B10).
-- [ ] Reflect with `MetaData().reflect(engine, schema=...)` after running the 4 official DDL scripts.
-- [ ] `enrich.py`:
+- [x] Reflect with `MetaData().reflect(engine, schema=...)` after running the 4 official DDL scripts.
+- [x] `enrich.py`:
   - Read the CSV specs with `csv.DictReader`
   - Set `table.comment` and `column.comment` in Python. Format them cleanly (fixes B8).
   - Mark the candidate keys on the reflected tables in Python (`pre_gen_sql/*.sql` goes away)
-- [ ] Call `DeclarativeGenerator` & co. directly with `options={"nojoined", "nofknames", …}`.
+- [x] Call `DeclarativeGenerator` & co. directly with `options={"nojoined", "nofknames", …}`.
       `nojoined` replaces `fix_death_table_glitch`.
-- [ ] Write the output to a staging dir first, and swap it in only when generation succeeds.
-- [ ] Use logging instead of `print`.
+- [x] Write the output to a staging dir first, and swap it in only when generation succeeds.
+- [x] Use logging instead of `print`.
 
 ## Done when
 
