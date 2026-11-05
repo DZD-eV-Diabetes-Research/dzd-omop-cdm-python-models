@@ -166,8 +166,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 01 | Baseline & safety net ([plan](01-baseline-and-safety-net/PLAN.md), [handover](01-baseline-and-safety-net/HANDOVER.md)) | Snapshot of today's model surface + smoke tests | ✅ done |
 | 02 | Project structure & tooling ([plan](02-project-structure-and-tooling/PLAN.md), [handover](02-project-structure-and-tooling/HANDOVER.md)) | uv workspace, pyproject, ruff, CI | ✅ done |
 | 03 | Generator core rewrite ([plan](03-generator-core/PLAN.md), [handover](03-generator-core/HANDOVER.md)) | Library-based pipeline, no post-processing yet | ✅ done |
-| 04 | [OMOP generator subclasses](04-omop-generator-subclasses/PLAN.md) | Policy file replaces all text hacks. Diff to baseline = intended only. | ⏳ next |
-| 05 | [Model usability](05-model-usability/PLAN.md) | Docstrings, formatting, flavor fixes (B1–B4) | – |
+| 04 | OMOP generator subclasses ([plan](04-omop-generator-subclasses/PLAN.md), [handover](04-omop-generator-subclasses/HANDOVER.md)) | Policy file replaces all text hacks. Diff to baseline = intended only. | ✅ done |
+| 05 | [Model usability](05-model-usability/PLAN.md) | Docstrings, formatting, flavor fixes (B2–B4, B1 done in S04) | ⏳ next |
 | 06 | [CDM 5.5 & version update](06-cdm-versions/PLAN.md) | 5.3 / 5.4.x / 5.5 models | – |
 | 07 | [Vocabulary loader refresh](07-vocabulary-loader/PLAN.md) | Bug fixes, psycopg 3, tests | – |
 | 08 | [User documentation](08-user-docs/PLAN.md) | `docs/models/` and `docs/generator/` | – |

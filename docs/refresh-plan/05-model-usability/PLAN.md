@@ -10,7 +10,7 @@
   - Keep `comment=` on the columns so the database still gets the docs
 - [ ] **Formatting:** run `ruff format` on the output as the last generator step
 - [ ] **Module extras:** `__all__`, `CDM_VERSION = "5.4"`, `CDM_RELEASE = "v5.4.x"`
-- [ ] **tables flavor:** keep the table variable names without the `t_` prefix, except for the
+- [x] *(done in S04)* **tables flavor:** keep the table variable names without the `t_` prefix, except for the
       OMOP `metadata` table: name it `metadata_table` so it doesn't overwrite the
       `metadata` object (B1). This is the one allowed name difference.
 - [ ] **dataclasses flavor:** `default=None` for optional columns, `default_factory=list`
