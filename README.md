@@ -9,7 +9,7 @@ classes, plus a loader for the standardized vocabularies you export from
 - Write and query OMOP data with typed Python classes; the OMOP docs show up in your editor
 - Load an Athena export (folder, zip file or download link) into PostgreSQL or SQLite
 
-Maintainer: Tim Bleimehl · Status: alpha, expect breaking changes · License: MIT
+Maintainer: Tim Bleimehl · Status: beta, your feedback is welcome · License: MIT
 
 ## Install
 
