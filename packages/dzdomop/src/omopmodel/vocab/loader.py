@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import itertools
 import logging
+import os
 from pathlib import Path
 from types import ModuleType
 from typing import Annotated, Any
@@ -12,13 +13,18 @@ from typing import Annotated, Any
 from sqlalchemy import Connection, Engine, MetaData, Table, text
 from sqlalchemy.exc import DBAPIError
 
-from omopmodel.vocab import constraints, state
+from omopmodel.vocab import constraints, download, state
 from omopmodel.vocab.constraints import ConstraintRecreateError
 from omopmodel.vocab.csv_source import (
     DEFAULT_FILE_TABLE_MAPPING,
     SKIP_HINTS,
+    ZIP_SKIP_HINTS,
+    CorruptSourceError,
     CsvFile,
-    find_csv_files,
+    Source,
+    SourceFile,
+    ZipSource,
+    open_source,
     table_for_file,
 )
 from omopmodel.vocab.writers import check_supported, write_rows
@@ -35,7 +41,11 @@ class VocabularyLoaderError(RuntimeError):
 class VocabulariesLoader:
     def __init__(
         self,
-        vocabulary_directory: Path | str,
+        vocabulary_directory: Annotated[
+            Path | str | Source,
+            "The Athena export: a folder with the CSV files, the zip file as Athena sends it, "
+            "or an http(s) URL to that zip.",
+        ],
         database_engine: Engine,
         flush_interval: Annotated[
             int,
@@ -78,16 +88,50 @@ class VocabulariesLoader:
             "(partial exports), log a warning instead of raising ConstraintRecreateError. "
             "The foreign key then stays missing.",
         ] = False,
+        download_dir: Annotated[
+            Path | str | None,
+            "URL sources: folder for the downloaded zip. Default: $DZDOMOP_DOWNLOAD_DIR, "
+            "else 'dzdomop' in the system's temp folder.",
+        ] = None,
+        keep_download: Annotated[
+            bool | None,
+            "URL sources: keep the downloaded zip after a successful load, so the next run "
+            "doesn't download it again. Default: $DZDOMOP_KEEP_DOWNLOAD, else False. After a "
+            "failed load the zip is always kept, and a rerun uses it.",
+        ] = None,
     ):
         """Load an Athena vocabulary export (https://athena.ohdsi.org) into existing OMOP tables.
 
         Works with PostgreSQL (drivers psycopg, psycopg2, pg8000; uses ``COPY``) and
         SQLite. The tables must exist, e.g. from ``omop.metadata.create_all(engine)``.
+        Nothing is read or downloaded before :meth:`load_all` (or :meth:`csv_files`).
         """
         check_supported(database_engine.dialect.name, database_engine.driver)
         if flush_interval < 1:
             raise ValueError(f"flush_interval must be at least 1, got {flush_interval}")
-        self.vocabulary_directory = Path(vocabulary_directory)
+        is_url = download.is_url(vocabulary_directory)
+        if isinstance(vocabulary_directory, (str, os.PathLike)) and not is_url:
+            vocabulary_directory = Path(vocabulary_directory)
+        # A folder or zip file (Path), a URL (str, Path would turn "https://" into
+        # "https:/"), or a Source object
+        self.vocabulary_directory: Path | str | Source = vocabulary_directory
+        # The environment variables only matter (and are only read) for a URL
+        self.download_dir: Path | None = (
+            Path(download_dir)
+            if download_dir is not None
+            else download.default_download_dir()
+            if is_url
+            else None
+        )
+        self.keep_download: bool = (
+            keep_download
+            if keep_download is not None
+            else download.keep_download_default()
+            if is_url
+            else False
+        )
+        self._source: Source | None = None
+        self._downloaded: Path | None = None
         self.database_engine = database_engine
         self.flush_interval = flush_interval
         self.drop_constraints_and_indexes_before_insert = drop_constraints_and_indexes_before_insert
@@ -114,7 +158,18 @@ class VocabulariesLoader:
         even when loading fails or is interrupted (Ctrl+C). Foreign keys that don't fit the
         half-loaded data then stay missing (a warning, the original error is raised); the
         next run continues the load and adds them.
+
+        A URL is downloaded first. After a successful load the zip is deleted, unless
+        ``keep_download`` is set.
         """
+        try:
+            self._load_all()
+        except CorruptSourceError:
+            self._discard_damaged_download()
+            raise
+        self._remove_download()
+
+    def _load_all(self) -> None:
         files = self.csv_files()
         tables = _unique_tables(files)
         scope = constraints.scope_for(self.metadata, tables)
@@ -131,6 +186,8 @@ class VocabulariesLoader:
                     self._load(conn, csv_file)
             except BaseException:
                 conn = self._recreate_after_failure(conn, scope)
+                if self._downloaded is not None:
+                    log.info("The downloaded file stays in %s for the next run", self._downloaded)
                 raise
             else:
                 if self.recreate_constraints_and_indexes_after_insert:
@@ -168,24 +225,59 @@ class VocabulariesLoader:
                 conn.commit()
             self._load(conn, source_csv)
 
+    def source(self) -> Source:
+        """Where the files come from: a folder or a zip file.
+
+        Downloads a URL on the first call. The zip stays until :meth:`load_all` succeeds
+        (or always, with ``keep_download``); a later call downloads it again.
+        """
+        if self._source is None:
+            location = self.vocabulary_directory
+            if download.is_url(location):
+                assert self.download_dir is not None
+                self._downloaded = download.download(
+                    location, self.download_dir, self.show_progress_bar
+                )
+                self._source = ZipSource(self._downloaded)
+            elif isinstance(location, Path):
+                self._source = open_source(location)
+            elif callable(getattr(location, "files", None)):
+                self._source = location  # type: ignore[assignment]
+            else:
+                raise TypeError(
+                    f"vocabulary_directory must be a path, an http(s) URL or a Source, "
+                    f"got {location!r}"
+                )
+        return self._source
+
     def csv_files(self) -> list[CsvFile]:
         """The CSV files in ``vocabulary_directory`` that match a table, sorted by name."""
+        return [CsvFile.from_source(file, table) for file, table in self._matching_files()]
+
+    def _matching_files(self, quiet: bool = False) -> list[tuple[SourceFile, Table]]:
+        """Files with their tables; logs the skipped ones unless ``quiet``. Reads no rows."""
+        source = self.source()
+        hints = ZIP_SKIP_HINTS if isinstance(source, ZipSource) else SKIP_HINTS
         files = []
-        for path in find_csv_files(self.vocabulary_directory):
-            if self.csv_file_table_mapping.get(path.stem, "") is None:
-                hint = SKIP_HINTS.get(path.stem, "csv_file_table_mapping says so")
-                log.info("Skipping '%s': %s", path.name, hint)
+        for file in source.files():
+            stem = Path(file.name).stem
+            if self.csv_file_table_mapping.get(stem, "") is None:
+                if not quiet:
+                    hint = hints.get(stem, "csv_file_table_mapping says so")
+                    log.info("Skipping '%s': %s", file.name, hint)
                 continue
-            table = table_for_file(path, self.metadata, self.csv_file_table_mapping)
+            table = table_for_file(file.name, self.metadata, self.csv_file_table_mapping)
             if table is None:
+                if quiet:
+                    continue
                 log.warning(
                     "Skipping '%s': no OMOP table with that name. Add it to "
                     "'%s.csv_file_table_mapping' to load it into a table.",
-                    path,
+                    file.location,
                     type(self).__name__,
                 )
                 continue
-            files.append(CsvFile.from_path(path, table))
+            files.append((file, table))
         return files
 
     def reset_state(self) -> None:
@@ -194,7 +286,10 @@ class VocabulariesLoader:
             state.drop(conn)
 
     def drop_constraints_and_pks_and_indexes(self) -> None:
-        """Drop keys and indexes for the tables that have a file in ``vocabulary_directory``."""
+        """Drop keys and indexes for the tables that have a file in ``vocabulary_directory``.
+
+        A URL is downloaded for that, and the zip stays (see :meth:`source`).
+        """
         with self.database_engine.connect() as conn:
             constraints.drop(conn, self._scope())
 
@@ -229,7 +324,7 @@ class VocabulariesLoader:
         done = state.committed_rows(conn, csv_file) if track else 0
         conn.commit()
         wanted = self._wanted(csv_file)
-        name = csv_file.path.name
+        name = csv_file.name
         if csv_file.rows == 0:
             log.info("%s: no rows", name)
             return
@@ -286,6 +381,28 @@ class VocabulariesLoader:
             )
         return conn
 
+    def _remove_download(self) -> None:
+        """Delete a downloaded zip after a successful load, unless ``keep_download``."""
+        if self._downloaded is None or self.keep_download:
+            if self._downloaded is not None:
+                log.info("Kept the downloaded file %s", self._downloaded)
+            return
+        self._downloaded.unlink(missing_ok=True)
+        log.info("Deleted the downloaded file %s", self._downloaded)
+        self._downloaded = None
+        self._source = None
+
+    def _discard_damaged_download(self) -> None:
+        """A damaged download would fail every rerun: delete it, so the next run downloads."""
+        if self._downloaded is None:
+            return
+        self._downloaded.unlink(missing_ok=True)
+        log.warning(
+            "Deleted the damaged download %s; the next run downloads it again", self._downloaded
+        )
+        self._downloaded = None
+        self._source = None
+
     def _wanted(self, csv_file: CsvFile) -> int:
         """Rows to load from ``csv_file`` in total (``max_rows_pers_csv`` included)."""
         if self.max_rows_pers_csv is None:
@@ -320,7 +437,8 @@ class VocabulariesLoader:
             ) from e
 
     def _scope(self) -> constraints.Scope:
-        return constraints.scope_for(self.metadata, _unique_tables(self.csv_files()))
+        tables = [table for _, table in self._matching_files(quiet=True)]
+        return constraints.scope_for(self.metadata, list({t.key: t for t in tables}.values()))
 
     def _table(self, omop_class: Any) -> Table:
         if isinstance(omop_class, Table):
@@ -402,4 +520,4 @@ def _progress(enabled: bool, csv_file: CsvFile, total: int, done: int):
     except ImportError:
         log.warning("No progress bar: tqdm isn't installed (pip install 'dzdomop[progress]')")
         return _NoProgress()
-    return tqdm(total=total, initial=done, desc=csv_file.path.name)
+    return tqdm(total=total, initial=done, desc=csv_file.name)

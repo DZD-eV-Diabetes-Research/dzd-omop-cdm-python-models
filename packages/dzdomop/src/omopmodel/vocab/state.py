@@ -54,7 +54,7 @@ def _key(csv_file: CsvFile):
     # B5: both conditions must reach SQL. A new export with the same file name but another
     # row count is a different file.
     return (
-        state_table.c.filename == csv_file.path.name,
+        state_table.c.filename == csv_file.name,
         state_table.c.file_total_rows == csv_file.rows,
     )
 
@@ -65,7 +65,7 @@ def committed_rows(conn: Connection, csv_file: CsvFile) -> int:
     if row is None:
         conn.execute(
             state_table.insert().values(
-                filename=csv_file.path.name,
+                filename=csv_file.name,
                 file_total_rows=csv_file.rows,
                 target_tablename=csv_file.table.name,
                 row_no_commited=0,

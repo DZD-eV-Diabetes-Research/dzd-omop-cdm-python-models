@@ -14,7 +14,8 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 
 from omopmodel.vocab.constraints import ConstraintRecreateError
-from omopmodel.vocab.csv_source import CsvFormatError
+from omopmodel.vocab.csv_source import CsvFormatError, VocabularySourceError
+from omopmodel.vocab.download import DOWNLOAD_DIR_ENV, KEEP_DOWNLOAD_ENV
 from omopmodel.vocab.loader import VocabulariesLoader, VocabularyLoaderError
 from omopmodel.vocab.writers import UnsupportedDatabaseError
 
@@ -37,10 +38,15 @@ def build_parser() -> argparse.ArgumentParser:
     load = commands.add_parser(
         "load-vocab",
         help="load an Athena vocabulary export into an OMOP database",
-        description="Load an unzipped Athena vocabulary export (https://athena.ohdsi.org) "
-        "into an OMOP CDM database (PostgreSQL or SQLite).",
+        description="Load an Athena vocabulary export (https://athena.ohdsi.org) into an "
+        "OMOP CDM database (PostgreSQL or SQLite).",
     )
-    load.add_argument("directory", help="folder with the unzipped Athena CSV files")
+    load.add_argument(
+        "source",
+        metavar="SOURCE",
+        help="the Athena export: a folder with the CSV files, the zip file, or an http(s) "
+        "URL to the zip (the download link from Athena's e-mail)",
+    )
     load.add_argument(
         "--url",
         default=os.environ.get(URL_ENV),
@@ -91,6 +97,19 @@ def build_parser() -> argparse.ArgumentParser:
     load.add_argument(
         "--max-rows", type=_positive_int, metavar="ROWS", help="load at most ROWS per file"
     )
+    load.add_argument(
+        "--download-dir",
+        metavar="DIR",
+        help=f"URL source: folder for the downloaded zip (default: ${DOWNLOAD_DIR_ENV}, "
+        "else 'dzdomop' in the system's temp folder)",
+    )
+    load.add_argument(
+        "--keep-download",
+        action="store_true",
+        default=None,
+        help="URL source: keep the zip after a successful load (default: "
+        f"${KEEP_DOWNLOAD_ENV}, else delete it). After a failed load it is always kept.",
+    )
     load.add_argument("--no-progress", action="store_true", help="no progress bars")
     load.add_argument("-q", "--quiet", action="store_true", help="only print warnings")
     return parser
@@ -108,7 +127,7 @@ def load_vocab(args: argparse.Namespace) -> None:
     if args.create_tables:
         omop.metadata.create_all(engine)
     loader = VocabulariesLoader(
-        args.directory,
+        args.source,
         database_engine=engine,
         flush_interval=args.flush_interval,
         drop_constraints_and_indexes_before_insert=not args.keep_constraints,
@@ -119,6 +138,8 @@ def load_vocab(args: argparse.Namespace) -> None:
         max_rows_pers_csv=args.max_rows,
         save_loader_state_into_table=not args.no_state,
         skip_invalid_foreign_keys=args.skip_invalid_foreign_keys,
+        download_dir=args.download_dir,
+        keep_download=args.keep_download,
     )
     if args.reset_state:
         loader.reset_state()
@@ -144,6 +165,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         CsvFormatError,
         UnsupportedDatabaseError,
         VocabularyLoaderError,
+        VocabularySourceError,
         DBAPIError,
     ) as e:
         print(f"error: {e}", file=sys.stderr)
