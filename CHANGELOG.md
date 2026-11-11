@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (unreleased)
+## 0.5.0 (2026-11-11)
 
 The models are regenerated with sqlacodegen 4 and a new generator, and the vocabulary loader is
 rewritten. Entries marked **Breaking** need a change in your code or database: the
