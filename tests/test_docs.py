@@ -42,7 +42,7 @@ MARKER = re.compile(r"<!--\s*docs-test:\s*(?P<what>run|skip|continue)\b(?P<reaso
 
 
 def doc_files() -> list[Path]:
-    docs = [p for p in sorted((ROOT / "docs").rglob("*.md")) if "refresh-plan" not in p.parts]
+    docs = sorted((ROOT / "docs").rglob("*.md"))
     return [ROOT / "README.md", ROOT / "packages" / "dzdomop" / "README.md", *docs]
 
 
