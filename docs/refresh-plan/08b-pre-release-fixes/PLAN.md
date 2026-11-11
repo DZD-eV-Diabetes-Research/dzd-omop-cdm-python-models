@@ -33,6 +33,11 @@ and a changelog line.
       (`constraints.py:118`) and "Recreating N ..." (`:155`) count the scope, not what was
       actually dropped or created. Count real actions.
 
+## Breaking changes
+
+Anything users must change after this session (e.g. the `tables` keys, the download folder) goes
+into the handover under "Breaking for the upgrade page": S09 writes `docs/upgrading.md` from it.
+
 ## Out of scope (stay in "For later")
 
 `run_codegen.sh` exit code and UID/GID, dockerfile `WORKDIR`, generator CI job, `schema_translate_map`
