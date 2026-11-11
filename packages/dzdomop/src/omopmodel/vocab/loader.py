@@ -539,12 +539,18 @@ class _NoProgress:
         pass
 
 
+_warned_no_tqdm = False
+
+
 def _progress(enabled: bool, csv_file: CsvFile, total: int, done: int):
+    global _warned_no_tqdm
     if not enabled:
         return _NoProgress()
     try:
         from tqdm import tqdm
     except ImportError:
-        log.warning("No progress bar: tqdm isn't installed (pip install 'dzdomop[progress]')")
+        if not _warned_no_tqdm:  # once, not per file
+            _warned_no_tqdm = True
+            log.warning("No progress bars: tqdm isn't installed (pip install 'dzdomop[progress]')")
         return _NoProgress()
     return tqdm(total=total, initial=done, desc=csv_file.name)

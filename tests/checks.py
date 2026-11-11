@@ -281,13 +281,22 @@ def check_loader_without_extras(athena_dir: str) -> None:
     """The loader imports and loads into SQLite with only the core dependencies."""
     for module in EXTRAS_MODULES:
         sys.modules[module] = None
+    import logging
+
     from omopmodel import OMOP_5_4_declarative as omop
     from omopmodel import VocabulariesLoader
 
+    warnings: list[str] = []
+    handler = logging.Handler()
+    handler.emit = lambda record: warnings.append(record.getMessage())
+    logging.getLogger("omopmodel.vocab").addHandler(handler)
+
     engine = sqlite_engine()
     omop.metadata.create_all(engine)
-    # show_progress_bar=True without tqdm: a warning, no error
+    # show_progress_bar=True without tqdm: one warning, no error
     VocabulariesLoader(athena_dir, engine, omop_module=omop).load_all()
+    no_tqdm = [w for w in warnings if "tqdm" in w]
+    assert len(no_tqdm) == 1, no_tqdm
     with engine.connect() as conn:
         assert conn.exec_driver_sql("SELECT count(*) FROM concept").scalar() > 0
     loaded = [m for m in EXTRAS_MODULES if sys.modules.get(m) is not None]
