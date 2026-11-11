@@ -11,10 +11,17 @@ schema. Without the variable they are skipped, except in CI, where they fail.
 
 from __future__ import annotations
 
+import gzip
 import importlib
+import io
 import logging
 import os
+import re
 import shutil
+import tempfile
+import threading
+import zipfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -23,12 +30,15 @@ from omopmodel import VocabulariesLoader
 from omopmodel.vocab import (
     ConstraintRecreateError,
     CsvFormatError,
+    DownloadError,
     UnsupportedDatabaseError,
     VocabularyLoaderError,
+    VocabularySourceError,
     cli,
+    download,
     loader,
 )
-from omopmodel.vocab.csv_source import CsvFile, _date, count_rows
+from omopmodel.vocab.csv_source import CsvFile, ZipSource, _date, count_rows
 from omopmodel.vocab.writers import _csv_buffer, check_supported
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.exc import DBAPIError
@@ -75,7 +85,7 @@ def schema_of(engine) -> dict:
     return out
 
 
-def make_loader(engine, module=None, directory: Path = ATHENA, **kw) -> VocabulariesLoader:
+def make_loader(engine, module=None, directory: Path | str = ATHENA, **kw) -> VocabulariesLoader:
     kw.setdefault("show_progress_bar", False)
     kw.setdefault("flush_interval", 3)
     return VocabulariesLoader(directory, engine, omop_module=module or omop(), **kw)
@@ -642,3 +652,447 @@ def test_postgres_driver_errors_are_wrapped(pg_engine, athena_copy):
         make_loader(pg_engine, directory=athena_copy).load_all()
     # the original error wins; keys and indexes are back
     assert schema_of(pg_engine)["concept"][0] == "xpk_concept"
+
+
+# ------------------------------------------------------------------- zip files and URLs
+
+
+def make_zip(path: Path, top: str | None = None, extra: dict[str, str] | None = None) -> Path:
+    """A zip of the fixture export, like Athena sends it (optionally below a top folder)."""
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file in sorted(ATHENA.iterdir()):
+            archive.write(file, f"{top}/{file.name}" if top else file.name)
+        for name, content in (extra or {}).items():
+            archive.writestr(name, content)
+    return path
+
+
+def all_rows(engine, module) -> dict[str, list]:
+    with engine.connect() as conn:
+        return {
+            name: sorted(map(tuple, conn.execute(table.select()).all()), key=repr)
+            for name, table in module.metadata.tables.items()
+        }
+
+
+@pytest.mark.parametrize("top", [None, "vocabulary_download_v5"])
+def test_load_from_zip(sqlite_engine, tmp_path, top):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    # the macOS Finder adds __MACOSX/._<name> files: ignored
+    export = make_zip(tmp_path / "export.zip", top, {"__MACOSX/._CONCEPT.csv": "junk"})
+    make_loader(sqlite_engine, directory=export).load_all()
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+    check_loaded_values(sqlite_engine)
+
+
+def test_zip_and_folder_give_the_same_rows(tmp_path):
+    module = omop("OMOP_5_5_declarative")
+    engines = {}
+    for name, source in [("folder", ATHENA), ("zip", make_zip(tmp_path / "export.zip"))]:
+        engines[name] = create_engine(f"sqlite:///{tmp_path / name}.db")
+        module.metadata.create_all(engines[name])
+        make_loader(engines[name], module, directory=source).load_all()
+    assert all_rows(engines["folder"], module) == all_rows(engines["zip"], module)
+
+
+def test_load_started_from_folder_continues_from_zip(sqlite_engine, tmp_path, monkeypatch):
+    """Same file names and row counts: the resume state fits both."""
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    real_write = loader.write_rows
+    calls = 0
+
+    def failing_write(*args):
+        nonlocal calls
+        calls += 1
+        if calls == 4:
+            raise KeyboardInterrupt
+        real_write(*args)
+
+    monkeypatch.setattr(loader, "write_rows", failing_write)
+    with pytest.raises(KeyboardInterrupt):
+        make_loader(sqlite_engine).load_all()
+    monkeypatch.setattr(loader, "write_rows", real_write)
+    make_loader(sqlite_engine, directory=make_zip(tmp_path / "export.zip")).load_all()
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_zip_errors(sqlite_engine, tmp_path):
+    twice = make_zip(tmp_path / "twice.zip", extra={"other/CONCEPT.csv": "concept_id\n"})
+    with pytest.raises(VocabularySourceError, match="two files named CONCEPT.csv"):
+        make_loader(sqlite_engine, directory=twice).csv_files()
+    not_a_zip = tmp_path / "export.zip"
+    not_a_zip.write_text("hello")
+    with pytest.raises(VocabularySourceError, match="neither a folder nor a zip file"):
+        make_loader(sqlite_engine, directory=not_a_zip).csv_files()
+    with pytest.raises(VocabularySourceError, match="doesn't exist"):
+        make_loader(sqlite_engine, directory=tmp_path / "missing").csv_files()
+
+
+def test_csv_errors_name_the_zip_member(sqlite_engine, tmp_path):
+    omop().metadata.create_all(sqlite_engine)
+    bad = "drug_concept_id\tingredient_concept_id\tvalid_start_date\tvalid_end_date\n1\t2\t20241301\t20991231\n"
+    export = tmp_path / "export.zip"
+    with zipfile.ZipFile(export, "w") as archive:
+        archive.writestr("DRUG_STRENGTH.csv", bad)
+    with pytest.raises(CsvFormatError, match=r"export.zip:DRUG_STRENGTH.csv, line 2"):
+        make_loader(sqlite_engine, directory=export).load_all()
+
+
+def test_cpt4_hint_for_zip(sqlite_engine, tmp_path, caplog):
+    omop().metadata.create_all(sqlite_engine)
+    with caplog.at_level(logging.INFO, logger="omopmodel.vocab"):
+        make_loader(sqlite_engine, directory=make_zip(tmp_path / "export.zip")).load_all()
+    assert "Skipping 'CONCEPT_CPT4.csv'" in caplog.text
+    assert "extract the zip" in caplog.text
+
+
+def test_count_rows_of_zip_member(tmp_path):
+    files = ZipSource(make_zip(tmp_path / "export.zip")).files()
+    for file in files:
+        assert count_rows(file) == count_rows(ATHENA / file.name), file.name
+
+
+def test_load_from_zip_postgres(pg, tmp_path):
+    module = omop("OMOP_5_5_declarative")
+    module.metadata.create_all(pg)
+    before = schema_of(pg)
+    make_loader(pg, module, directory=make_zip(tmp_path / "export.zip")).load_all()
+    expected = expected_counts(module)
+    assert table_counts(pg, expected) == expected
+    assert schema_of(pg) == before
+    check_loaded_values(pg)
+
+
+class ExportServer:
+    """Serves ``body`` at ``/export`` like a download server, and records the requests.
+
+    ``ranges``: answer ``Range`` requests with 206. ``wrong_start``: ... but always from
+    byte 0. ``gzip``: send the body gzipped (Athena does that for ``Range`` requests).
+    ``cut_after``: the next response breaks off after that many bytes. ``status``: answer
+    with this HTTP error instead.
+    """
+
+    def __init__(self, body: bytes):
+        self.body = body
+        self.ranges = True
+        self.wrong_start = False
+        self.gzip = False
+        self.cut_after: int | None = None
+        self.status = 200
+        self.requests: list[dict[str, str]] = []
+        server = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                server.requests.append(dict(self.headers))
+                if server.status != 200:
+                    self.send_error(server.status)
+                    return
+                start = 0
+                wanted = self.headers.get("Range")
+                if wanted and server.ranges:
+                    start = int(re.fullmatch(r"bytes=(\d+)-", wanted).group(1))
+                    if start >= len(server.body):
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{len(server.body)}")
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+                        return
+                    if server.wrong_start:
+                        start = 0
+                    self.send_response(206)
+                    self.send_header(
+                        "Content-Range", f"bytes {start}-{len(server.body) - 1}/{len(server.body)}"
+                    )
+                else:
+                    self.send_response(200)
+                payload = server.body[start:]
+                if server.gzip:
+                    payload = gzip.compress(payload)
+                    self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                if server.cut_after is not None:
+                    payload = payload[: server.cut_after]
+                    server.cut_after = None
+                    self.close_connection = True
+                self.wfile.write(payload)
+
+            def log_message(self, *args):
+                pass
+
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread.start()
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.httpd.server_port}/export?token=secret"
+
+    def close(self) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+
+@pytest.fixture
+def export_server(tmp_path):
+    server = ExportServer(make_zip(tmp_path / "served.zip").read_bytes())
+    yield server
+    server.close()
+
+
+@pytest.fixture
+def download_dir(tmp_path, monkeypatch) -> Path:
+    monkeypatch.delenv(download.DOWNLOAD_DIR_ENV, raising=False)
+    monkeypatch.delenv(download.KEEP_DOWNLOAD_ENV, raising=False)
+    return tmp_path / "downloads"
+
+
+def load_url(engine, server, download_dir, **kw) -> VocabulariesLoader:
+    v = make_loader(engine, directory=server.url, download_dir=download_dir, **kw)
+    v.load_all()
+    return v
+
+
+def test_load_from_url_deletes_the_zip(sqlite_engine, export_server, download_dir, caplog):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    with caplog.at_level(logging.INFO, logger="omopmodel.vocab"):
+        load_url(sqlite_engine, export_server, download_dir)
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+    assert list(download_dir.iterdir()) == []
+    assert len(export_server.requests) == 1
+    assert export_server.requests[0]["User-Agent"].startswith("dzdomop/")
+    assert "token=secret" not in caplog.text  # a query string may hold a token
+
+
+def test_keep_download_reuses_the_zip(sqlite_engine, export_server, download_dir):
+    omop().metadata.create_all(sqlite_engine)
+    load_url(sqlite_engine, export_server, download_dir, keep_download=True)
+    load_url(sqlite_engine, export_server, download_dir, keep_download=True)
+    assert len(export_server.requests) == 1
+    assert [p.suffix for p in download_dir.iterdir()] == [".zip"]
+
+
+def test_failed_load_keeps_the_zip_for_the_rerun(
+    sqlite_engine, export_server, download_dir, monkeypatch
+):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+
+    def fail(*args):
+        raise RuntimeError("database gone")
+
+    monkeypatch.setattr(loader, "write_rows", fail)
+    with pytest.raises(RuntimeError, match="database gone"):
+        load_url(sqlite_engine, export_server, download_dir)
+    assert [p.suffix for p in download_dir.iterdir()] == [".zip"]
+    monkeypatch.undo()
+    load_url(sqlite_engine, export_server, download_dir)
+    assert len(export_server.requests) == 1
+    assert list(download_dir.iterdir()) == []
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+@pytest.mark.parametrize("ranges", [True, False], ids=["range", "no-range"])
+def test_interrupted_download(sqlite_engine, export_server, download_dir, ranges):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    export_server.ranges = ranges
+    half = len(export_server.body) // 2
+    export_server.cut_after = half
+    with pytest.raises(DownloadError, match="Run again to continue"):
+        load_url(sqlite_engine, export_server, download_dir)
+    [part] = download_dir.iterdir()
+    assert part.name.endswith(".zip.part") and part.stat().st_size == half
+    load_url(sqlite_engine, export_server, download_dir)
+    assert export_server.requests[1]["Range"] == f"bytes={half}-"
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_gzip_response_like_athena(sqlite_engine, export_server, download_dir):
+    """Athena sends a gzipped body (Content-Encoding) for Range requests."""
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    export_server.ranges = False
+    export_server.gzip = True
+    (download_dir).mkdir()
+    part = download.download_path(export_server.url, download_dir).with_suffix(".zip.part")
+    part.write_bytes(b"left over")
+    load_url(sqlite_engine, export_server, download_dir)
+    assert "Range" in export_server.requests[0]
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_download_errors(sqlite_engine, export_server, download_dir):
+    export_server.status = 404
+    with pytest.raises(DownloadError, match="HTTP 404"):
+        load_url(sqlite_engine, export_server, download_dir)
+    export_server.status = 200
+    export_server.body = b"<html>link expired</html>"
+    with pytest.raises(DownloadError, match="didn't send a complete zip file"):
+        load_url(sqlite_engine, export_server, download_dir)
+    assert list(download_dir.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://user:secret@127.0.0.1:9/export.zip",
+        "http://127.0.0.1:9/export.zip?token=secret#secret",
+        "http://127.0.0.1:9/export.zip?token=sec ret",
+        "http://[::1/export.zip?token=secret",
+    ],
+)
+def test_download_errors_hide_secrets(url, download_dir):
+    with pytest.raises(DownloadError) as error:
+        download.download(url, download_dir, show_progress=False)
+    assert "secret" not in str(error.value)
+    assert "sec ret" not in str(error.value)
+
+
+def test_complete_part_file_is_used(sqlite_engine, export_server, download_dir):
+    """Stopped between download and rename: the server answers 416 with the size."""
+    omop().metadata.create_all(sqlite_engine)
+    download_dir.mkdir()
+    part = download.download_path(export_server.url, download_dir).with_suffix(".zip.part")
+    part.write_bytes(export_server.body)
+    load_url(sqlite_engine, export_server, download_dir)
+    assert len(export_server.requests) == 1
+    assert export_server.requests[0]["Range"] == f"bytes={len(export_server.body)}-"
+
+
+@pytest.mark.parametrize("case", ["too-long", "wrong-start"])
+def test_unusable_part_file_starts_over(sqlite_engine, export_server, download_dir, case):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    download_dir.mkdir()
+    part = download.download_path(export_server.url, download_dir).with_suffix(".zip.part")
+    if case == "too-long":
+        part.write_bytes(export_server.body + b"junk")  # 416 with another size
+    else:
+        part.write_bytes(export_server.body[:100])
+        export_server.wrong_start = True  # 206 from byte 0
+    load_url(sqlite_engine, export_server, download_dir)
+    assert len(export_server.requests) == 2
+    assert "Range" not in export_server.requests[1]
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_gzip_body_that_breaks_off(sqlite_engine, export_server, download_dir):
+    """Not chunked: http.client returns b"" instead of raising."""
+    export_server.gzip = True
+    export_server.cut_after = 1000
+    with pytest.raises(DownloadError, match="broke off"):
+        load_url(sqlite_engine, export_server, download_dir)
+
+
+def test_one_download_per_loader(sqlite_engine, export_server, download_dir):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    v = make_loader(sqlite_engine, directory=export_server.url, download_dir=download_dir)
+    assert v.csv_files()
+    v.drop_constraints_and_pks_and_indexes()
+    v.recreate_constraints_and_pks_and_indexes()
+    v.load_all()
+    assert len(export_server.requests) == 1
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_damaged_download_is_deleted(sqlite_engine, export_server, download_dir):
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    good = export_server.body
+    with zipfile.ZipFile(io.BytesIO(good)) as archive:
+        info = archive.getinfo("CONCEPT.csv")
+    data_start = info.header_offset + 30 + len(info.filename) + len(info.extra)
+    damaged = bytearray(good)
+    for i in range(data_start + 10, data_start + 60):
+        damaged[i] ^= 0xFF
+    export_server.body = bytes(damaged)
+    with pytest.raises(VocabularySourceError, match=r"CONCEPT.csv is damaged"):
+        load_url(sqlite_engine, export_server, download_dir)
+    assert list(download_dir.iterdir()) == []
+    export_server.body = good
+    load_url(sqlite_engine, export_server, download_dir)
+    expected = expected_counts(module)
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_path_like_source(sqlite_engine):
+    class PathLike:
+        def __fspath__(self):
+            return str(ATHENA)
+
+    v = make_loader(sqlite_engine, directory=PathLike())
+    assert v.vocabulary_directory == ATHENA
+    assert v.csv_files()
+
+
+def test_download_settings_ignored_without_url(sqlite_engine, monkeypatch):
+    monkeypatch.setenv(download.KEEP_DOWNLOAD_ENV, "maybe")
+    v = make_loader(sqlite_engine)
+    assert (v.download_dir, v.keep_download) == (None, False)
+
+
+def test_download_settings_from_environment(sqlite_engine, tmp_path, monkeypatch):
+    url = "https://example.org/export.zip"
+    monkeypatch.setenv(download.DOWNLOAD_DIR_ENV, str(tmp_path / "env"))
+    monkeypatch.setenv(download.KEEP_DOWNLOAD_ENV, "yes")
+    v = make_loader(sqlite_engine, directory=url)
+    assert (v.vocabulary_directory, v.download_dir, v.keep_download) == (
+        url,
+        tmp_path / "env",
+        True,
+    )
+    v = make_loader(sqlite_engine, directory=url, download_dir=tmp_path, keep_download=False)
+    assert (v.download_dir, v.keep_download) == (tmp_path, False)
+    monkeypatch.setenv(download.KEEP_DOWNLOAD_ENV, "maybe")
+    with pytest.raises(ValueError, match="DZDOMOP_KEEP_DOWNLOAD"):
+        make_loader(sqlite_engine, directory=url)
+    monkeypatch.delenv(download.DOWNLOAD_DIR_ENV)
+    monkeypatch.delenv(download.KEEP_DOWNLOAD_ENV)
+    v = make_loader(sqlite_engine, directory=url)
+    assert v.download_dir == Path(tempfile.gettempdir()) / "dzdomop"
+    assert v.keep_download is False
+
+
+@pytest.mark.skipif(not hasattr(os, "getuid"), reason="POSIX only")
+def test_shared_download_dir_of_another_user(tmp_path, monkeypatch):
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    real_uid = os.getuid()
+    monkeypatch.setattr(os, "getuid", lambda: real_uid + 1)
+    with pytest.raises(DownloadError, match="belongs to another user"):
+        download.download("http://127.0.0.1:9/x.zip", tmp_path / "dzdomop", show_progress=False)
+    # a folder you chose yourself is not checked
+    with pytest.raises(DownloadError, match="failed"):
+        download.download("http://127.0.0.1:9/x.zip", tmp_path / "mine", show_progress=False)
+
+
+def test_cli_url(tmp_path, export_server, download_dir):
+    url = f"sqlite:///{tmp_path / 'cli.db'}"
+    args = ["load-vocab", export_server.url, "--url", url, "--create-tables", "--no-progress"]
+    args += ["-q", "--download-dir", str(download_dir)]
+    assert cli.main([*args, "--keep-download"]) == 0
+    assert [p.suffix for p in download_dir.iterdir()] == [".zip"]
+    assert cli.main(args) == 0  # uses the kept zip, then deletes it
+    assert list(download_dir.iterdir()) == []
+    assert len(export_server.requests) == 1
+    expected = expected_counts(omop())
+    assert table_counts(create_engine(url), expected) == expected
+
+
+def test_cli_bad_source(tmp_path, capsys):
+    url = f"sqlite:///{tmp_path / 'cli.db'}"
+    assert cli.main(["load-vocab", str(tmp_path / "missing"), "--url", url, "-q"]) == 1
+    assert "doesn't exist" in capsys.readouterr().err

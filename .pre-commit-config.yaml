@@ -7,11 +7,12 @@ repos:
       - id: check-added-large-files
         exclude: ^tests/baseline/
       - id: end-of-file-fixer
-        exclude: ^(LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*)$
+        exclude: ^(LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*|tests/data/.*)$
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-        # LICENSE is copied verbatim into the generated model headers
-        exclude: ^(LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*)$
+        # LICENSE is copied verbatim into the generated model headers. Athena fixtures end
+        # lines with a tab when the last field is empty.
+        exclude: ^(LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*|tests/data/.*)$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.3
