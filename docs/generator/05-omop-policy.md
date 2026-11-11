@@ -130,5 +130,5 @@ The ORM flavors run with two [sqlacodegen options](https://github.com/agronholm/
 | `nojoined` | `death.person_id` is the key of `death` and a foreign key to `person`. Without it, `Death` would be a joined-inheritance subclass of `Person`. |
 | `nofknames` | Reverse sides are named after the table that holds the foreign key (`Person.death`), not after the foreign key columns |
 
-[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/omop_policy.py
-[generate]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/generate.py
+[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/omop_policy.py
+[generate]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/generate.py

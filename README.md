@@ -60,6 +60,7 @@ dzdomop load-vocab athena-export.zip --url sqlite:///omop.db --cdm-version 5.4 -
 | ----- | --- |
 | [Use the models](docs/models/01-install.md) | quickstart, flavors, relationships, validation, vocabularies, PostgreSQL, FAQ |
 | [Run the generator](docs/generator/01-overview.md) | how the models are generated, the OMOP policy, adding a CDM version, tests |
+| [Upgrading](docs/upgrading.md) | what to change when you update from 0.4 |
 | [Changelog](CHANGELOG.md) | what changed |
 
 ## Kudos

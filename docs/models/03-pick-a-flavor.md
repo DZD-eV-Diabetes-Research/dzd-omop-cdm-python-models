@@ -103,7 +103,8 @@ with Session(engine) as session:
 > [!WARNING]
 > `SQLModel.metadata.create_all(engine)` creates **no** OMOP tables, and raises no error.
 > The classes derive from `omop.Base` (a `SQLModel` subclass) with its own `metadata`.
-> Always use `omop.metadata`.
+> Always use `omop.metadata`. Derive your own tables from `omop.Base` if they have a foreign
+> key to an OMOP table.
 
 `Person(...)` doesn't validate anything, like in the other flavors. Use
 `Person.model_validate({...})` for that, see [Validation](05-validation.md).

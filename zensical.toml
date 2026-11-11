@@ -11,10 +11,6 @@ repo_name = "dzd-omop-cdm-python-models"
 edit_uri = "edit/main/docs/"
 docs_dir = "docs"
 site_dir = "site"
-# Internal working notes, not user docs
-exclude_docs = """
-/refresh-plan/
-"""
 nav = [
   { "Home" = "index.md" },
   { "Use the models" = [
@@ -28,6 +24,7 @@ nav = [
     "models/07-postgres.md",
     "models/faq.md",
   ] },
+  { "Upgrading" = "upgrading.md" },
   { "Run the generator" = [
     "generator/01-overview.md",
     "generator/02-run-with-docker.md",
@@ -37,7 +34,7 @@ nav = [
     "generator/06-new-cdm-version.md",
     "generator/07-testing.md",
   ] },
-  { "Changelog" = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/CHANGELOG.md" },
+  { "Changelog" = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md" },
 ]
 
 [project.theme]

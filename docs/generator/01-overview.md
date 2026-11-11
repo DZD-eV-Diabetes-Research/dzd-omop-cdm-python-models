@@ -2,7 +2,7 @@
 
 The model modules in `dzdomop` are generated, never written by hand. The generator is the
 `omop-codegen` package in
-[`generator/`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen).
+[`generator/`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen).
 It isn't published on PyPI: it runs from a clone of this repository.
 
 ```text
@@ -91,10 +91,10 @@ output reproducible: the Docker run and a local run write byte-identical files.
 | Add a new CDM version | [New CDM version](06-new-cdm-version.md) |
 | Check that the output didn't change by accident | [Testing](07-testing.md) |
 
-[download]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/download.py
-[database]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/database.py
-[enrich]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/enrich.py
-[generate]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/generate.py
-[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/omop_policy.py
-[text]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/text.py
-[cli]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/cli.py
+[download]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/download.py
+[database]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/database.py
+[enrich]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/enrich.py
+[generate]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/generate.py
+[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/omop_policy.py
+[text]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/text.py
+[cli]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/cli.py

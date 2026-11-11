@@ -1,7 +1,7 @@
 # Configuration
 
 Settings come from env vars or a `.env` file in the working directory, read by
-[`config.py`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/config.py)
+[`config.py`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/config.py)
 with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 Print the defaults:
 
@@ -54,8 +54,8 @@ print(settings.sql_url().render_as_string())  # password shown as ***
 
 ## In Docker
 
-[`docker-compose.yaml`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/docker-compose.yaml)
+[`docker-compose.yaml`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/docker-compose.yaml)
 sets the `POSTGRESQL_*` variables for the bundled Postgres. The
-[`dockerfile`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/dockerfile)
+[`dockerfile`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/dockerfile)
 sets `DATAMODEL_OUTPUT_DIR=/output` and `OMOP_CDM_DOWNLOAD_DIR=/downloads`, the two mounted
 folders. Add other settings under `environment:` of the `omopcodegen` service.

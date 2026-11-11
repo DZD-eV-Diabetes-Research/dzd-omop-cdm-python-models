@@ -13,8 +13,8 @@ This regenerates every module and **overwrites** the committed models in
 
 ## What the script does
 
-[`run_codegen.sh`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/run_codegen.sh)
-drives [`docker-compose.yaml`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/docker-compose.yaml):
+[`run_codegen.sh`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/run_codegen.sh)
+drives [`docker-compose.yaml`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/docker-compose.yaml):
 
 | Step | Command |
 | ---- | ------- |
@@ -28,7 +28,7 @@ drives [`docker-compose.yaml`](https://github.com/DZD-eV-Diabetes-Research/dzd-o
 | Service | What it is |
 | ------- | ---------- |
 | `postgresql` | `postgres:16`, user, password and database `omop`. No port is published. |
-| `omopcodegen` | Built from the [`dockerfile`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/dockerfile): Python 3.12, the generator with the locked dependencies from `uv.lock`. Starts when Postgres is healthy. |
+| `omopcodegen` | Built from the [`dockerfile`](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/dockerfile): Python 3.12, the generator with the locked dependencies from `uv.lock`. Starts when Postgres is healthy. |
 
 | Folder on the host | In the container | Holds |
 | ------------------ | ---------------- | ----- |
