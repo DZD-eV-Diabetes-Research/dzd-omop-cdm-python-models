@@ -32,4 +32,5 @@ Tested on SQLite and PostgreSQL, with Python 3.10 to 3.14.
 
 - [Source code and issues](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models)
 - [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md)
+- [Preview of the next release](https://dzd-ev-diabetes-research.github.io/dzd-omop-cdm-python-models/beta/): these docs for the `beta` branch
 - [OMOP CDM documentation](https://ohdsi.github.io/CommonDataModel/)
