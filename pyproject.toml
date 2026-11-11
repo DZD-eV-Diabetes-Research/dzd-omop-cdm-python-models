@@ -13,6 +13,8 @@ dev = [
     # Loader tests also cover psycopg2 (not an extra: users bring their own)
     "psycopg2-binary>=2.9.2",
 ]
+# Docs site (zensical.toml). Zensical needs Python 3.11+.
+docs = ["zensical>=0.1.1,<0.2; python_version >= '3.11'"]
 
 [tool.uv]
 package = false
