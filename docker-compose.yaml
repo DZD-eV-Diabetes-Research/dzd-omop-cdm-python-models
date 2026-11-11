@@ -14,7 +14,8 @@ services:
       POSTGRESQL_PORT: 5432
     user: ${UID:-1000}:${GID:-1000}
     volumes:
-      - ./DZDOMOPModel/omopmodel:/output
+      - ./packages/dzdomop/src/omopmodel:/output
+      - ./downloads:/downloads
     depends_on:
       postgresql:
         condition: service_healthy

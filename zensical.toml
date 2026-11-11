@@ -1,0 +1,72 @@
+# Docs site: `uv run --group docs zensical serve` (preview), `zensical build --strict` (CI).
+# The pages are plain Markdown that GitHub renders too: relative links to .md files,
+# GitHub callouts (> [!NOTE]) instead of admonitions, no content tabs.
+
+[project]
+site_name = "dzdomop"
+site_description = "The OMOP Common Data Model as Python classes, and a loader for Athena vocabularies"
+site_url = "https://dzd-ev-diabetes-research.github.io/dzd-omop-cdm-python-models/"
+repo_url = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models"
+repo_name = "dzd-omop-cdm-python-models"
+edit_uri = "edit/main/docs/"
+docs_dir = "docs"
+site_dir = "site"
+nav = [
+  { "Home" = "index.md" },
+  { "Use the models" = [
+    "models/01-install.md",
+    "models/02-quickstart.md",
+    "models/03-pick-a-flavor.md",
+    "models/04-relationships.md",
+    "models/05-validation.md",
+    "models/06-vocabulary.md",
+    "models/06b-vocabulary-troubleshooting.md",
+    "models/07-postgres.md",
+    "models/faq.md",
+  ] },
+  { "Upgrading" = "upgrading.md" },
+  { "Run the generator" = [
+    "generator/01-overview.md",
+    "generator/02-run-with-docker.md",
+    "generator/03-run-locally.md",
+    "generator/04-configuration.md",
+    "generator/05-omop-policy.md",
+    "generator/06-new-cdm-version.md",
+    "generator/07-testing.md",
+  ] },
+  { "Changelog" = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md" },
+]
+
+[project.theme]
+language = "en"
+features = [
+  "navigation.sections",
+  "navigation.top",
+  "navigation.footer",
+  "content.code.copy",
+  "search.highlight",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions]
+tables = {}
+attr_list = {}
+md_in_html = {}
+toc.permalink = true
+pymdownx.highlight.anchor_linenums = true
+pymdownx.inlinehilite = {}
+pymdownx.superfences = {}
+
+[project.markdown_extensions.pymdownx.quotes]
+callouts = true

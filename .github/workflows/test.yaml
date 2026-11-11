@@ -1,0 +1,72 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    # Vocabulary loader tests (tests/test_vocab_loader.py) also run against Postgres
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: omop
+          POSTGRES_PASSWORD: omop
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DZDOMOP_TEST_POSTGRES_URL: postgresql://omop:omop@localhost:5432/omop
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  # Oldest allowed versions of dzdomop's direct dependencies (SQLAlchemy 2.0 line).
+  test-lowest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: omop
+          POSTGRES_PASSWORD: omop
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DZDOMOP_TEST_POSTGRES_URL: postgresql://omop:omop@localhost:5432/omop
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.10"
+      - run: uv venv
+      - run: >-
+          uv pip install --resolution lowest-direct
+          -e "packages/dzdomop[sqlmodel,pg8000,postgres,progress]" "pytest>=8"
+          "psycopg2-binary>=2.9.2"
+      - run: uv pip list
+      # Only the package tests: the generator (generator/tests) isn't installed here.
+      - run: .venv/bin/python -m pytest tests

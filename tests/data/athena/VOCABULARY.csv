@@ -1,0 +1,9 @@
+vocabulary_id	vocabulary_name	vocabulary_reference	vocabulary_version	vocabulary_concept_id
+None	OMOP Standardized Vocabularies	OMOP generated	v5.0 01-OCT-26	44819096
+Vocabulary	OMOP Vocabulary	OMOP generated		44819232
+Domain	OMOP Domain	OMOP generated		44819233
+Concept Class	OMOP Concept Class	OMOP generated		44819234
+Relationship	OMOP Relationship	OMOP generated		44819235
+Gender	OMOP Gender	OMOP generated		44819108
+RxNorm	RxNorm (NLM)	https://www.nlm.nih.gov/research/umls/rxnorm	RxNorm 20260901	44819104
+UCUM	Unified Code for Units of Measure	https://ucum.org	Version 1.8.2	44819107

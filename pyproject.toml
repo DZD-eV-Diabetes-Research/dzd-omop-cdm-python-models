@@ -1,0 +1,43 @@
+[project]
+name = "dzd-omop-workspace"
+version = "0"
+description = "Workspace root: dev tools and tests. Not published."
+requires-python = ">=3.10"
+dependencies = ["dzdomop[sqlmodel,pg8000,postgres,progress]", "omop-codegen"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.17",
+    "pre-commit>=4",
+    # Loader tests also cover psycopg2 (not an extra: users bring their own)
+    "psycopg2-binary>=2.9.2",
+]
+# Docs site (zensical.toml). Zensical needs Python 3.11+.
+docs = ["zensical>=0.1.1,<0.2; python_version >= '3.11'"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/dzdomop", "generator"]
+
+[tool.uv.sources]
+dzdomop = { workspace = true }
+omop-codegen = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "generator/tests"]
+pythonpath = ["tests", "tools"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    # Generated models: formatted by the generator, never by hand.
+    "packages/dzdomop/src/omopmodel/OMOP_*.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]

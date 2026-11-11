@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        exclude: ^tests/baseline/
+      - id: end-of-file-fixer
+        exclude: ^((packages/dzdomop/)?LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*|tests/data/.*)$
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        # LICENSE is copied verbatim into the generated model headers. Athena fixtures end
+        # lines with a tab when the last field is empty.
+        exclude: ^((packages/dzdomop/)?LICENSE|packages/dzdomop/src/omopmodel/OMOP_.*\.py|tests/baseline/.*|tests/data/.*)$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+        # ruff also formats code blocks in Markdown; CI checks them too
+        types_or: [python, pyi, jupyter, markdown]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.7
+    hooks:
+      - id: uv-lock

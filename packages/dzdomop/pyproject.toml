@@ -1,0 +1,42 @@
+[project]
+name = "dzdomop"
+authors = [{ name = "Tim Bleimehl", email = "bleimehl@helmholtz-munich.de" }]
+description = "A Python ORM/data classes representation of the OMOP Common Data Model in different flavors powered by sqlacodegen"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["DZD", "OMOP"]
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = ["sqlalchemy>=2.0.14,<2.2"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+sqlmodel = ["sqlmodel>=0.0.22"]
+pg8000 = ["pg8000>=1.30"]
+postgres = ["psycopg[binary]>=3.1"]
+progress = ["tqdm>=4.60"]
+
+[project.scripts]
+dzdomop = "omopmodel.vocab.cli:main"
+
+[project.urls]
+Source = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models"
+Issues = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/issues"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { root = "../..", version_scheme = "guess-next-dev", local_scheme = "node-and-date" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omopmodel"]

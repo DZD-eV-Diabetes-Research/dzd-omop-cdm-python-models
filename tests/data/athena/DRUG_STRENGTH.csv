@@ -1,0 +1,3 @@
+drug_concept_id	ingredient_concept_id	amount_value	amount_unit_concept_id	numerator_value	numerator_unit_concept_id	denominator_value	denominator_unit_concept_id	box_size	valid_start_date	valid_end_date	invalid_reason
+1127433	1125315	325	8576						19700101	20991231	
+1127078	1125315	500	8576					30	19700101	20200131	D
