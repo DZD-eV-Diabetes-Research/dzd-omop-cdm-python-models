@@ -183,6 +183,7 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 07 | Vocabulary loader refresh ([plan](07-vocabulary-loader/PLAN.md), [handover](07-vocabulary-loader/HANDOVER.md)) | Bug fixes, psycopg 3, tests, CLI | ✅ done |
 | 07b | Vocabulary sources ([plan](07b-vocabulary-sources/PLAN.md), [handover](07b-vocabulary-sources/HANDOVER.md)) | Load from zip files and http(s) URLs | ✅ done |
 | 08 | User documentation ([plan](08-user-docs/PLAN.md), [handover](08-user-docs/HANDOVER.md)) | `docs/models/` and `docs/generator/`, tested snippets, Zensical site | ✅ done |
-| 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | ⏳ next |
+| 08b | [Pre-release fixes](08b-pre-release-fixes/PLAN.md) | `tables` flavor keys, download folder, SQLite FK check, CLI hint | ⏳ next |
+| 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | – |
 
 Each session folder gets its `HANDOVER.md` at the end of that session.

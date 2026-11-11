@@ -68,7 +68,7 @@ Found while writing and reviewing the docs; the docs describe the current behavi
 
 ## Start here (next session)
 
-1. Read [RULES.md](../RULES.md), then [09-release/PLAN.md](../09-release/PLAN.md).
+1. Next is **08b** (Tim's choice): read [RULES.md](../RULES.md), then [08b-pre-release-fixes/PLAN.md](../08b-pre-release-fixes/PLAN.md). After it, [09-release/PLAN.md](../09-release/PLAN.md).
 2. `uv sync`, start Postgres and run the tests:
    ```bash
    docker start dzdomop-vocab-test-pg || docker run -d --name dzdomop-vocab-test-pg -p 127.0.0.1:55433:5432 -e POSTGRES_USER=omop -e POSTGRES_PASSWORD=omop postgres:16
