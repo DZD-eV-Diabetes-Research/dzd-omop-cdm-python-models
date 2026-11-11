@@ -36,12 +36,15 @@ docs/
 
 ## Tasks
 
-- [ ] Write the pages above
-- [ ] Trim the root `README.md` to a pitch + a 10-line quickstart + links. Merge
-      `README_codegen.md` and `DZDOMOPModel/README.md` into the docs and delete them.
-- [ ] Optional: an mkdocs-material site (the extras are already in `pyproject.toml`), published
-      with GitHub Pages
-- [ ] Run the snippets in the docs as tests (e.g. `pytest-examples` or `pytest --doctest-glob`)
+- [x] Write the pages above
+- [x] Trim the root `README.md` to a pitch + a 10-line quickstart + links. Merge
+      `README_codegen.md` into the docs and delete it. *(Corrected: `DZDOMOPModel/README.md` is
+      now `packages/dzdomop/README.md`, the PyPI page; it can't be deleted, so it became a short
+      version of the root README with absolute links. `examples/` and `load_vocab.png` deleted.)*
+- [x] A docs site published with GitHub Pages. *(Corrected: there were no mkdocs extras.
+      mkdocs-material is out of support since 2026-11-05, so the site uses its successor
+      Zensical: `zensical.toml`, dependency group `docs`, workflow `docs.yml`.)*
+- [x] Run the snippets in the docs as tests *(own file `tests/test_docs.py`, Tim's choice)*
 
 ## Done when
 

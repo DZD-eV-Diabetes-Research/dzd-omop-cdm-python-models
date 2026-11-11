@@ -182,7 +182,7 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 06 | CDM 5.5 & version update ([plan](06-cdm-versions/PLAN.md), [handover](06-cdm-versions/HANDOVER.md)) | 5.3 / 5.4.x / 5.5 models | ✅ done |
 | 07 | Vocabulary loader refresh ([plan](07-vocabulary-loader/PLAN.md), [handover](07-vocabulary-loader/HANDOVER.md)) | Bug fixes, psycopg 3, tests, CLI | ✅ done |
 | 07b | Vocabulary sources ([plan](07b-vocabulary-sources/PLAN.md), [handover](07b-vocabulary-sources/HANDOVER.md)) | Load from zip files and http(s) URLs | ✅ done |
-| 08 | [User documentation](08-user-docs/PLAN.md) | `docs/models/` and `docs/generator/` | ⏳ next |
-| 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | – |
+| 08 | User documentation ([plan](08-user-docs/PLAN.md), [handover](08-user-docs/HANDOVER.md)) | `docs/models/` and `docs/generator/`, tested snippets, Zensical site | ✅ done |
+| 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | ⏳ next |
 
 Each session folder gets its `HANDOVER.md` at the end of that session.
