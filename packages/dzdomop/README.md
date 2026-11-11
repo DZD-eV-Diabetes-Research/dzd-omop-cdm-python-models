@@ -13,15 +13,16 @@ Just install the python module from pypi.org
 
 `python -m pip install --upgrade dzdomop`
 
-The vocabulary loader and the `sqlmodels` flavor need extras:
+The `sqlmodels` flavor and the vocabulary loader on Postgres need extras:
 
 | Extra | Installs | Needed for |
 | ----- | -------- | ---------- |
-| `sqlmodel` | sqlmodel | `OMOP_5_x_sqlmodels`, `VocabulariesLoader` |
-| `pg8000` | pg8000 | `VocabulariesLoader` on Postgres |
-| `progress` | tqdm | `VocabulariesLoader` progress bar |
+| `sqlmodel` | sqlmodel | `OMOP_5_x_sqlmodels` |
+| `postgres` | psycopg 3 | `VocabulariesLoader` on Postgres (psycopg2 and pg8000 work too) |
+| `pg8000` | pg8000 | `VocabulariesLoader` on Postgres with `postgresql+pg8000://` |
+| `progress` | tqdm | `VocabulariesLoader` progress bars |
 
-`pip install "dzdomop[sqlmodel,pg8000,progress]"` installs everything.
+`pip install "dzdomop[sqlmodel,postgres,progress]"` installs everything.
 
 # How to use
 

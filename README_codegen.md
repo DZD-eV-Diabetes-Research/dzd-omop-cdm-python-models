@@ -70,7 +70,7 @@ All in [`omop_policy.py`](generator/src/omop_codegen/omop_policy.py), plain data
 | ------- | ------ |
 | `NO_REVERSE_RELATIONSHIPS` | No list back-references on `Concept` (it's the target of ~120 foreign keys), except `Concept.concept_classes` |
 | `SELF_REFERENCE_REVERSE_RELATIONSHIPS` | No `<name>_reverse` lists on `VisitDetail` / `VisitOccurrence` |
-| `TABLE_VARIABLE_NAMES` | `tables` flavor: `metadata_table` for the OMOP `metadata` table (B1) |
+| `TABLE_VARIABLE_NAMES` | `tables` flavor: `metadata_table` for the OMOP `metadata` table |
 | `CANDIDATE_KEYS` | Tables without a primary key get `__mapper_args__ = {'primary_key': [...]}`. Never created in the database. The key columns become NOT NULL. 5.5 `vocabulary` has a UNIQUE instead of a primary key, so it gets one too |
 | `DDL_PATCHES` | SQL that runs after one of the official DDL scripts, for upstream bugs that stop them on Postgres. 5.4: the `vocabulary` primary key, dropped upstream in v5.4.3 while the foreign keys to it stayed |
 
@@ -82,8 +82,8 @@ the plural of the target table (`Person.visit_occurrences`).
 
 | Name | `tables` | `declarative` / `dataclasses` | `sqlmodels` |
 | ---- | -------- | ----------------------------- | ----------- |
-| `metadata` | `MetaData()` | `Base.metadata` | `MetaData()`, own registry (B4) |
-| `Base` | – | `DeclarativeBase` (+ `MappedAsDataclass`) | `SQLModel` subclass with `registry=registry(metadata=metadata)` |
+| `metadata` | `MetaData()` | `Base.metadata` | `MetaData()`, own registry |
+| `Base` | (none) | `DeclarativeBase` (+ `MappedAsDataclass`) | `SQLModel` subclass with `registry=registry(metadata=metadata)` |
 | `CDM_VERSION`, `CDM_RELEASE` | `"5.4"`, `"v5.5.0"` | same | same |
 | `__all__` | all of the above + table variables | + classes | + classes |
 | Docstrings | under each `Table` variable | class: table docs. Attribute: field docs (IDE hover) | same |
@@ -92,6 +92,6 @@ Comments stay in `comment=` for the database. Docstrings use the same CSV text, 
 the description (table) or user guidance (field) first, then `User guidance:` / `ETL
 conventions:` sections.
 
-`dataclasses` flavor (B2): nullable columns `default=None`, lists `default_factory=list`,
+`dataclasses` flavor: nullable columns `default=None`, lists `default_factory=list`,
 many-to-one / one-to-one `init=False`. Not `default=None`: on SQLAlchemy 2.0 that overwrites a
 foreign key passed to `__init__` with NULL.

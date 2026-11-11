@@ -38,7 +38,7 @@ allowed when a bug can't be fixed without it. Each one goes in the changelog.
 | B2 | `OMOP_5_x_dataclasses.py` | Relationships and optional columns have no defaults, so you can't create `Vocabulary(...)` without passing every relationship list. |
 | B3 | `omopmodel/__init__.py` | Importing the package registers `_vocabulary_loader_state` in the global `SQLModel.metadata`. `SQLModel.metadata.create_all()` then creates an extra table. |
 | B4 | SQLModel flavors | Every version shares the global `SQLModel.metadata`, so importing 5.3 and 5.4 SQLModels in the same process raises `Table 'concept' is already defined`. |
-| B5 | `vocabularies_loader.py` | `.where(a == x and b == y)` uses Python `and`, so only one condition reaches SQL. Resume state can match the wrong file. |
+| B5 | `vocabularies_loader.py` | `.where(a == x and b == y)` uses Python `and`, so only one condition reaches SQL (the file name). A new export with the same file names resumes at the old row and skips rows. |
 | B6 | `omop_cdm_release_downloader.py` | `download()` returns `None` when the files already exist. A second local run then crashes on `Path(None, …)`. |
 | B7 | `config.get_sql_url()` | Ignores `POSTGRESQL_PORT` and `POSTGRESQL_SCHEMA`. |
 | B8 | Column comments | Comments start with `' \| ETLCONVENTIONS…'` when user guidance is empty. The labels are inconsistent (`ETL CONVENTIONS` vs `ETLCONVENTIONS`). Quotes are swapped for `"` instead of escaped. |
@@ -46,6 +46,12 @@ allowed when a bug can't be fixed without it. Each one goes in the changelog.
 | B10 | `sources.py` | `omopcdm_6_0` is a copy of 5.4 left over from WIP. `from config import Config` only works when run from the generator folder. |
 | B11 | SQLModel flavor | NOT NULL columns are nullable: `sa_column=Column(...)` has no `nullable=False` (152 columns in 5.4). `create_all` makes them NULL-able. Fixed by sqlacodegen 4 *(found in S03)*. |
 | B12 | SQLModel flavor | Self-references `VisitDetail.parent_visit_detail` / `preceding_visit_detail` and `VisitOccurrence.preceding_visit_occurrence` point the wrong way (one-to-many without `remote_side`). Fixed by sqlacodegen 4 *(found in S03)*. |
+| B13 | `vocabularies_loader.py` | Athena files are unquoted, but the loader parsed `"` as CSV quoting: `"Female" sex` → `Female sex`, an unclosed leading `"` swallows the following lines. 33 names in a real 5.5 export contain `"`. *(S07)* |
+| B14 | `vocabularies_loader.py` | SQLite: empty fields are stored as `''` instead of `NULL`. *(S07)* |
+| B15 | `vocabularies_loader.py` | `CONCEPT_CPT4.csv` is mapped to `concept`, but its concepts have no names (NOT NULL) until `cpt4.jar` runs, and then they are in `CONCEPT.csv` too (duplicates). Fails either way. *(S07)* |
+| B16 | `vocabularies_loader.py` | `TRUNCATE … CASCADE` empties every clinical table with an FK to a vocabulary table when constraints are kept. *(S07)* |
+| B17 | `vocabularies_loader.py` | Ctrl+C is swallowed (`load_all()` returns normally) and constraints are recreated twice (fails on Postgres). *(S07)* |
+| B18 | `vocabularies_loader.py` | SQLAlchemy's `AddConstraint`/`DropConstraint` mark the model's constraints, so `metadata.create_all()` after a load in the same process creates `concept` without its PK. *(S07)* |
 
 ### Hacks that the new tools can replace
 
@@ -130,8 +136,12 @@ one class and one test parametrization, so we keep all four and fix `tables` (B1
 | D3 | Which Python versions? | **3.10–3.14.** Allow `sqlalchemy>=2.0,<2.2`, so Python 3.10 gets SQLAlchemy 2.0 and 3.11+ gets 2.1. CI tests both ends. We drop 3.10 when SQLModel or pydantic drop it. The generator itself is internal and can require 3.12+. |
 | D4 | Relationship names? | **Keep today's names.** Pinned through `nofknames` + the policy file. The S01 baseline enforces it. |
 | D5 | Which CDM versions do we ship? | 5.3, 5.4, 5.5 (all from the v5.5.0 archive). Drop the 6.0 stub. *(proposed)* |
-| D6 | Postgres driver for the vocabulary loader | psycopg 3 *and* pg8000, both as optional extras. *(proposed; decide in S07. S02 only adds the `pg8000` extra, the `postgres`/psycopg extra comes with the loader code in S07)* |
-| D7 | Core dependencies of `dzdomop` | **SQLAlchemy only.** `sqlmodel`, `pg8000`, `progress` (tqdm) are extras. `omopmodel/__init__.py` imports `VocabulariesLoader` lazily. Install change, noted in `CHANGELOG.md`. *(Tim, S02)* |
+| D6 | Postgres driver for the vocabulary loader | **psycopg 3, psycopg2 and pg8000.** Extras `postgres` (psycopg 3) and `pg8000`; psycopg2 works if installed, no extra. *(Tim, S07)* |
+| D7 | Core dependencies of `dzdomop` | **SQLAlchemy only.** `sqlmodel`, `pg8000`, `postgres` (psycopg 3), `progress` (tqdm) are extras. `omopmodel/__init__.py` imports `VocabulariesLoader` lazily. Since S07 the loader needs no extra on SQLite. *(Tim, S02)* |
+| D8 | Which keys/indexes does the loader drop? | **Only those of the loaded tables**, plus FKs from or to them. Clinical tables keep PKs and indexes. *(Tim, S07: "try it, test it")* |
+| D9 | Truncate | **Mirror upstream:** per table, no `CASCADE` (CDM v5.3.1 VocabImport script). If FKs still point at the table, a clear error. *(Tim, S07)* |
+| D10 | FKs the data breaks (partial exports) | **Error by default** (`ConstraintRecreateError` with orphan counts), `skip_invalid_foreign_keys=True` / `--skip-invalid-foreign-keys` turns it into a warning. *(Tim, S07)* |
+| D11 | Zip files and URLs as loader sources | **Yes**, in its own session 07b. *(Tim, S07)* |
 
 ### The one breaking change we can't avoid (B4)
 
@@ -169,7 +179,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 04 | OMOP generator subclasses ([plan](04-omop-generator-subclasses/PLAN.md), [handover](04-omop-generator-subclasses/HANDOVER.md)) | Policy file replaces all text hacks. Diff to baseline = intended only. | ✅ done |
 | 05 | Model usability ([plan](05-model-usability/PLAN.md), [handover](05-model-usability/HANDOVER.md)) | Docstrings, formatting, flavor fixes (B2–B4, B1 done in S04) | ✅ done |
 | 06 | CDM 5.5 & version update ([plan](06-cdm-versions/PLAN.md), [handover](06-cdm-versions/HANDOVER.md)) | 5.3 / 5.4.x / 5.5 models | ✅ done |
-| 07 | [Vocabulary loader refresh](07-vocabulary-loader/PLAN.md) | Bug fixes, psycopg 3, tests | ⏳ next |
+| 07 | Vocabulary loader refresh ([plan](07-vocabulary-loader/PLAN.md), [handover](07-vocabulary-loader/HANDOVER.md)) | Bug fixes, psycopg 3, tests, CLI | ✅ done |
+| 07b | [Vocabulary sources](07b-vocabulary-sources/PLAN.md) | Load from zip files and http(s) URLs | ⏳ next |
 | 08 | [User documentation](08-user-docs/PLAN.md) | `docs/models/` and `docs/generator/` | – |
 | 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | – |
 
