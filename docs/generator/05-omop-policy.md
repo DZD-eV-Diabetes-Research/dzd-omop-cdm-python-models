@@ -88,8 +88,12 @@ print(Death.__mapper_args__)  # {'primary_key': ['person_id']}
 | What happens | Where |
 | ------------ | ----- |
 | The key columns become NOT NULL | every flavor |
-| The class gets `__mapper_args__ = {"primary_key": [...]}`, the table gets no primary key | `declarative`, `dataclasses`, `sqlmodels` |
-| The table keeps the key as `PrimaryKeyConstraint(..., name="tmp_pk_candiate_key_<table>")` | `tables` |
+| The table gets no primary key, like the official DDL | every flavor |
+| The class gets `__mapper_args__ = {"primary_key": [...]}` | `declarative`, `dataclasses`, `sqlmodels` |
+
+`mark_candidate_keys()` adds the key as a temporary primary key, so sqlacodegen makes a class
+instead of a plain `Table`. `OmopGeneratorMixin.generate_models()` removes it again before
+rendering.
 
 Every version in `CDM_VERSIONS` needs an entry in `CANDIDATE_KEYS`, even an empty one. A
 candidate key for a table that already has a primary key stops the run.

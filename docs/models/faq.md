@@ -44,10 +44,9 @@ print(omop.ConceptAncestor.__mapper_args__["primary_key"])
 ['ancestor_concept_id', 'descendant_concept_id', 'min_levels_of_separation', 'max_levels_of_separation']
 ```
 
-| Where | Candidate key |
-| ----- | ------------- |
-| ORM classes (`declarative`, `dataclasses`, `sqlmodels`) | in Python only. `create_all()` creates the table without a primary key, like upstream |
-| `tables` flavor | `create_all()` creates a real primary key, named `tmp_pk_candiate_key_<table>` |
+The candidate key lives in Python only. `create_all()` creates these tables without a
+primary key, like upstream, in every flavor. The key columns are NOT NULL. The `tables`
+flavor has no classes, so it has no candidate key at all, only the NOT NULL columns.
 
 If two rows share the candidate key, a session treats them as one object: a query returns
 the first row twice. Keep these columns unique, or query such tables with plain `select()`

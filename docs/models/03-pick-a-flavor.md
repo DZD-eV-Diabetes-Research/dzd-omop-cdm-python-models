@@ -43,10 +43,9 @@ with engine.begin() as conn:
 ```
 
 > [!NOTE]
-> Some OMOP tables have no primary key upstream (e.g. `death`, `concept_ancestor`). Only
-> the `tables` flavor's `create_all()` gives them one in the database, named
-> `tmp_pk_candiate_key_<table>`. The other flavors create them without a primary key. See
-> the [FAQ](faq.md#why-do-tables-without-a-primary-key-have-one-in-python).
+> Some OMOP tables have no primary key upstream (e.g. `death`, `concept_ancestor`).
+> `create_all()` creates them without one in every flavor, like the official DDL. See the
+> [FAQ](faq.md#why-do-tables-without-a-primary-key-have-one-in-python).
 
 ## dataclasses
 

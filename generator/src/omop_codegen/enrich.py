@@ -74,11 +74,10 @@ def add_comments(metadata: MetaData, table_csv: Path, field_csv: Path) -> None:
 def mark_candidate_keys(metadata: MetaData, candidate_keys: dict[str, tuple[str, ...]]) -> None:
     """Record each table's candidate key in ``table.info["candidate_key"]``.
 
-    Stopgap until the OMOP generator subclasses can render ``__mapper_args__``: the
-    candidate key is also added as a primary key, so sqlacodegen generates a class
-    instead of a plain ``Table``. That's what the old ``pre_gen_sql`` scripts did in the
-    database, including the ``NOT NULL`` Postgres adds to primary key columns, and with
-    the same constraint name (the ``tables`` flavor keeps the constraint, see the baseline).
+    The candidate key is also added as a primary key, so sqlacodegen generates a class
+    instead of a plain ``Table``. The generator removes that constraint again before
+    rendering (``OmopGeneratorMixin.generate_models``), in every flavor: the database gets
+    no primary key, like the official DDL. The key columns stay ``NOT NULL``.
     """
     for name, columns in candidate_keys.items():
         table = metadata.tables[name]

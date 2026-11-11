@@ -81,17 +81,10 @@ metadata = MetaData()
 cohort = Table(
     "cohort",
     metadata,
-    Column("cohort_definition_id", Integer, primary_key=True),
-    Column("subject_id", Integer, primary_key=True),
-    Column("cohort_start_date", Date, primary_key=True),
-    Column("cohort_end_date", Date, primary_key=True),
-    PrimaryKeyConstraint(
-        "cohort_definition_id",
-        "subject_id",
-        "cohort_start_date",
-        "cohort_end_date",
-        name="tmp_pk_candiate_key_cohort",
-    ),
+    Column("cohort_definition_id", Integer, nullable=False),
+    Column("subject_id", Integer, nullable=False),
+    Column("cohort_start_date", Date, nullable=False),
+    Column("cohort_end_date", Date, nullable=False),
     comment=(
         "DESC: The subject of a cohort can have multiple, discrete records in the "
         "cohort table per cohort_definition_id, subject_id, and non-overlapping "
@@ -429,7 +422,7 @@ vocabulary = Table(
     Column(
         "vocabulary_id",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: A unique identifier for each Vocabulary, such\n"
             "as ICD9CM, SNOMED, Visit."
@@ -474,7 +467,6 @@ vocabulary = Table(
         ["concept.concept_id"],
         name="fpk_vocabulary_vocabulary_concept_id",
     ),
-    PrimaryKeyConstraint("vocabulary_id", name="tmp_pk_candiate_key_vocabulary"),
     UniqueConstraint("vocabulary_id", name="unq_vocabulary"),
     Index("idx_vocabulary_vocabulary_id", "vocabulary_id"),
     comment=(
@@ -514,13 +506,13 @@ cdm_source = Table(
     Column(
         "cdm_source_abbreviation",
         String(25),
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The abbreviation of the CDM instance.",
     ),
     Column(
         "cdm_holder",
         String(255),
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The holder of the CDM instance.",
     ),
     Column(
@@ -573,7 +565,7 @@ cdm_source = Table(
     Column(
         "cdm_version_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The Concept Id representing the version of the CDM. | ETL "
             "CONVENTIONS: You can find all concepts that represent the CDM versions "
@@ -584,7 +576,7 @@ cdm_source = Table(
     Column(
         "vocabulary_version",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: Version of the OMOP standardised vocabularies loaded | ETL "
             "CONVENTIONS: You can find the version of your Vocabulary using the query: "
@@ -595,13 +587,6 @@ cdm_source = Table(
         ["cdm_version_concept_id"],
         ["concept.concept_id"],
         name="fpk_cdm_source_cdm_version_concept_id",
-    ),
-    PrimaryKeyConstraint(
-        "cdm_source_abbreviation",
-        "cdm_holder",
-        "cdm_version_concept_id",
-        "vocabulary_version",
-        name="tmp_pk_candiate_key_cdm_source",
     ),
     comment=(
         "DESC: The CDM_SOURCE table contains details about your CDM instance. Most "
@@ -622,7 +607,7 @@ cohort_definition = Table(
     Column(
         "cohort_definition_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: This is the identifier given to the cohort, usually by the "
             "ATLAS application"
@@ -642,7 +627,7 @@ cohort_definition = Table(
     Column(
         "definition_type_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: Type defining what kind of Cohort Definition the record "
             "represents and how the syntax may be executed."
@@ -656,7 +641,7 @@ cohort_definition = Table(
     Column(
         "subject_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: This field contains a Concept that represents the domain "
             "of the subjects that are members of the cohort (e.g., Person, Provider, "
@@ -679,12 +664,6 @@ cohort_definition = Table(
         ["subject_concept_id"],
         ["concept.concept_id"],
         name="fpk_cohort_definition_subject_concept_id",
-    ),
-    PrimaryKeyConstraint(
-        "cohort_definition_id",
-        "definition_type_concept_id",
-        "subject_concept_id",
-        name="tmp_pk_candiate_key_cohort_definition",
     ),
     comment=(
         "DESC: The COHORT_DEFINITION table contains records defining a Cohort "
@@ -712,7 +691,7 @@ concept_ancestor = Table(
     Column(
         "ancestor_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The Concept Id for the higher-level concept\n"
             "that forms the ancestor in the relationship."
@@ -721,7 +700,7 @@ concept_ancestor = Table(
     Column(
         "descendant_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The Concept Id for the lower-level concept\n"
             "that forms the descendant in the\n"
@@ -731,7 +710,7 @@ concept_ancestor = Table(
     Column(
         "min_levels_of_separation",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The minimum separation in number of\n"
             "levels of hierarchy between ancestor and\n"
@@ -742,7 +721,7 @@ concept_ancestor = Table(
     Column(
         "max_levels_of_separation",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The maximum separation in number of\n"
             "levels of hierarchy between ancestor and\n"
@@ -759,13 +738,6 @@ concept_ancestor = Table(
         ["descendant_concept_id"],
         ["concept.concept_id"],
         name="fpk_concept_ancestor_descendant_concept_id",
-    ),
-    PrimaryKeyConstraint(
-        "ancestor_concept_id",
-        "descendant_concept_id",
-        "min_levels_of_separation",
-        "max_levels_of_separation",
-        name="tmp_pk_candiate_key_concept_ancestor",
     ),
     Index("idx_concept_ancestor_id_1", "ancestor_concept_id"),
     Index("idx_concept_ancestor_id_2", "descendant_concept_id"),
@@ -820,7 +792,7 @@ concept_metadata = Table(
     Column(
         "concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: Foreign key to the concept table",
     ),
     Column(
@@ -862,7 +834,6 @@ concept_metadata = Table(
     ForeignKeyConstraint(
         ["concept_id"], ["concept.concept_id"], name="fpk_concept_metadata_concept_id"
     ),
-    PrimaryKeyConstraint("concept_id", name="tmp_pk_candiate_key_concept_metadata"),
     comment=(
         "DESC: The concept_metadata table stores metadata for each concept from "
         "the concept table. | USER GUIDANCE: The link between the concept table "
@@ -879,9 +850,9 @@ User guidance:
 concept_synonym = Table(
     "concept_synonym",
     metadata,
-    Column("concept_id", Integer, primary_key=True),
-    Column("concept_synonym_name", String(1000), primary_key=True),
-    Column("language_concept_id", Integer, primary_key=True),
+    Column("concept_id", Integer, nullable=False),
+    Column("concept_synonym_name", String(1000), nullable=False),
+    Column("language_concept_id", Integer, nullable=False),
     ForeignKeyConstraint(
         ["concept_id"], ["concept.concept_id"], name="fpk_concept_synonym_concept_id"
     ),
@@ -889,12 +860,6 @@ concept_synonym = Table(
         ["language_concept_id"],
         ["concept.concept_id"],
         name="fpk_concept_synonym_language_concept_id",
-    ),
-    PrimaryKeyConstraint(
-        "concept_id",
-        "concept_synonym_name",
-        "language_concept_id",
-        name="tmp_pk_candiate_key_concept_synonym",
     ),
     Index("idx_concept_synonym_id", "concept_id"),
     comment=(
@@ -1247,7 +1212,7 @@ drug_strength = Table(
     Column(
         "drug_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The Concept representing the Branded Drug or Clinical Drug Product."
         ),
@@ -1255,7 +1220,7 @@ drug_strength = Table(
     Column(
         "ingredient_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The Concept representing the active ingredient contained "
             "within the drug product. | ETL CONVENTIONS: Combination Drugs will have "
@@ -1366,9 +1331,6 @@ drug_strength = Table(
         ["concept.concept_id"],
         name="fpk_drug_strength_numerator_unit_concept_id",
     ),
-    PrimaryKeyConstraint(
-        "drug_concept_id", "ingredient_concept_id", name="tmp_pk_candiate_key_drug_strength"
-    ),
     Index("idx_drug_strength_id_1", "drug_concept_id"),
     Index("idx_drug_strength_id_2", "ingredient_concept_id"),
     comment=(
@@ -1386,11 +1348,11 @@ supplemental information to support standardized analysis of drug utilization.
 fact_relationship = Table(
     "fact_relationship",
     metadata,
-    Column("domain_concept_id_1", Integer, primary_key=True),
-    Column("fact_id_1", Integer, primary_key=True),
-    Column("domain_concept_id_2", Integer, primary_key=True),
-    Column("fact_id_2", Integer, primary_key=True),
-    Column("relationship_concept_id", Integer, primary_key=True),
+    Column("domain_concept_id_1", Integer, nullable=False),
+    Column("fact_id_1", Integer, nullable=False),
+    Column("domain_concept_id_2", Integer, nullable=False),
+    Column("fact_id_2", Integer, nullable=False),
+    Column("relationship_concept_id", Integer, nullable=False),
     ForeignKeyConstraint(
         ["domain_concept_id_1"],
         ["concept.concept_id"],
@@ -1405,14 +1367,6 @@ fact_relationship = Table(
         ["relationship_concept_id"],
         ["concept.concept_id"],
         name="fpk_fact_relationship_relationship_concept_id",
-    ),
-    PrimaryKeyConstraint(
-        "domain_concept_id_1",
-        "fact_id_1",
-        "domain_concept_id_2",
-        "fact_id_2",
-        "relationship_concept_id",
-        name="tmp_pk_candiate_key_fact_relationship",
     ),
     Index("idx_fact_relationship_id1", "domain_concept_id_1"),
     Index("idx_fact_relationship_id2", "domain_concept_id_2"),
@@ -1603,13 +1557,13 @@ pack_content = Table(
     Column(
         "pack_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The concept representing the pack",
     ),
     Column(
         "drug_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The concept representing the individual drug component inside the pack"
         ),
@@ -1625,9 +1579,6 @@ pack_content = Table(
     ),
     ForeignKeyConstraint(
         ["pack_concept_id"], ["concept.concept_id"], name="fpk_pack_content_pack_concept_id"
-    ),
-    PrimaryKeyConstraint(
-        "pack_concept_id", "drug_concept_id", name="tmp_pk_candiate_key_pack_content"
     ),
     comment=(
         "DESC: The PACK_CONTENT table contains structured content of drug Packs. "
@@ -1744,13 +1695,13 @@ source_to_concept_map = Table(
     Column(
         "source_code",
         String(50),
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The source code being translated\ninto a Standard Concept.",
     ),
     Column(
         "source_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: A foreign key to the Source\n"
             "Concept that is being translated\n"
@@ -1762,7 +1713,7 @@ source_to_concept_map = Table(
     Column(
         "source_vocabulary_id",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: A foreign key to the\n"
             "VOCABULARY table defining the\n"
@@ -1785,25 +1736,25 @@ source_to_concept_map = Table(
     Column(
         "target_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=("USER GUIDANCE: The target Concept\nto which the source code is being\nmapped."),
     ),
     Column(
         "target_vocabulary_id",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The Vocabulary of the target Concept.",
     ),
     Column(
         "valid_start_date",
         Date,
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The date when the mapping\ninstance was first recorded.",
     ),
     Column(
         "valid_end_date",
         Date,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The date when the mapping\n"
             "instance became invalid because it\n"
@@ -1835,16 +1786,6 @@ source_to_concept_map = Table(
         ["target_vocabulary_id"],
         ["vocabulary.vocabulary_id"],
         name="fpk_source_to_concept_map_target_vocabulary_id",
-    ),
-    PrimaryKeyConstraint(
-        "source_code",
-        "source_concept_id",
-        "source_vocabulary_id",
-        "target_concept_id",
-        "target_vocabulary_id",
-        "valid_start_date",
-        "valid_end_date",
-        name="tmp_pk_candiate_key_source_to_concept_map",
     ),
     Index("idx_source_to_concept_map_1", "source_vocabulary_id"),
     Index("idx_source_to_concept_map_2", "target_vocabulary_id"),
@@ -1990,12 +1931,12 @@ ETL conventions:
 concept_relationship = Table(
     "concept_relationship",
     metadata,
-    Column("concept_id_1", Integer, primary_key=True),
-    Column("concept_id_2", Integer, primary_key=True),
+    Column("concept_id_1", Integer, nullable=False),
+    Column("concept_id_2", Integer, nullable=False),
     Column(
         "relationship_id",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: The relationship between CONCEPT_ID_1 and CONCEPT_ID_2. "
             "Please see the [Vocabulary "
@@ -2006,13 +1947,13 @@ concept_relationship = Table(
     Column(
         "valid_start_date",
         Date,
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The date when the relationship is first recorded.",
     ),
     Column(
         "valid_end_date",
         Date,
-        primary_key=True,
+        nullable=False,
         comment="USER GUIDANCE: The date when the relationship is invalidated.",
     ),
     Column(
@@ -2033,14 +1974,6 @@ concept_relationship = Table(
         ["relationship_id"],
         ["relationship.relationship_id"],
         name="fpk_concept_relationship_relationship_id",
-    ),
-    PrimaryKeyConstraint(
-        "concept_id_1",
-        "concept_id_2",
-        "relationship_id",
-        "valid_start_date",
-        "valid_end_date",
-        name="tmp_pk_candiate_key_concept_relationship",
     ),
     Index("idx_concept_relationship_id_1", "concept_id_1"),
     Index("idx_concept_relationship_id_2", "concept_id_2"),
@@ -2078,12 +2011,12 @@ User guidance:
 concept_relationship_metadata = Table(
     "concept_relationship_metadata",
     metadata,
-    Column("concept_id_1", Integer, primary_key=True),
-    Column("concept_id_2", Integer, primary_key=True),
+    Column("concept_id_1", Integer, nullable=False),
+    Column("concept_id_2", Integer, nullable=False),
     Column(
         "relationship_id",
         String(20),
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: concept_id_1, concept_id_2, and relationship_id should be "
             "used together as the foreign key to the concept_relationship table as all "
@@ -2164,12 +2097,6 @@ concept_relationship_metadata = Table(
         ["relationship_id"],
         ["relationship.relationship_id"],
         name="fpk_concept_relationship_metadata_relationship_id",
-    ),
-    PrimaryKeyConstraint(
-        "concept_id_1",
-        "concept_id_2",
-        "relationship_id",
-        name="tmp_pk_candiate_key_concept_relationship_metadata",
     ),
     comment=(
         "DESC: The concept_relationship_metadata table stores metadata for each "
@@ -2761,7 +2688,7 @@ ETL conventions:
 death = Table(
     "death",
     metadata,
-    Column("person_id", Integer, primary_key=True),
+    Column("person_id", Integer, nullable=False),
     Column(
         "death_date",
         Date,
@@ -2837,7 +2764,6 @@ death = Table(
         ["death_type_concept_id"], ["concept.concept_id"], name="fpk_death_death_type_concept_id"
     ),
     ForeignKeyConstraint(["person_id"], ["person.person_id"], name="fpk_death_person_id"),
-    PrimaryKeyConstraint("person_id", name="tmp_pk_candiate_key_death"),
     Index("idx_death_person_id_1", "person_id"),
     comment=(
         "DESC: The death domain contains the clinical event for how and when a "
@@ -4017,7 +3943,7 @@ episode_event = Table(
     Column(
         "episode_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: Use this field to link the EPISODE_EVENT record to its "
             "EPISODE. | ETL CONVENTIONS: Put the EPISODE_ID that subsumes the "
@@ -4027,7 +3953,7 @@ episode_event = Table(
     Column(
         "event_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: This field is the primary key of the linked record in the "
             "database. For example, if the Episode Event is a Condition Occurrence, "
@@ -4038,7 +3964,7 @@ episode_event = Table(
     Column(
         "episode_event_field_concept_id",
         Integer,
-        primary_key=True,
+        nullable=False,
         comment=(
             "USER GUIDANCE: This field is the CONCEPT_ID that identifies which table "
             "the primary key of the linked record came from. | ETL CONVENTIONS: Put "
@@ -4054,12 +3980,6 @@ episode_event = Table(
     ),
     ForeignKeyConstraint(
         ["episode_id"], ["episode.episode_id"], name="fpk_episode_event_episode_id"
-    ),
-    PrimaryKeyConstraint(
-        "episode_id",
-        "event_id",
-        "episode_event_field_concept_id",
-        name="tmp_pk_candiate_key_episode_event",
     ),
     comment=(
         "DESC: The EPISODE_EVENT table connects qualifying clinical events (such "

@@ -97,6 +97,16 @@ class OmopGeneratorMixin:
                     item.comment = LongText(item.comment)
         return self.header + "\n" + super().generate()  # type: ignore[misc]
 
+    def generate_models(self) -> list[Model]:
+        # enrich.mark_candidate_keys() added a primary key constraint, so sqlacodegen made a
+        # class. Now that the models exist, the constraint goes: the database must not get
+        # it, in no flavor (the official DDL has none).
+        models = super().generate_models()  # type: ignore[misc]
+        for model in models:
+            if "candidate_key" in model.table.info:
+                _drop_primary_key_constraint(model.table)
+        return models
+
     def public_names(self, models: list[Model]) -> list[str]:
         return ["CDM_VERSION", "CDM_RELEASE", "metadata", *(model.name for model in models)]
 
@@ -208,15 +218,6 @@ class OmopOrmMixin(OmopGeneratorMixin):
             super().generate_relationship_name(relationship, global_names, local_names)
 
     # --------------------------------------------------------------- candidate keys
-
-    def generate_models(self) -> list[Model]:
-        # enrich.mark_candidate_keys() added a primary key constraint, so sqlacodegen made a
-        # class. Now that the classes exist, the constraint goes: the database must not get it.
-        models = super().generate_models()
-        for model in models:
-            if isinstance(model, ModelClass) and "candidate_key" in model.table.info:
-                _drop_primary_key_constraint(model.table)
-        return models
 
     @staticmethod
     def _render_candidate_key(model: ModelClass, variables: str) -> str:

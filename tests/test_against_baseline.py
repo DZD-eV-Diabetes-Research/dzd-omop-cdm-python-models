@@ -36,6 +36,32 @@ _SQLMODEL_BACKREFS = (
 )
 _UPSTREAM_INDEX = "upstream: index name typo fixed (vocabluary -> vocabulary)"
 _UPSTREAM_FK = "upstream: new foreign key (episode.episode_parent_id, note_nlp.note_id)"
+_CANDIDATE_PK = "tables flavor: no candidate-key primary key in the database (S08b)"
+# The tables with a candidate key (CANDIDATE_KEYS in generator/src/omop_codegen/omop_policy.py)
+_CANDIDATE_KEY_TABLES_5_X = (
+    "cohort_definition",
+    "concept_ancestor",
+    "concept_relationship",
+    "concept_synonym",
+    "death",
+    "drug_strength",
+    "fact_relationship",
+    "source_to_concept_map",
+    "cdm_source",
+)
+_CANDIDATE_KEY_TABLES = {
+    "5_3": (*_CANDIDATE_KEY_TABLES_5_X, "attribute_definition", "metadata"),
+    "5_4": (*_CANDIDATE_KEY_TABLES_5_X, "cohort", "episode_event"),
+    "5_5": (
+        *_CANDIDATE_KEY_TABLES_5_X,
+        "cohort",
+        "episode_event",
+        "vocabulary",
+        "concept_metadata",
+        "concept_relationship_metadata",
+        "pack_content",
+    ),
+}
 ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     # B8: comment format fixed (labels, empty parts, quotes)
     ("OMOP_5_*", "tables.*.comment", "B8"),
@@ -96,6 +122,15 @@ ALLOWED_DIFFERENCES: list[tuple[str, str, str]] = [
     ("OMOP_5_4_*", "tables.note_nlp.foreign_keys.fpk_note_nlp_note_id", _UPSTREAM_FK),
     ("OMOP_5_4_*", "classes.Note.relationships.note_nlps", _UPSTREAM_FK),
     ("OMOP_5_4_*", "classes.NoteNlp.relationships.note", _UPSTREAM_FK),
+    # The tables flavor no longer creates tmp_pk_candiate_key_<table> primary keys: like the
+    # official DDL and the ORM flavors, tables without a key upstream get none (Tim, S08b).
+    # The key columns stay NOT NULL.
+    *(
+        (f"OMOP_{version}_tables", path.format(table), _CANDIDATE_PK)
+        for version, tables in _CANDIDATE_KEY_TABLES.items()
+        for table in tables
+        for path in ("tables.{}.primary_key", "tables.{}.columns.*.primary_key")
+    ),
 ]
 
 

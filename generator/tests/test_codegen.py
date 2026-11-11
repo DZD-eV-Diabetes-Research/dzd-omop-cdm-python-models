@@ -410,6 +410,19 @@ def test_candidate_key_columns_stay_not_null():
 
 
 @_FK_CYCLE
+def test_tables_flavor_has_no_candidate_primary_key():
+    """Like the ORM flavors and the official DDL: no primary key, the columns stay NOT NULL."""
+    source = _render(_mini_omop(), "tables")
+    assert "tmp_pk_candiate_key" not in source
+    namespace: dict = {}
+    exec(compile(source, "generated.py", "exec", dont_inherit=True), namespace)
+    table = namespace["concept_relationship"]
+    assert not table.primary_key.columns
+    assert not table.c.concept_id_1.nullable
+    assert namespace["concept"].primary_key.columns.keys() == ["concept_id"]  # real keys stay
+
+
+@_FK_CYCLE
 def test_tables_flavor_names():
     source = _render(_mini_omop(), "tables")
     namespace: dict = {}
