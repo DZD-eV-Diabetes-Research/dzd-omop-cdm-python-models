@@ -41,7 +41,17 @@ from omopmodel.vocab import (
 )
 from omopmodel.vocab.csv_source import CsvFile, ZipSource, _date, count_rows
 from omopmodel.vocab.writers import _csv_buffer, check_supported
-from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    create_engine,
+    event,
+    inspect,
+    text,
+)
 from sqlalchemy.exc import DBAPIError
 
 ATHENA = Path(__file__).parent / "data" / "athena"
@@ -1219,3 +1229,38 @@ def test_cli_bad_source(tmp_path, capsys):
     url = f"sqlite:///{tmp_path / 'cli.db'}"
     assert cli.main(["load-vocab", str(tmp_path / "missing"), "--url", url, "-q"]) == 1
     assert "doesn't exist" in capsys.readouterr().err
+
+
+def test_postgres_foreign_key_outside_the_model(pg_engine):
+    """A table that the model doesn't know points at concept: a clear error before anything
+    is dropped. In the model (derived from Base), its foreign key is dropped and recreated."""
+    module = omop()
+    module.metadata.create_all(pg_engine)
+    make_loader(pg_engine).load_all()
+    with pg_engine.begin() as conn:
+        conn.exec_driver_sql(
+            "CREATE TABLE my_codes (id integer PRIMARY KEY, "
+            "concept_id integer CONSTRAINT my_codes_concept_fk REFERENCES concept (concept_id))"
+        )
+        conn.exec_driver_sql("INSERT INTO my_codes VALUES (1, 0)")
+    before = schema_of(pg_engine)
+    with pytest.raises(
+        VocabularyLoaderError, match=r"my_codes\.my_codes_concept_fk -> concept.*Base"
+    ):
+        make_loader(pg_engine, truncate_vocabulary_tables_before_insert=True).load_all()
+    assert schema_of(pg_engine) == before
+
+    metadata = MetaData()
+    for table in module.metadata.tables.values():
+        table.to_metadata(metadata)
+    Table(
+        "my_codes",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("concept_id", Integer, ForeignKey("concept.concept_id", name="my_codes_concept_fk")),
+    )
+    make_loader(
+        pg_engine, module=metadata, truncate_vocabulary_tables_before_insert=True
+    ).load_all()
+    assert schema_of(pg_engine) == before
+    assert table_counts(pg_engine, ["my_codes"]) == {"my_codes": 1}

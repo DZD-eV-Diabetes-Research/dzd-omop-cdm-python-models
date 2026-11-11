@@ -38,6 +38,7 @@ from sqlalchemy import (
     func,
     inspect,
     select,
+    text,
 )
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.schema import AddConstraint, CreateIndex, DropConstraint, DropIndex
@@ -101,6 +102,32 @@ def scope_for(metadata: MetaData, tables: Iterable[Table]) -> Scope:
             if fk.name and (table.key in loaded or fk.referred_table.key in loaded):
                 scope.foreign_keys.append(fk)
     return scope
+
+
+def foreign_keys_outside(conn: Connection, scope: Scope) -> list[tuple[str, str, str]]:
+    """Postgres: foreign keys in the database that point at a table whose key ``scope``
+    drops, but that ``scope`` doesn't know (tables outside the model, or other names).
+
+    Postgres refuses to drop a key that such a foreign key uses. Returns
+    ``(table, foreign key, referred table)``.
+    """
+    if conn.dialect.name != "postgresql" or not scope.keys:
+        return []
+    preparer = conn.dialect.identifier_preparer
+    parents = sorted({preparer.format_table(key.table) for key in scope.keys})
+    known = {(fk.table.name, fk.name) for fk in scope.foreign_keys}
+    rows = conn.execute(
+        text(
+            "SELECT child.relname, c.conname, parent.relname FROM pg_constraint c "
+            "JOIN pg_class child ON child.oid = c.conrelid "
+            "JOIN pg_class parent ON parent.oid = c.confrelid "
+            "WHERE c.contype = 'f' AND c.confrelid IN "
+            "(SELECT to_regclass(name) FROM unnest(CAST(:parents AS text[])) AS name) "
+            "ORDER BY 1, 2"
+        ),
+        {"parents": parents},
+    )
+    return [(child, name, parent) for child, name, parent in rows if (child, name) not in known]
 
 
 def drop(conn: Connection, scope: Scope) -> None:

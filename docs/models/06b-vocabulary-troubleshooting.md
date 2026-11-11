@@ -42,6 +42,21 @@ first, and adds them back afterwards, so they are checked against the new data. 
 Leave out `--keep-constraints` (Python: keep the default
 `drop_constraints_and_indexes_before_insert=True`), as the message says.
 
+## Your own tables point at the vocabulary
+
+On PostgreSQL the loader only drops foreign keys it knows from the model. If one of your own
+tables has a foreign key to a vocabulary table (e.g. `my_codes.concept_id` → `concept`), the
+loader stops before it drops anything:
+
+```text
+VocabularyLoaderError: Can't drop the keys of the vocabulary tables: foreign keys that aren't in the OMOP model point at them (my_codes.my_codes_concept_fk -> concept). ...
+```
+
+| Fix | How |
+| --- | --- |
+| Put the table into the model | Derive its class from the module's `Base` (`class MyCode(omop.Base): ...`) and pass the module as `omop_module`, or pass a `MetaData` that has it. Name its foreign keys (`ForeignKey("concept.concept_id", name="my_codes_concept_fk")`): the loader finds constraints by name. It then drops and recreates them too. |
+| Drop the foreign key yourself | `ALTER TABLE my_codes DROP CONSTRAINT ...` before the load, add it back after. Works with the command line too. |
+
 ## CPT4
 
 `CONCEPT_CPT4.csv` is skipped. Its concepts have no names until you run Athena's CPT4 tool

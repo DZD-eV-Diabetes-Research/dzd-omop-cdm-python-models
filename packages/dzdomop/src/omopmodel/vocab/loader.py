@@ -38,6 +38,22 @@ class VocabularyLoaderError(RuntimeError):
     """Loading can't go on (e.g. a table can't be emptied)."""
 
 
+def _check_foreign_keys_outside(conn: Connection, scope: constraints.Scope) -> None:
+    """Postgres can't drop the keys of the loaded tables while foreign keys that the model
+    doesn't know use them. Say which ones and what to do, before anything is dropped."""
+    outside = constraints.foreign_keys_outside(conn, scope)
+    if not outside:
+        return
+    names = ", ".join(f"{child}.{name} -> {parent}" for child, name, parent in outside)
+    raise VocabularyLoaderError(
+        f"Can't drop the keys of the vocabulary tables: foreign keys that aren't in the OMOP "
+        f"model point at them ({names}). Add these tables to the model with named foreign "
+        "keys (derive them from the module's Base, or pass a MetaData with them as "
+        "omop_module), so the loader drops and recreates them too. Or drop these foreign "
+        "keys yourself and add them back after the load."
+    )
+
+
 class VocabulariesLoader:
     def __init__(
         self,
@@ -183,6 +199,7 @@ class VocabulariesLoader:
                     conn.commit()
                 # Nothing left to load (a rerun): don't rebuild keys and indexes for nothing
                 if self.drop_constraints_and_indexes_before_insert and self._has_work(conn, files):
+                    _check_foreign_keys_outside(conn, scope)
                     constraints.drop(conn, scope)
                 for csv_file in files:
                     self._load(conn, csv_file)
@@ -292,8 +309,10 @@ class VocabulariesLoader:
 
         A URL is downloaded for that, and the zip stays (see :meth:`source`).
         """
+        scope = self._scope()
         with self.database_engine.connect() as conn:
-            constraints.drop(conn, self._scope())
+            _check_foreign_keys_outside(conn, scope)
+            constraints.drop(conn, scope)
 
     def recreate_constraints_and_pks_and_indexes(self) -> None:
         """Add back the keys and indexes that :meth:`drop_constraints_and_pks_and_indexes` dropped."""
