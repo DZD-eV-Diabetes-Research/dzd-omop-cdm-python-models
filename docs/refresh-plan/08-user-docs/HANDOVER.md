@@ -29,6 +29,7 @@
 ## Decisions made this session
 
 - Tim: Zensical site now; own snippet test file; two short READMEs, `README_codegen.md`, `examples/` and the screenshot go; quickstart uses the declarative flavor.
+- Tim: SQLAlchemy lower bound raised from 2.0.4 (Feb 2023) to **2.0.14** (May 2023), the version the lowest-deps job actually tests (sqlmodel 0.0.22 needs it). Package and generator.
 - CDM 5.4 in all examples, READMEs included, because it's the default of `VocabulariesLoader` and `dzdomop load-vocab`. *(my call)*
 - Repo links use the canonical name `dzd-omop-cdm-python-models` (the `dzd-omop-cdm-sqlmodel` remote is a GitHub redirect). *(my call)*
 - PostgreSQL schemas are documented with `search_path` only: `create_all()` honours `schema_translate_map`, the loader doesn't (fails with `relation "concept" does not exist`). *(my call, see For later)*
@@ -42,7 +43,7 @@
 
 ## State
 
-- Tests: `DZDOMOP_TEST_POSTGRES_URL=postgresql://omop:omop@127.0.0.1:55433/omop uv run pytest` → `293 passed` (255 + 38 docs tests; Python 3.14.7, SQLAlchemy 2.1.8). No xfails.
+- Tests: `DZDOMOP_TEST_POSTGRES_URL=postgresql://omop:omop@127.0.0.1:55433/omop uv run pytest` → `293 passed` (255 + 38 docs tests; Python 3.14.7, SQLAlchemy 2.1.8). No xfails. Lowest deps (Python 3.10, SQLAlchemy 2.0.14, sqlmodel 0.0.22, psycopg 3.1, pg8000 1.30.1, `tests/`, with Postgres): `223 passed, 11 skipped` (the generator docs blocks).
 - Docs: `uv run --group docs zensical build --strict --clean` → no issues.
 - Baseline diff: no model changes this session.
 - ruff: clean (incl. Markdown blocks).
@@ -58,7 +59,6 @@ Found while writing and reviewing the docs; the docs describe the current behavi
 - SQLite: foreign keys are never checked after a load, so a partial export loads without error or warning.
 - SQLite log line "Dropped N keys, M indexes and K foreign keys" counts the scope, not what was dropped (only indexes are). Same family as the S07 "Recreating N" note.
 - The "Can't empty table" hint names the Python parameter `drop_constraints_and_indexes_before_insert=True`; on the CLI it means "without `--keep-constraints`".
-- `sqlalchemy>=2.0.4` is allowed, but the lowest-deps CI job resolves 2.0.14 (the sqlmodel extra needs it), so 2.0.4 to 2.0.13 are never tested.
 - `run_codegen.sh` exits 0 when the generator fails (exit code of `docker compose logs -f`). Bash doesn't export `UID` and doesn't set `GID`, so compose always falls back to 1000:1000 unless the user exports both.
 - `dockerfile` sets `WORKDIR /output`: inside the container a `.env` would be read from the models folder.
 - Comment on `ORM_OPTIONS` in `generate.py` says `nofknames` names relationships "after the target class"; it controls how reverse sides are named.

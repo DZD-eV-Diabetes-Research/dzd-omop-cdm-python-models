@@ -303,7 +303,7 @@ sqlmodel = [
 requires-dist = [
     { name = "pg8000", marker = "extra == 'pg8000'", specifier = ">=1.30" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'postgres'", specifier = ">=3.1" },
-    { name = "sqlalchemy", specifier = ">=2.0.4,<2.2" },
+    { name = "sqlalchemy", specifier = ">=2.0.14,<2.2" },
     { name = "sqlmodel", marker = "extra == 'sqlmodel'", specifier = ">=0.0.22" },
     { name = "tqdm", marker = "extra == 'progress'", specifier = ">=4.60" },
 ]
@@ -693,7 +693,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.28" },
     { name = "ruff", specifier = "==0.17.3" },
     { name = "sqlacodegen", specifier = "==4.0.4" },
-    { name = "sqlalchemy", specifier = ">=2.0.4,<2.2" },
+    { name = "sqlalchemy", specifier = ">=2.0.14,<2.2" },
     { name = "sqlmodel", specifier = ">=0.0.22" },
 ]
 

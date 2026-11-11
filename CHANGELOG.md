@@ -16,7 +16,7 @@
   ```
 
   The classes derive from `omop.Base` (a `SQLModel` subclass) instead of `SQLModel`.
-- **Install:** `pip install dzdomop` now only installs SQLAlchemy (`>=2.0.4,<2.2`).
+- **Install:** `pip install dzdomop` now only installs SQLAlchemy (`>=2.0.14,<2.2`).
   `sqlmodel`, the Postgres drivers and `tqdm` are extras:
 
   | You use | Install |

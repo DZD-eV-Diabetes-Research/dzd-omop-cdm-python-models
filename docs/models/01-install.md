@@ -30,7 +30,7 @@ With [uv](https://docs.astral.sh/uv/): `uv add dzdomop` or `uv add "dzdomop[sqlm
 | What | Versions |
 | ---- | -------- |
 | Python | 3.10 to 3.14 |
-| SQLAlchemy | 2.0 or 2.1 (`>=2.0.4,<2.2`), installed with the package |
+| SQLAlchemy | 2.0 or 2.1 (`>=2.0.14,<2.2`), installed with the package |
 | sqlmodel | 0.0.22 or newer, with the `sqlmodel` extra |
 | Databases | SQLite and PostgreSQL (tested with PostgreSQL 16), see the [FAQ](faq.md) |
 

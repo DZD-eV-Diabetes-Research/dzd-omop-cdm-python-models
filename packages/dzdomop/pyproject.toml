@@ -14,7 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["sqlalchemy>=2.0.4,<2.2"]
+dependencies = ["sqlalchemy>=2.0.14,<2.2"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
