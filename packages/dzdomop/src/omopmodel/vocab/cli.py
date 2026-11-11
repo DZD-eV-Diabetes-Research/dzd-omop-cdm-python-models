@@ -76,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
     load.add_argument(
         "--no-recreate",
         action="store_true",
-        help="don't recreate keys and indexes after loading",
+        help="don't recreate keys and indexes after loading (SQLite: don't check foreign keys)",
     )
     load.add_argument(
         "--no-state",
@@ -95,13 +95,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     load.add_argument("--flush-interval", type=_positive_int, default=20000, metavar="ROWS")
     load.add_argument(
-        "--max-rows", type=_positive_int, metavar="ROWS", help="load at most ROWS per file"
+        "--max-rows",
+        type=_positive_int,
+        metavar="ROWS",
+        help="load at most ROWS per file (breaks foreign keys: add --skip-invalid-foreign-keys)",
     )
     load.add_argument(
         "--download-dir",
         metavar="DIR",
         help=f"URL source: folder for the downloaded zip (default: ${DOWNLOAD_DIR_ENV}, "
-        "else 'dzdomop' in the system's temp folder)",
+        "else 'dzdomop' in your cache folder, e.g. ~/.cache/dzdomop)",
     )
     load.add_argument(
         "--keep-download",

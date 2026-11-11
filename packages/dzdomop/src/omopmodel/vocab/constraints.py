@@ -15,7 +15,9 @@ Other tables (``person``, ``measurement``, ...) keep their keys and indexes.
 run twice, and after an interrupted load the next run repairs the schema.
 
 SQLite can't drop constraints (``ALTER TABLE`` doesn't support it), so there only the
-indexes are dropped.
+indexes are dropped. Its foreign keys stay in the table definitions, and :func:`recreate`
+checks them against the data instead (``PRAGMA foreign_key_check``), with the same errors as
+on Postgres.
 """
 
 from __future__ import annotations
@@ -55,7 +57,8 @@ class ConstraintRecreateError(RuntimeError):
             hint = (
                 " Foreign keys fail when the export misses concepts that other rows point at: "
                 "CPT4 concepts if Athena's cpt4.jar hasn't added them to CONCEPT.csv, or "
-                "vocabularies you didn't download (e.g. SNOMED language concepts). To keep "
+                "vocabularies you didn't download (e.g. SNOMED language concepts), or a "
+                "test run with max_rows_pers_csv. To keep "
                 "the data without these foreign keys, pass skip_invalid_foreign_keys=True "
                 "(CLI: --skip-invalid-foreign-keys)."
             )
@@ -85,8 +88,8 @@ def scope_for(metadata: MetaData, tables: Iterable[Table]) -> Scope:
             # Tables without a key in the database have an empty, unnamed PK object
             if not constraint.name or not len(constraint.columns):
                 continue
-            # Postgres skips a UNIQUE that repeats the primary key in CREATE TABLE (5.5
-            # `tables` flavor: vocabulary), but ADD CONSTRAINT would create it.
+            # Postgres skips a UNIQUE that repeats the primary key in CREATE TABLE, but ADD
+            # CONSTRAINT would create it. No shipped model has one; a custom MetaData might.
             if isinstance(constraint, UniqueConstraint) and (
                 set(constraint.columns.keys()) == pk_columns
             ):
@@ -103,56 +106,84 @@ def scope_for(metadata: MetaData, tables: Iterable[Table]) -> Scope:
 def drop(conn: Connection, scope: Scope) -> None:
     """Drop everything in ``scope`` that exists. Commits."""
     existing = _existing_tables(conn, scope)
+    names = _existing_constraint_names(conn, existing.values())
+    index_names = _existing_index_names(conn, existing.values())
+    keys: list[PrimaryKeyConstraint | UniqueConstraint] = []
+    foreign_keys: list[ForeignKeyConstraint] = []
     if conn.dialect.name == "postgresql":
-        for fk in scope.foreign_keys:
-            if fk.table.key in existing:
-                conn.execute(_isolated(DropConstraint, fk, if_exists=True))
-        for key in scope.keys:
-            if key.table.key in existing:
-                conn.execute(_isolated(DropConstraint, key, if_exists=True))
-    for index in scope.indexes:
-        if index.table.key in existing:
-            conn.execute(DropIndex(index, if_exists=True))
+        foreign_keys = [
+            fk
+            for fk in scope.foreign_keys
+            if fk.table.key in existing and fk.name in names[fk.table.key]
+        ]
+        keys = [k for k in scope.keys if k.table.key in existing and k.name in names[k.table.key]]
+    indexes = [
+        i for i in scope.indexes if i.table.key in existing and i.name in index_names[i.table.key]
+    ]
+    for fk in foreign_keys:
+        conn.execute(_isolated(DropConstraint, fk, if_exists=True))
+    for key in keys:
+        conn.execute(_isolated(DropConstraint, key, if_exists=True))
+    for index in indexes:
+        conn.execute(DropIndex(index, if_exists=True))
     conn.commit()
     log.info(
         "Dropped %d keys, %d indexes and %d foreign keys",
-        len(scope.keys),
-        len(scope.indexes),
-        len(scope.foreign_keys),
+        len(keys),
+        len(indexes),
+        len(foreign_keys),
     )
 
 
-def recreate(conn: Connection, scope: Scope, skip_invalid_foreign_keys: bool = False) -> None:
+def recreate(
+    conn: Connection,
+    scope: Scope,
+    skip_invalid_foreign_keys: bool = False,
+    check_sqlite_foreign_keys: bool = True,
+) -> None:
     """Add back what's in ``scope`` but missing in the database.
 
     Each statement commits on its own, so one failing foreign key (orphan rows) doesn't
     undo the others. Raises :class:`ConstraintRecreateError` at the end if any failed.
     With ``skip_invalid_foreign_keys``, foreign keys with orphan rows are only a warning.
+
+    SQLite: the foreign keys were never dropped, so instead of adding them, the data is
+    checked against them (unless ``check_sqlite_foreign_keys`` is false).
     """
     existing = _existing_tables(conn, scope)
     names = _existing_constraint_names(conn, existing.values())
-    statements = []
+    index_names = _existing_index_names(conn, existing.values())
+    keys: list[PrimaryKeyConstraint | UniqueConstraint] = []
+    foreign_keys: list[ForeignKeyConstraint] = []
     if conn.dialect.name == "postgresql":
-        statements += [
-            (key, _isolated(AddConstraint, key))
-            for key in scope.keys
-            if key.table.key in existing and key.name not in names[key.table.key]
+        keys = [
+            k for k in scope.keys if k.table.key in existing and k.name not in names[k.table.key]
         ]
-    statements += [
-        (index, CreateIndex(index, if_not_exists=True))
-        for index in scope.indexes
-        if index.table.key in existing
-    ]
-    if conn.dialect.name == "postgresql":
-        statements += [
-            (fk, _isolated(AddConstraint, fk))
+        foreign_keys = [
+            fk
             for fk in scope.foreign_keys
             if fk.table.key in existing
             and fk.referred_table.key in existing
             and fk.name not in names[fk.table.key]
         ]
+    indexes = [
+        i
+        for i in scope.indexes
+        if i.table.key in existing and i.name not in index_names[i.table.key]
+    ]
+    statements = [
+        *((key, _isolated(AddConstraint, key)) for key in keys),
+        *((index, CreateIndex(index, if_not_exists=True)) for index in indexes),
+        *((fk, _isolated(AddConstraint, fk)) for fk in foreign_keys),
+    ]
 
-    log.info("Recreating %d keys, indexes and foreign keys", len(statements))
+    if statements:
+        log.info(
+            "Recreating %d keys, %d indexes and %d foreign keys",
+            len(keys),
+            len(indexes),
+            len(foreign_keys),
+        )
     failures: list[tuple[str, str]] = []
     for item, statement in statements:
         try:
@@ -168,8 +199,50 @@ def recreate(conn: Connection, scope: Scope, skip_invalid_foreign_keys: bool = F
                     log.warning("Foreign key %s not recreated: %s", item.name, reason)
                     continue
             failures.append((str(item.name), reason))
+    if conn.dialect.name == "sqlite" and check_sqlite_foreign_keys:
+        failures += _check_sqlite_foreign_keys(conn, scope, existing, skip_invalid_foreign_keys)
     if failures:
         raise ConstraintRecreateError(failures)
+
+
+def _check_sqlite_foreign_keys(
+    conn: Connection, scope: Scope, existing: dict[str, Table], skip_invalid: bool
+) -> list[tuple[str, str]]:
+    """The foreign keys in ``scope`` that rows break, as ``(name, reason)``.
+
+    ``PRAGMA foreign_key_check`` finds the tables with broken rows in one pass per table;
+    only their foreign keys get the slower per-key count, for the same message as Postgres.
+    """
+    fks = [
+        fk
+        for fk in scope.foreign_keys
+        if fk.table.key in existing and fk.referred_table.key in existing
+    ]
+    if not fks:
+        return []
+    log.info("Checking %d foreign keys", len(fks))
+    quote = conn.dialect.identifier_preparer
+    suspects = set()
+    for table in {fk.table.key: fk.table for fk in fks}.values():
+        schema = f"{quote.quote_schema(table.schema)}." if table.schema else ""
+        try:
+            broken = conn.exec_driver_sql(
+                f"PRAGMA {schema}foreign_key_check({quote.quote(table.name)})"
+            ).first()
+        except DBAPIError:  # e.g. "foreign key mismatch": check each foreign key instead
+            broken = True
+        conn.rollback()
+        if broken:
+            suspects.add(table.key)
+    failures = []
+    for fk in fks:
+        if fk.table.key not in suspects or not (orphans := _orphans(conn, fk)):
+            continue
+        if skip_invalid:
+            log.warning("Foreign key %s is broken by the data: %s", fk.name, orphans)
+        else:
+            failures.append((str(fk.name), orphans))
+    return failures
 
 
 def _orphans(conn: Connection, fk: ForeignKeyConstraint) -> str | None:
@@ -224,6 +297,15 @@ def _existing_tables(conn: Connection, scope: Scope) -> dict[str, Table]:
         for schema in {t.schema for t in tables.values()}
     }
     return {key: t for key, t in tables.items() if t.name in in_db[t.schema]}
+
+
+def _existing_index_names(conn: Connection, tables: Iterable[Table]) -> dict[str, set[str]]:
+    """Names of the indexes in the database, per table."""
+    inspector = inspect(conn)
+    return {
+        table.key: {i["name"] for i in inspector.get_indexes(table.name, table.schema) if i["name"]}
+        for table in tables
+    }
 
 
 def _existing_constraint_names(conn: Connection, tables: Iterable[Table]) -> dict[str, set[str]]:

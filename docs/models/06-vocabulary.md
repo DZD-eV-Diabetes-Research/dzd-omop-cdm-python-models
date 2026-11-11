@@ -43,7 +43,7 @@ table in your CDM version are skipped with a warning.
 | Create missing tables | `omop.metadata.create_all(engine)` | `--create-tables` |
 | Empty the tables first | `truncate_vocabulary_tables_before_insert=True` | `--truncate` |
 | Partial export | `skip_invalid_foreign_keys=True` | `--skip-invalid-foreign-keys` |
-| Quick test run | `max_rows_pers_csv=1000` | `--max-rows 1000` |
+| Quick test run (breaks foreign keys) | `max_rows_pers_csv=1000, skip_invalid_foreign_keys=True` | `--max-rows 1000 --skip-invalid-foreign-keys` |
 | Forget earlier runs | `loader.reset_state()` | `--reset-state` |
 | No progress bars | `show_progress_bar=False` | `--no-progress` |
 | Download folder | `download_dir="..."` | `--download-dir DIR`, or `DZDOMOP_DOWNLOAD_DIR` |
@@ -71,16 +71,21 @@ dzdomop load-vocab "https://athena.ohdsi.org/api/v1/vocabularies/zip/..." \
 
 | Situation | What happens |
 | --------- | ------------ |
-| Where the zip goes | `DZDOMOP_DOWNLOAD_DIR` (or `--download-dir`), else `dzdomop` in the system's temp folder |
+| Where the zip goes | `DZDOMOP_DOWNLOAD_DIR` (or `--download-dir`), else `dzdomop` in your cache folder (see below) |
 | The load succeeds | the zip is deleted, unless `--keep-download` |
 | The load fails | the zip stays, and the next run uses it |
 | The zip is damaged | it is deleted, and the next run downloads it again |
 | The download breaks off | the next run starts over (Athena can't continue downloads) |
 | The link is too old | `DownloadError`: Athena's links expire after some days |
 
-> [!WARNING]
-> On many Linux systems `/tmp` lives in RAM (tmpfs). A full export is a zip of about 1 GB,
-> which then takes 1 GB of RAM. Set `DZDOMOP_DOWNLOAD_DIR` to a folder on disk.
+| System | Default download folder |
+| ------ | ----------------------- |
+| Linux | `$XDG_CACHE_HOME/dzdomop`, else `~/.cache/dzdomop` |
+| macOS | `~/Library/Caches/dzdomop` |
+| Windows | `%LOCALAPPDATA%\dzdomop` |
+
+A full export is a zip of about 1 GB. Point `DZDOMOP_DOWNLOAD_DIR` elsewhere if your cache
+folder lacks the space. Avoid `/tmp`: on many Linux systems it lives in RAM (tmpfs).
 
 ## How long it takes
 

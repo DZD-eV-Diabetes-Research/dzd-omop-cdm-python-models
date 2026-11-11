@@ -18,7 +18,7 @@ import logging
 import os
 import re
 import shutil
-import tempfile
+import sys
 import threading
 import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -35,6 +35,7 @@ from omopmodel.vocab import (
     VocabularyLoaderError,
     VocabularySourceError,
     cli,
+    constraints,
     download,
     loader,
 )
@@ -303,10 +304,15 @@ def test_truncate_reloads_without_duplicates(sqlite_engine):
     assert table_counts(sqlite_engine, expected) == expected
 
 
-def test_max_rows_per_csv(sqlite_engine):
+def test_max_rows_per_csv(sqlite_engine, caplog):
+    """A partial load breaks foreign keys: an error, or with skip_invalid_foreign_keys a warning."""
     module = omop()
     module.metadata.create_all(sqlite_engine)
-    make_loader(sqlite_engine, max_rows_pers_csv=2).load_all()
+    with pytest.raises(ConstraintRecreateError, match="fpk_concept_relationship_concept_id_1"):
+        make_loader(sqlite_engine, max_rows_pers_csv=2).load_all()
+    with caplog.at_level(logging.WARNING, logger="omopmodel.vocab"):
+        make_loader(sqlite_engine, max_rows_pers_csv=2, skip_invalid_foreign_keys=True).load_all()
+    assert "fpk_concept_relationship_concept_id_1 is broken by the data" in caplog.text
     expected = expected_counts(module)
     counts = table_counts(sqlite_engine, expected)
     assert counts == {t: min(2, n) for t, n in expected.items()}
@@ -358,6 +364,107 @@ def test_sqlite_with_foreign_keys_enforced(sqlite_engine):
     assert table_counts(sqlite_engine, expected) == expected
     with sqlite_engine.connect() as conn:
         assert conn.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+
+
+def test_sqlite_reports_orphans(sqlite_engine, athena_copy):
+    """A partial export: SQLite keeps the foreign keys, so the data is checked against them."""
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    (athena_copy / "RELATIONSHIP.csv").unlink()
+    with pytest.raises(ConstraintRecreateError) as error:
+        make_loader(sqlite_engine, directory=athena_copy).load_all()
+    [(name, reason)] = error.value.failures
+    assert name == "fpk_concept_relationship_relationship_id"
+    assert re.fullmatch(
+        r"\d+ rows in concept_relationship\.relationship_id point at no relationship \(e\.g\. .+\)",
+        reason,
+    )
+    assert "skip_invalid_foreign_keys=True" in str(error.value)
+    # The data stays; after a fix, the check passes
+    expected = expected_counts(module)
+    shutil.copy(ATHENA / "RELATIONSHIP.csv", athena_copy)
+    make_loader(sqlite_engine, directory=athena_copy).load_all()
+    assert table_counts(sqlite_engine, expected) == expected
+
+
+def test_sqlite_checks_tables_that_were_not_loaded(sqlite_engine):
+    """A person pointing at a concept that isn't in the export breaks the check, as on Postgres."""
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    with sqlite_engine.begin() as conn:
+        conn.execute(
+            module.Person.__table__.insert().values(
+                person_id=1,
+                gender_concept_id=999999999,
+                year_of_birth=1980,
+                race_concept_id=0,
+                ethnicity_concept_id=0,
+            )
+        )
+    with pytest.raises(ConstraintRecreateError) as error:
+        make_loader(sqlite_engine).load_all()
+    assert [name for name, _ in error.value.failures] == ["fpk_person_gender_concept_id"]
+
+
+def test_sqlite_skip_invalid_foreign_keys(sqlite_engine, athena_copy, caplog):
+    omop().metadata.create_all(sqlite_engine)
+    (athena_copy / "RELATIONSHIP.csv").unlink()
+    with caplog.at_level(logging.WARNING, logger="omopmodel.vocab"):
+        make_loader(sqlite_engine, directory=athena_copy, skip_invalid_foreign_keys=True).load_all()
+    assert "fpk_concept_relationship_relationship_id is broken by the data" in caplog.text
+
+
+def test_sqlite_no_foreign_key_check_after_a_failed_load(sqlite_engine, athena_copy, caplog):
+    """Partial data always has orphans: the check waits for the next complete load."""
+    omop().metadata.create_all(sqlite_engine)
+    (athena_copy / "VOCABULARY.csv").write_text("no_such_column\nx\n", encoding="utf-8")
+    with caplog.at_level(logging.INFO, logger="omopmodel.vocab"):
+        with pytest.raises(CsvFormatError):
+            make_loader(sqlite_engine, directory=athena_copy).load_all()
+    assert "Checking" not in caplog.text
+    assert "Recreating" in caplog.text
+
+
+def test_drop_and_recreate_log_what_they_do(sqlite_engine, caplog):
+    """The counts are what was dropped or created, not what the model has."""
+    module = omop()
+    module.metadata.create_all(sqlite_engine)
+    loader = make_loader(sqlite_engine)
+    indexes = len(constraints.scope_for(module.metadata, _loaded_tables(loader)).indexes)
+    with caplog.at_level(logging.INFO, logger="omopmodel.vocab"):
+        loader.drop_constraints_and_pks_and_indexes()
+        loader.drop_constraints_and_pks_and_indexes()
+        loader.recreate_constraints_and_pks_and_indexes()
+        loader.recreate_constraints_and_pks_and_indexes()
+    messages = [r.getMessage() for r in caplog.records if r.name == "omopmodel.vocab"]
+    assert [m for m in messages if m.startswith(("Dropped", "Recreating"))] == [
+        f"Dropped 0 keys, {indexes} indexes and 0 foreign keys",  # SQLite: indexes only
+        "Dropped 0 keys, 0 indexes and 0 foreign keys",
+        f"Recreating 0 keys, {indexes} indexes and 0 foreign keys",
+    ]
+
+
+def test_postgres_drop_and_recreate_log_what_they_do(pg, caplog):
+    module = omop()
+    module.metadata.create_all(pg)
+    loader = make_loader(pg)
+    scope = constraints.scope_for(module.metadata, _loaded_tables(loader))
+    counts = f"{len(scope.keys)} keys, {len(scope.indexes)} indexes and {len(scope.foreign_keys)}"
+    with caplog.at_level(logging.INFO, logger="omopmodel.vocab"):
+        loader.drop_constraints_and_pks_and_indexes()
+        loader.drop_constraints_and_pks_and_indexes()
+        loader.recreate_constraints_and_pks_and_indexes()
+        loader.recreate_constraints_and_pks_and_indexes()
+    messages = [r.getMessage() for r in caplog.records if r.name == "omopmodel.vocab"]
+    assert [m for m in messages if m.startswith(("Dropped", "Recreating"))] == [
+        f"Dropped {counts} foreign keys",
+        "Dropped 0 keys, 0 indexes and 0 foreign keys",
+        f"Recreating {counts} foreign keys",
+    ]
+
+
+def _loaded_tables(loader: VocabulariesLoader) -> list:
+    return list({f.table.key: f.table for f in loader.csv_files()}.values())
 
 
 @pytest.mark.parametrize(
@@ -578,7 +685,10 @@ def test_postgres_truncate_does_not_cascade(pg):
                 ethnicity_concept_id=0,
             )
         )
-    with pytest.raises(VocabularyLoaderError, match="foreign keys"):
+    with pytest.raises(
+        VocabularyLoaderError,
+        match=r"foreign keys.*drop_constraints_and_indexes_before_insert=True.*--keep-constraints",
+    ):
         make_loader(
             pg,
             truncate_vocabulary_tables_before_insert=True,
@@ -1062,21 +1172,34 @@ def test_download_settings_from_environment(sqlite_engine, tmp_path, monkeypatch
         make_loader(sqlite_engine, directory=url)
     monkeypatch.delenv(download.DOWNLOAD_DIR_ENV)
     monkeypatch.delenv(download.KEEP_DOWNLOAD_ENV)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     v = make_loader(sqlite_engine, directory=url)
-    assert v.download_dir == Path(tempfile.gettempdir()) / "dzdomop"
+    if os.name == "posix" and sys.platform != "darwin":
+        assert v.download_dir == tmp_path / "cache" / "dzdomop"
     assert v.keep_download is False
 
 
-@pytest.mark.skipif(not hasattr(os, "getuid"), reason="POSIX only")
-def test_shared_download_dir_of_another_user(tmp_path, monkeypatch):
-    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
-    real_uid = os.getuid()
-    monkeypatch.setattr(os, "getuid", lambda: real_uid + 1)
-    with pytest.raises(DownloadError, match="belongs to another user"):
-        download.download("http://127.0.0.1:9/x.zip", tmp_path / "dzdomop", show_progress=False)
-    # a folder you chose yourself is not checked
-    with pytest.raises(DownloadError, match="failed"):
-        download.download("http://127.0.0.1:9/x.zip", tmp_path / "mine", show_progress=False)
+@pytest.mark.skipif(os.name != "posix", reason="POSIX paths")
+def test_default_download_dir_is_the_user_cache(tmp_path, monkeypatch):
+    """Not the temp folder: often a RAM disk (tmpfs), and a full export is about 1 GB."""
+    monkeypatch.delenv(download.DOWNLOAD_DIR_ENV, raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
+    assert download.default_download_dir() == tmp_path / "xdg" / "dzdomop"
+    monkeypatch.setenv("XDG_CACHE_HOME", "relative/path")  # ignored, as the XDG spec says
+    assert download.default_download_dir() == tmp_path / ".cache" / "dzdomop"
+    monkeypatch.delenv("XDG_CACHE_HOME")
+    assert download.default_download_dir() == tmp_path / ".cache" / "dzdomop"
+    monkeypatch.setattr(sys, "platform", "darwin")
+    assert download.default_download_dir() == tmp_path / "Library" / "Caches" / "dzdomop"
+
+
+def test_download_dir_that_cant_be_created(tmp_path):
+    blocker = tmp_path / "file"
+    blocker.write_text("not a folder")
+    with pytest.raises(DownloadError, match=r"Can't create download folder.*DZDOMOP_DOWNLOAD_DIR"):
+        download.download("http://127.0.0.1:9/x.zip", blocker / "sub", show_progress=False)
 
 
 def test_cli_url(tmp_path, export_server, download_dir):

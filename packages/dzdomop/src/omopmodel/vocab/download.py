@@ -7,8 +7,12 @@ Athena itself doesn't, so there an interrupted download starts over.
 
 | Setting         | Parameter         | CLI flag          | Environment variable    | Default                    |
 | --------------- | ----------------- | ----------------- | ----------------------- | -------------------------- |
-| download folder | ``download_dir``  | --download-dir    | ``DZDOMOP_DOWNLOAD_DIR``  | ``<temp>/dzdomop``         |
+| download folder | ``download_dir``  | --download-dir    | ``DZDOMOP_DOWNLOAD_DIR``  | ``dzdomop`` in the user's cache folder |
 | keep the zip    | ``keep_download`` | --keep-download   | ``DZDOMOP_KEEP_DOWNLOAD`` | deleted after a successful load |
+
+The user's cache folder is ``$XDG_CACHE_HOME`` or ``~/.cache`` on Linux,
+``~/Library/Caches`` on macOS and ``%LOCALAPPDATA%`` on Windows. Not the temp folder: on
+many systems that is a RAM disk (tmpfs), and a full export is about 1 GB.
 """
 
 from __future__ import annotations
@@ -18,7 +22,7 @@ import http.client
 import logging
 import os
 import re
-import tempfile
+import sys
 import time
 import zipfile
 import zlib
@@ -46,9 +50,9 @@ def is_url(location: object) -> bool:
 
 
 def default_download_dir() -> Path:
-    """``$DZDOMOP_DOWNLOAD_DIR``, else ``dzdomop`` in the system's temp folder."""
+    """``$DZDOMOP_DOWNLOAD_DIR``, else ``dzdomop`` in the user's cache folder."""
     configured = os.environ.get(DOWNLOAD_DIR_ENV)
-    return Path(configured) if configured else _shared_temp_dir()
+    return Path(configured) if configured else _user_cache_dir() / "dzdomop"
 
 
 def keep_download_default() -> bool:
@@ -184,22 +188,37 @@ def _unsatisfied_range_total(error: HTTPError) -> int | None:
 
 
 def _prepare(directory: Path) -> None:
-    """Create the download folder. Refuse the shared temp folder if someone else owns it:
-    another user could put a zip there under the name we look for."""
+    """Create the download folder."""
     try:
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     except OSError as e:
-        raise DownloadError(f"Can't create download folder '{directory}': {e}") from e
-    shared = directory.resolve() == _shared_temp_dir().resolve()
-    if shared and hasattr(os, "getuid") and directory.stat().st_uid != os.getuid():
         raise DownloadError(
-            f"Download folder '{directory}' belongs to another user. Choose your own with "
+            f"Can't create download folder '{directory}': {e}. Choose another one with "
             f"download_dir, --download-dir or ${DOWNLOAD_DIR_ENV}."
-        )
+        ) from e
 
 
-def _shared_temp_dir() -> Path:
-    return Path(tempfile.gettempdir()) / "dzdomop"
+def _user_cache_dir() -> Path:
+    """The user's cache folder, like ``platformdirs.user_cache_path()`` without the
+    dependency."""
+    if os.name == "nt":
+        local = os.environ.get("LOCALAPPDATA")
+        return Path(local) if local else _home() / "AppData" / "Local"
+    if sys.platform == "darwin":
+        return _home() / "Library" / "Caches"
+    xdg = os.environ.get("XDG_CACHE_HOME", "")
+    # The XDG spec says to ignore relative paths
+    return Path(xdg) if os.path.isabs(xdg) else _home() / ".cache"
+
+
+def _home() -> Path:
+    try:
+        return Path.home()
+    except (KeyError, RuntimeError) as e:  # no HOME and no passwd entry, e.g. some containers
+        raise DownloadError(
+            f"Can't find your home folder for the default download folder ({e}). Choose a "
+            f"folder with download_dir, --download-dir or ${DOWNLOAD_DIR_ENV}."
+        ) from e
 
 
 def _content_range(response) -> tuple[int | None, int | None]:

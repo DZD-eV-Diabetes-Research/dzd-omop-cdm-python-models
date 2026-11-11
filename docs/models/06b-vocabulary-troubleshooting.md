@@ -39,8 +39,8 @@ first, and adds them back afterwards, so they are checked against the new data. 
 | Python | `VocabularyLoaderError: Can't empty table 'concept': cannot truncate a table referenced in a foreign key constraint. ...` |
 | Command line | `error: Can't empty table 'concept': cannot truncate a table referenced in a foreign key constraint. ...` |
 
-The message suggests `drop_constraints_and_indexes_before_insert=True`; on the command line,
-that means running without `--keep-constraints`.
+Leave out `--keep-constraints` (Python: keep the default
+`drop_constraints_and_indexes_before_insert=True`), as the message says.
 
 ## CPT4
 
@@ -69,6 +69,14 @@ foreign keys, run again with `--skip-invalid-foreign-keys` (Python:
 `skip_invalid_foreign_keys=True`) and get a warning per key instead. Or download the missing
 vocabularies.
 
-SQLite can't add foreign keys to existing tables, so there you get no error at all.
+| Database | The foreign key | With `--skip-invalid-foreign-keys` |
+| -------- | --------------- | ---------------------------------- |
+| PostgreSQL | is dropped for the load and can't be added back | stays missing |
+| SQLite | can't be dropped, so the loader checks the data against it after the load | stays in the table, broken by the data. SQLite only enforces it with `PRAGMA foreign_keys = ON` |
+
+On SQLite the check runs after a complete load only, not after one that stopped early,
+and not with `--no-recreate`. It covers every table with a foreign key to a loaded table,
+so rows in `person` or `measurement` that point at a concept missing from the new export
+fail it too, as on PostgreSQL.
 
 Next: [PostgreSQL](07-postgres.md)

@@ -75,7 +75,8 @@ class VocabulariesLoader:
         ] = None,
         max_rows_pers_csv: Annotated[
             int | None,
-            "Load at most this many rows per file. Handy for a quick test run.",
+            "Load at most this many rows per file. Handy for a quick test run. Breaks "
+            "foreign keys, so combine it with skip_invalid_foreign_keys=True.",
         ] = None,
         save_loader_state_into_table: Annotated[
             bool,
@@ -84,14 +85,15 @@ class VocabulariesLoader:
         ] = True,
         skip_invalid_foreign_keys: Annotated[
             bool,
-            "If a foreign key can't be recreated because rows point at missing concepts "
-            "(partial exports), log a warning instead of raising ConstraintRecreateError. "
-            "The foreign key then stays missing.",
+            "If rows break a foreign key because they point at missing concepts (partial "
+            "exports), log a warning instead of raising ConstraintRecreateError. Postgres: "
+            "the foreign key then stays missing. SQLite: it stays in the table, broken by "
+            "the data.",
         ] = False,
         download_dir: Annotated[
             Path | str | None,
             "URL sources: folder for the downloaded zip. Default: $DZDOMOP_DOWNLOAD_DIR, "
-            "else 'dzdomop' in the system's temp folder.",
+            "else 'dzdomop' in the user's cache folder (e.g. ~/.cache/dzdomop).",
         ] = None,
         keep_download: Annotated[
             bool | None,
@@ -365,12 +367,17 @@ class VocabulariesLoader:
             conn = None
         if not self.recreate_constraints_and_indexes_after_insert:
             return conn
+        # SQLite: no foreign key check, the data is incomplete. The next full load checks.
+        options = dict(
+            skip_invalid_foreign_keys=self.skip_invalid_foreign_keys,
+            check_sqlite_foreign_keys=False,
+        )
         try:
             if conn is not None:
-                constraints.recreate(conn, scope, self.skip_invalid_foreign_keys)
+                constraints.recreate(conn, scope, **options)
             else:
                 with self.database_engine.connect() as fresh:
-                    constraints.recreate(fresh, scope, self.skip_invalid_foreign_keys)
+                    constraints.recreate(fresh, scope, **options)
         except ConstraintRecreateError as e:
             log.warning("Loading stopped. %s", e)
         except Exception as e:
@@ -432,8 +439,9 @@ class VocabulariesLoader:
             conn.rollback()
             raise VocabularyLoaderError(
                 f"Can't empty table {table.name!r}: {str(e.orig).splitlines()[0]}. "
-                "Other tables probably have foreign keys to it. Load with "
-                "drop_constraints_and_indexes_before_insert=True, which drops them first."
+                "Other tables probably have foreign keys to it. Let the loader drop them "
+                "first: drop_constraints_and_indexes_before_insert=True (the default), or on "
+                "the command line leave out --keep-constraints."
             ) from e
 
     def _scope(self) -> constraints.Scope:
