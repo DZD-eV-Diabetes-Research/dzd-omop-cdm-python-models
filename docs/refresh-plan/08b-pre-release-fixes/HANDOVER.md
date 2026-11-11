@@ -62,7 +62,7 @@
 
 ## Breaking for the upgrade page
 
-- **SQLite users of the vocabulary loader:** a load now fails with `ConstraintRecreateError`
+- **SQLite users of the vocabulary loader** (in the 09 plan list and under "Changed" in the changelog): a load now fails with `ConstraintRecreateError`
   when rows break foreign keys (partial export, `max_rows_pers_csv`, clinical rows pointing at
   concepts missing from the new export). Before it loaded silently. Fix the data or pass
   `skip_invalid_foreign_keys=True` / `--skip-invalid-foreign-keys`.

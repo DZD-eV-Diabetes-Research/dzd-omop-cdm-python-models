@@ -20,9 +20,10 @@
       | ---- | ------ |
       | SQLModel | `SQLModel.metadata.create_all()` creates no OMOP tables (silently): use `omop.metadata`; classes derive from `omop.Base` |
       | Install | `sqlmodel`, pg8000, tqdm are extras (`dzdomop[sqlmodel]`, ...) |
-      | `tables` | table variable `metadata` → `metadata_table` (+ the key change from 08b, if any) |
+      | `tables` | table variable `metadata` → `metadata_table`. The 08b key change (no `tmp_pk_candiate_key_*`) is not breaking: the old `tables` flavor didn't import |
       | `dataclasses` | many-to-one relationships are no `__init__` arguments; pass the id or set it afterwards |
       | Loader | truncate without CASCADE: error if other tables point at a vocabulary table |
+| Loader, SQLite | foreign keys are checked after a load (08b): a partial export, a `max_rows_pers_csv` / `--max-rows` run, or clinical rows pointing at concepts missing from the new export now raise `ConstraintRecreateError` (before: loaded silently). Fix the data or pass `skip_invalid_foreign_keys=True` / `--skip-invalid-foreign-keys` |
       | Loader | `CONCEPT_CPT4.csv` skipped; messages via `logging` (logger `omopmodel.vocab`), not `print`; `max_rows` loads N (was N + 1); Ctrl+C raises `KeyboardInterrupt` |
       | Existing databases | 5.4: new FKs `episode.episode_parent_id`, `note_nlp.note_id`, index `idx_concept_vocabulary_id` renamed; SQLModel columns now NOT NULL. Tables created with 0.4.0 differ from new ones |
       | Versions | SQLAlchemy 2.0.14 or newer |

@@ -119,6 +119,12 @@ Changed:
 - **Ctrl+C is no longer swallowed.** `load_all()` puts keys and indexes back, then raises
   `KeyboardInterrupt`. Before, it returned as if the load had finished, and on Postgres
   failed while recreating the constraints a second time.
+- **SQLite: foreign keys are checked after a load.** Before, a partial export loaded without
+  a word. Now you get the same `ConstraintRecreateError` as on Postgres, or with
+  `skip_invalid_foreign_keys=True` a warning. The check also covers rows in other tables
+  (`person`, `measurement`, ...) that point at concepts missing from the new export. A test
+  run with `max_rows_pers_csv` (CLI: `--max-rows`) breaks foreign keys too, so add
+  `skip_invalid_foreign_keys=True`.
 - Messages go to the `omopmodel.vocab` logger instead of `print()`.
 - `max_rows_pers_csv=N` loads `N` rows per file (was `N + 1`).
 
@@ -144,11 +150,6 @@ Added:
 - `skip_invalid_foreign_keys=True`: if an export misses concepts that other rows point at
   (e.g. a download without SNOMED, whose synonyms use SNOMED language concepts), log a
   warning and leave that foreign key out instead of raising `ConstraintRecreateError`.
-- **SQLite: foreign keys are checked after a load.** Before, a partial export loaded without
-  a word. Now you get the same `ConstraintRecreateError` as on Postgres, or with
-  `skip_invalid_foreign_keys=True` a warning. The check also covers rows in other tables
-  (`person`, `measurement`, ...) that point at concepts missing from the new export. A test run with `max_rows_pers_csv` (CLI:
-  `--max-rows`) breaks foreign keys too, so add `skip_invalid_foreign_keys=True`.
 - A command line tool:
 
   ```bash
