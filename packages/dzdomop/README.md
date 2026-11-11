@@ -1,60 +1,66 @@
-# DZD - OMOP CDM Python ORM/Data Classes Representation
-A Python ORM/data classes representation of the [Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) in different flavors powered by [sqlacodegen](https://github.com/agronholm/sqlacodegen)
+# dzdomop: the OMOP CDM as Python classes
 
-Author/Maintainer: Tim Bleimehl  
+The [OMOP Common Data Model](https://ohdsi.github.io/CommonDataModel/) (CDM) 5.3, 5.4 and 5.5 as
+ready-made [SQLAlchemy](https://www.sqlalchemy.org/) and [SQLModel](https://sqlmodel.tiangolo.com/)
+classes, plus a loader for the standardized vocabularies you export from
+[Athena](https://athena.ohdsi.org).
 
-For more background how this sausage is made have a look at the github repo at https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models
+- Create a complete OMOP schema with one call
+- Write and query OMOP data with typed Python classes; the OMOP docs show up in your editor
+- Load an Athena export (folder, zip file or download link) into PostgreSQL or SQLite
 
-This Readme is a "work in process". Come back later for a more complete manual.
+Status: alpha, expect breaking changes.
 
-# Install
+## Install
 
-Just install the python module from pypi.org
-
-`python -m pip install --upgrade dzdomop`
-
-The `sqlmodels` flavor and the vocabulary loader on Postgres need extras:
+```bash
+pip install dzdomop
+```
 
 | Extra | Installs | Needed for |
 | ----- | -------- | ---------- |
-| `sqlmodel` | sqlmodel | `OMOP_5_x_sqlmodels` |
-| `postgres` | psycopg 3 | `VocabulariesLoader` on Postgres (psycopg2 and pg8000 work too) |
-| `pg8000` | pg8000 | `VocabulariesLoader` on Postgres with `postgresql+pg8000://` |
-| `progress` | tqdm | `VocabulariesLoader` progress bars |
+| `sqlmodel` | sqlmodel | the `OMOP_5_x_sqlmodels` modules |
+| `postgres` | psycopg 3 | PostgreSQL (psycopg2 and pg8000 work too) |
+| `pg8000` | pg8000 | PostgreSQL with `postgresql+pg8000://` |
+| `progress` | tqdm | progress bars of the vocabulary loader |
 
-`pip install "dzdomop[sqlmodel,postgres,progress]"` installs everything.
-
-# How to use
-
-
-
-This tiny script demostrates how this module can help you to
-* Create a local dev database with the complete omop datamodel
-* insert some data based on our classes with some basic guardrails like type hints for your editor, typo prevention, ...
+## Quickstart
 
 ```python
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from omopmodel import OMOP_5_3_declarative as omop
+from omopmodel import OMOP_5_4_declarative as omop
 
-# Create a local SQLite database with all OMOP CDM tables+properties
-engine = create_engine("sqlite:///cdm_source.db", echo=True)
-omop.metadata.create_all(engine)
+engine = create_engine("sqlite:///omop.db")
+omop.metadata.create_all(engine)  # every OMOP CDM 5.4 table
 
-# Create a some basic OMOP objects
-care_site = omop.CareSite(care_site_id=5678, care_site_name="St. Local")
-person = omop.Person(
-    person_id=1234,
-    year_of_birth=1985,
-    care_site=care_site,
-    gender_concept_id=1,
-    race_concept_id=1,
-    ethnicity_concept_id=1,
-)
-
-# Write the Object to the database
 with Session(engine) as session:
-    session.add(care_site)
+    care_site = omop.CareSite(care_site_id=1, care_site_name="St. Local")
+    person = omop.Person(
+        person_id=1,
+        year_of_birth=1985,
+        care_site=care_site,
+        gender_concept_id=0,
+        race_concept_id=0,
+        ethnicity_concept_id=0,
+    )
     session.add(person)
     session.commit()
+    print(session.scalars(select(omop.Person)).one().care_site.care_site_name)
 ```
+
+Load a vocabulary export from Athena (the zip file, the unzipped folder or the download link):
+
+<!-- docs-test: run -->
+```bash
+dzdomop load-vocab athena-export.zip --url sqlite:///omop.db --cdm-version 5.4 --create-tables
+```
+
+## Documentation
+
+- [User guide](https://dzd-ev-diabetes-research.github.io/dzd-omop-cdm-python-models/): flavors,
+  relationships, validation, vocabularies, PostgreSQL, FAQ
+- [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md)
+- [Source code and issues](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models)
+
+Maintainer: Tim Bleimehl · License: MIT

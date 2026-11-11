@@ -75,6 +75,10 @@ The models are regenerated with sqlacodegen 4 and the new generator.
   in `Person(...)`; use `Person.model_validate({...})` to get a `ValidationError`.
 - `Death.person` and `Person.death` (one-to-one) in every class-based flavor.
 - SQLModel flavor: `Domain.concepts` and `Vocabulary.concepts`, as in the other flavors.
+- **Documentation:** a user guide (install, quickstart, flavors, relationships, validation,
+  vocabularies, PostgreSQL, FAQ) and a guide for the code generator, at
+  https://dzd-ev-diabetes-research.github.io/dzd-omop-cdm-python-models/ and in `docs/`.
+  The examples are in the guide now; the `examples/` folder is gone.
 
 ### Vocabulary loader
 
