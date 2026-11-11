@@ -249,6 +249,7 @@ class OmopDataclassGenerator(OmopOrmMixin, DataclassGenerator):
     - many-to-one and one-to-one: ``init=False``, set them after creating the object.
       ``default=None`` would be simpler, but SQLAlchemy 2.0 then writes NULL to a foreign
       key column that was passed to ``__init__`` (``Person(care_site_id=1)``). 2.1 doesn't.
+    - every relationship: ``repr=False``
     """
 
     _nullable_column = False
@@ -269,6 +270,9 @@ class OmopDataclassGenerator(OmopOrmMixin, DataclassGenerator):
         self, relationship: RelationshipAttribute
     ) -> Mapping[str, Any]:
         kwargs = dict(super().render_relationship_arguments(relationship))
+        # repr() shows the columns only: with relationships it loaded every one of them (20
+        # queries for a 5.4 Person) and failed on a detached object.
+        kwargs["repr"] = "False"
         if relationship.type in (RelationshipType.ONE_TO_MANY, RelationshipType.MANY_TO_MANY):
             kwargs["default_factory"] = "list"
         else:

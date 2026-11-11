@@ -365,18 +365,27 @@ class Concept(Base):
     """
 
     concept_class: Mapped["ConceptClass"] = relationship(
-        "ConceptClass", foreign_keys=[concept_class_id], back_populates="concepts", init=False
+        "ConceptClass",
+        foreign_keys=[concept_class_id],
+        back_populates="concepts",
+        repr=False,
+        init=False,
     )
     domain: Mapped["Domain"] = relationship(
-        "Domain", foreign_keys=[domain_id], back_populates="concepts", init=False
+        "Domain", foreign_keys=[domain_id], back_populates="concepts", repr=False, init=False
     )
     vocabulary: Mapped["Vocabulary"] = relationship(
-        "Vocabulary", foreign_keys=[vocabulary_id], back_populates="concepts", init=False
+        "Vocabulary",
+        foreign_keys=[vocabulary_id],
+        back_populates="concepts",
+        repr=False,
+        init=False,
     )
     concept_classes: Mapped[list["ConceptClass"]] = relationship(
         "ConceptClass",
         foreign_keys="[ConceptClass.concept_class_concept_id]",
         back_populates="concept_class_concept",
+        repr=False,
         default_factory=list,
     )
 
@@ -447,12 +456,14 @@ class ConceptClass(Base):
         "Concept",
         foreign_keys="[Concept.concept_class_id]",
         back_populates="concept_class",
+        repr=False,
         default_factory=list,
     )
     concept_class_concept: Mapped["Concept"] = relationship(
         "Concept",
         foreign_keys=[concept_class_concept_id],
         back_populates="concept_classes",
+        repr=False,
         init=False,
     )
 
@@ -528,13 +539,17 @@ class Domain(Base):
     """A Concept representing the Domain Concept the DOMAIN record belongs to."""
 
     concepts: Mapped[list["Concept"]] = relationship(
-        "Concept", foreign_keys="[Concept.domain_id]", back_populates="domain", default_factory=list
+        "Concept",
+        foreign_keys="[Concept.domain_id]",
+        back_populates="domain",
+        repr=False,
+        default_factory=list,
     )
     domain_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[domain_concept_id], init=False
+        "Concept", foreign_keys=[domain_concept_id], repr=False, init=False
     )
     costs: Mapped[list["Cost"]] = relationship(
-        "Cost", back_populates="cost_domain", default_factory=list
+        "Cost", back_populates="cost_domain", repr=False, default_factory=list
     )
 
 
@@ -641,13 +656,14 @@ class Vocabulary(Base):
         "Concept",
         foreign_keys="[Concept.vocabulary_id]",
         back_populates="vocabulary",
+        repr=False,
         default_factory=list,
     )
     vocabulary_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[vocabulary_concept_id], init=False
+        "Concept", foreign_keys=[vocabulary_concept_id], repr=False, init=False
     )
     source_to_concept_maps: Mapped[list["SourceToConceptMap"]] = relationship(
-        "SourceToConceptMap", back_populates="target_vocabulary", default_factory=list
+        "SourceToConceptMap", back_populates="target_vocabulary", repr=False, default_factory=list
     )
 
 
@@ -781,7 +797,7 @@ class CdmSource(Base):
     )
     """Version of the OMOP CDM used as string. e.g. v5.4"""
 
-    cdm_version_concept: Mapped["Concept"] = relationship("Concept", init=False)
+    cdm_version_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
 
 
 class CohortDefinition(Base):
@@ -885,10 +901,10 @@ class CohortDefinition(Base):
     """A date to indicate when the Cohort was initiated in the COHORT table."""
 
     definition_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[definition_type_concept_id], init=False
+        "Concept", foreign_keys=[definition_type_concept_id], repr=False, init=False
     )
     subject_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[subject_concept_id], init=False
+        "Concept", foreign_keys=[subject_concept_id], repr=False, init=False
     )
 
 
@@ -1022,10 +1038,10 @@ class ConceptAncestor(Base):
     """
 
     ancestor_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[ancestor_concept_id], init=False
+        "Concept", foreign_keys=[ancestor_concept_id], repr=False, init=False
     )
     descendant_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[descendant_concept_id], init=False
+        "Concept", foreign_keys=[descendant_concept_id], repr=False, init=False
     )
 
 
@@ -1073,9 +1089,11 @@ class ConceptSynonym(Base):
     concept_synonym_name: Mapped[str] = mapped_column(String(1000), nullable=False)
     language_concept_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    concept: Mapped["Concept"] = relationship("Concept", foreign_keys=[concept_id], init=False)
+    concept: Mapped["Concept"] = relationship(
+        "Concept", foreign_keys=[concept_id], repr=False, init=False
+    )
     language_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[language_concept_id], init=False
+        "Concept", foreign_keys=[language_concept_id], repr=False, init=False
     )
 
 
@@ -1561,18 +1579,20 @@ class Cost(Base):
         here for reference.
     """
 
-    cost_domain: Mapped["Domain"] = relationship("Domain", back_populates="costs", init=False)
+    cost_domain: Mapped["Domain"] = relationship(
+        "Domain", back_populates="costs", repr=False, init=False
+    )
     cost_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[cost_type_concept_id], init=False
+        "Concept", foreign_keys=[cost_type_concept_id], repr=False, init=False
     )
     currency_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[currency_concept_id], init=False
+        "Concept", foreign_keys=[currency_concept_id], repr=False, init=False
     )
     drg_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[drg_concept_id], init=False
+        "Concept", foreign_keys=[drg_concept_id], repr=False, init=False
     )
     revenue_code_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[revenue_code_concept_id], init=False
+        "Concept", foreign_keys=[revenue_code_concept_id], repr=False, init=False
     )
 
 
@@ -1753,19 +1773,19 @@ class DrugStrength(Base):
     """
 
     amount_unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[amount_unit_concept_id], init=False
+        "Concept", foreign_keys=[amount_unit_concept_id], repr=False, init=False
     )
     denominator_unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[denominator_unit_concept_id], init=False
+        "Concept", foreign_keys=[denominator_unit_concept_id], repr=False, init=False
     )
     drug_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[drug_concept_id], init=False
+        "Concept", foreign_keys=[drug_concept_id], repr=False, init=False
     )
     ingredient_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[ingredient_concept_id], init=False
+        "Concept", foreign_keys=[ingredient_concept_id], repr=False, init=False
     )
     numerator_unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[numerator_unit_concept_id], init=False
+        "Concept", foreign_keys=[numerator_unit_concept_id], repr=False, init=False
     )
 
 
@@ -1847,13 +1867,13 @@ class FactRelationship(Base):
     relationship_concept_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     domain_concept_1: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[domain_concept_id_1], init=False
+        "Concept", foreign_keys=[domain_concept_id_1], repr=False, init=False
     )
     domain_concept_2: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[domain_concept_id_2], init=False
+        "Concept", foreign_keys=[domain_concept_id_2], repr=False, init=False
     )
     relationship_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[relationship_concept_id], init=False
+        "Concept", foreign_keys=[relationship_concept_id], repr=False, init=False
     )
 
 
@@ -1987,12 +2007,12 @@ class Location(Base):
     )
     """ETL conventions: Must be between -180 and 180."""
 
-    country_concept: Mapped[Optional["Concept"]] = relationship("Concept", init=False)
+    country_concept: Mapped[Optional["Concept"]] = relationship("Concept", repr=False, init=False)
     care_sites: Mapped[list["CareSite"]] = relationship(
-        "CareSite", back_populates="location", default_factory=list
+        "CareSite", back_populates="location", repr=False, default_factory=list
     )
     persons: Mapped[list["Person"]] = relationship(
-        "Person", back_populates="location", default_factory=list
+        "Person", back_populates="location", repr=False, default_factory=list
     )
 
 
@@ -2062,13 +2082,13 @@ class Metadata(Base):
     metadata_datetime: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, default=None)
 
     metadata_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[metadata_concept_id], init=False
+        "Concept", foreign_keys=[metadata_concept_id], repr=False, init=False
     )
     metadata_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[metadata_type_concept_id], init=False
+        "Concept", foreign_keys=[metadata_type_concept_id], repr=False, init=False
     )
     value_as_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[value_as_concept_id], init=False
+        "Concept", foreign_keys=[value_as_concept_id], repr=False, init=False
     )
 
 
@@ -2181,9 +2201,9 @@ class Relationship(Base):
     relationship concept.
     """
 
-    relationship_concept: Mapped["Concept"] = relationship("Concept", init=False)
+    relationship_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
     concept_relationships: Mapped[list["ConceptRelationship"]] = relationship(
-        "ConceptRelationship", back_populates="relationship_", default_factory=list
+        "ConceptRelationship", back_populates="relationship_", repr=False, default_factory=list
     )
 
 
@@ -2370,13 +2390,13 @@ class SourceToConceptMap(Base):
     """
 
     source_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[source_concept_id], init=False
+        "Concept", foreign_keys=[source_concept_id], repr=False, init=False
     )
     target_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[target_concept_id], init=False
+        "Concept", foreign_keys=[target_concept_id], repr=False, init=False
     )
     target_vocabulary: Mapped["Vocabulary"] = relationship(
-        "Vocabulary", back_populates="source_to_concept_maps", init=False
+        "Vocabulary", back_populates="source_to_concept_maps", repr=False, init=False
     )
 
 
@@ -2526,20 +2546,22 @@ class CareSite(Base):
     """
 
     location: Mapped[Optional["Location"]] = relationship(
-        "Location", back_populates="care_sites", init=False
+        "Location", back_populates="care_sites", repr=False, init=False
     )
-    place_of_service_concept: Mapped[Optional["Concept"]] = relationship("Concept", init=False)
+    place_of_service_concept: Mapped[Optional["Concept"]] = relationship(
+        "Concept", repr=False, init=False
+    )
     providers: Mapped[list["Provider"]] = relationship(
-        "Provider", back_populates="care_site", default_factory=list
+        "Provider", back_populates="care_site", repr=False, default_factory=list
     )
     persons: Mapped[list["Person"]] = relationship(
-        "Person", back_populates="care_site", default_factory=list
+        "Person", back_populates="care_site", repr=False, default_factory=list
     )
     visit_occurrences: Mapped[list["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="care_site", default_factory=list
+        "VisitOccurrence", back_populates="care_site", repr=False, default_factory=list
     )
     visit_details: Mapped[list["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="care_site", default_factory=list
+        "VisitDetail", back_populates="care_site", repr=False, default_factory=list
     )
 
 
@@ -2645,10 +2667,14 @@ class ConceptRelationship(Base):
     NULL.
     """
 
-    concept_1: Mapped["Concept"] = relationship("Concept", foreign_keys=[concept_id_1], init=False)
-    concept_2: Mapped["Concept"] = relationship("Concept", foreign_keys=[concept_id_2], init=False)
+    concept_1: Mapped["Concept"] = relationship(
+        "Concept", foreign_keys=[concept_id_1], repr=False, init=False
+    )
+    concept_2: Mapped["Concept"] = relationship(
+        "Concept", foreign_keys=[concept_id_2], repr=False, init=False
+    )
     relationship_: Mapped["Relationship"] = relationship(
-        "Relationship", back_populates="concept_relationships", init=False
+        "Relationship", back_populates="concept_relationships", repr=False, init=False
     )
 
 
@@ -2933,49 +2959,49 @@ class Provider(Base):
     """
 
     care_site: Mapped[Optional["CareSite"]] = relationship(
-        "CareSite", back_populates="providers", init=False
+        "CareSite", back_populates="providers", repr=False, init=False
     )
     gender_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[gender_concept_id], init=False
+        "Concept", foreign_keys=[gender_concept_id], repr=False, init=False
     )
     gender_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[gender_source_concept_id], init=False
+        "Concept", foreign_keys=[gender_source_concept_id], repr=False, init=False
     )
     specialty_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[specialty_concept_id], init=False
+        "Concept", foreign_keys=[specialty_concept_id], repr=False, init=False
     )
     specialty_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[specialty_source_concept_id], init=False
+        "Concept", foreign_keys=[specialty_source_concept_id], repr=False, init=False
     )
     persons: Mapped[list["Person"]] = relationship(
-        "Person", back_populates="provider", default_factory=list
+        "Person", back_populates="provider", repr=False, default_factory=list
     )
     visit_occurrences: Mapped[list["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="provider", default_factory=list
+        "VisitOccurrence", back_populates="provider", repr=False, default_factory=list
     )
     visit_details: Mapped[list["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="provider", default_factory=list
+        "VisitDetail", back_populates="provider", repr=False, default_factory=list
     )
     condition_occurrences: Mapped[list["ConditionOccurrence"]] = relationship(
-        "ConditionOccurrence", back_populates="provider", default_factory=list
+        "ConditionOccurrence", back_populates="provider", repr=False, default_factory=list
     )
     device_exposures: Mapped[list["DeviceExposure"]] = relationship(
-        "DeviceExposure", back_populates="provider", default_factory=list
+        "DeviceExposure", back_populates="provider", repr=False, default_factory=list
     )
     drug_exposures: Mapped[list["DrugExposure"]] = relationship(
-        "DrugExposure", back_populates="provider", default_factory=list
+        "DrugExposure", back_populates="provider", repr=False, default_factory=list
     )
     measurements: Mapped[list["Measurement"]] = relationship(
-        "Measurement", back_populates="provider", default_factory=list
+        "Measurement", back_populates="provider", repr=False, default_factory=list
     )
     notes: Mapped[list["Note"]] = relationship(
-        "Note", back_populates="provider", default_factory=list
+        "Note", back_populates="provider", repr=False, default_factory=list
     )
     observations: Mapped[list["Observation"]] = relationship(
-        "Observation", back_populates="provider", default_factory=list
+        "Observation", back_populates="provider", repr=False, default_factory=list
     )
     procedure_occurrences: Mapped[list["ProcedureOccurrence"]] = relationship(
-        "ProcedureOccurrence", back_populates="provider", default_factory=list
+        "ProcedureOccurrence", back_populates="provider", repr=False, default_factory=list
     )
 
 
@@ -3394,82 +3420,82 @@ class Person(Base):
     """
 
     care_site: Mapped[Optional["CareSite"]] = relationship(
-        "CareSite", back_populates="persons", init=False
+        "CareSite", back_populates="persons", repr=False, init=False
     )
     ethnicity_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[ethnicity_concept_id], init=False
+        "Concept", foreign_keys=[ethnicity_concept_id], repr=False, init=False
     )
     ethnicity_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[ethnicity_source_concept_id], init=False
+        "Concept", foreign_keys=[ethnicity_source_concept_id], repr=False, init=False
     )
     gender_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[gender_concept_id], init=False
+        "Concept", foreign_keys=[gender_concept_id], repr=False, init=False
     )
     gender_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[gender_source_concept_id], init=False
+        "Concept", foreign_keys=[gender_source_concept_id], repr=False, init=False
     )
     location: Mapped[Optional["Location"]] = relationship(
-        "Location", back_populates="persons", init=False
+        "Location", back_populates="persons", repr=False, init=False
     )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="persons", init=False
+        "Provider", back_populates="persons", repr=False, init=False
     )
     race_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[race_concept_id], init=False
+        "Concept", foreign_keys=[race_concept_id], repr=False, init=False
     )
     race_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[race_source_concept_id], init=False
+        "Concept", foreign_keys=[race_source_concept_id], repr=False, init=False
     )
     condition_eras: Mapped[list["ConditionEra"]] = relationship(
-        "ConditionEra", back_populates="person", default_factory=list
+        "ConditionEra", back_populates="person", repr=False, default_factory=list
     )
     death: Mapped["Death"] = relationship(
-        "Death", uselist=False, back_populates="person", init=False
+        "Death", uselist=False, back_populates="person", repr=False, init=False
     )
     dose_eras: Mapped[list["DoseEra"]] = relationship(
-        "DoseEra", back_populates="person", default_factory=list
+        "DoseEra", back_populates="person", repr=False, default_factory=list
     )
     drug_eras: Mapped[list["DrugEra"]] = relationship(
-        "DrugEra", back_populates="person", default_factory=list
+        "DrugEra", back_populates="person", repr=False, default_factory=list
     )
     episodes: Mapped[list["Episode"]] = relationship(
-        "Episode", back_populates="person", default_factory=list
+        "Episode", back_populates="person", repr=False, default_factory=list
     )
     observation_periods: Mapped[list["ObservationPeriod"]] = relationship(
-        "ObservationPeriod", back_populates="person", default_factory=list
+        "ObservationPeriod", back_populates="person", repr=False, default_factory=list
     )
     payer_plan_periods: Mapped[list["PayerPlanPeriod"]] = relationship(
-        "PayerPlanPeriod", back_populates="person", default_factory=list
+        "PayerPlanPeriod", back_populates="person", repr=False, default_factory=list
     )
     specimens: Mapped[list["Specimen"]] = relationship(
-        "Specimen", back_populates="person", default_factory=list
+        "Specimen", back_populates="person", repr=False, default_factory=list
     )
     visit_occurrences: Mapped[list["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="person", default_factory=list
+        "VisitOccurrence", back_populates="person", repr=False, default_factory=list
     )
     visit_details: Mapped[list["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="person", default_factory=list
+        "VisitDetail", back_populates="person", repr=False, default_factory=list
     )
     condition_occurrences: Mapped[list["ConditionOccurrence"]] = relationship(
-        "ConditionOccurrence", back_populates="person", default_factory=list
+        "ConditionOccurrence", back_populates="person", repr=False, default_factory=list
     )
     device_exposures: Mapped[list["DeviceExposure"]] = relationship(
-        "DeviceExposure", back_populates="person", default_factory=list
+        "DeviceExposure", back_populates="person", repr=False, default_factory=list
     )
     drug_exposures: Mapped[list["DrugExposure"]] = relationship(
-        "DrugExposure", back_populates="person", default_factory=list
+        "DrugExposure", back_populates="person", repr=False, default_factory=list
     )
     measurements: Mapped[list["Measurement"]] = relationship(
-        "Measurement", back_populates="person", default_factory=list
+        "Measurement", back_populates="person", repr=False, default_factory=list
     )
     notes: Mapped[list["Note"]] = relationship(
-        "Note", back_populates="person", default_factory=list
+        "Note", back_populates="person", repr=False, default_factory=list
     )
     observations: Mapped[list["Observation"]] = relationship(
-        "Observation", back_populates="person", default_factory=list
+        "Observation", back_populates="person", repr=False, default_factory=list
     )
     procedure_occurrences: Mapped[list["ProcedureOccurrence"]] = relationship(
-        "ProcedureOccurrence", back_populates="person", default_factory=list
+        "ProcedureOccurrence", back_populates="person", repr=False, default_factory=list
     )
 
 
@@ -3614,8 +3640,10 @@ class ConditionEra(Base):
     condition era.
     """
 
-    condition_concept: Mapped["Concept"] = relationship("Concept", init=False)
-    person: Mapped["Person"] = relationship("Person", back_populates="condition_eras", init=False)
+    condition_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="condition_eras", repr=False, init=False
+    )
 
 
 class Death(Base):
@@ -3762,15 +3790,17 @@ class Death(Base):
     """
 
     cause_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[cause_concept_id], init=False
+        "Concept", foreign_keys=[cause_concept_id], repr=False, init=False
     )
     cause_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[cause_source_concept_id], init=False
+        "Concept", foreign_keys=[cause_source_concept_id], repr=False, init=False
     )
     death_type_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[death_type_concept_id], init=False
+        "Concept", foreign_keys=[death_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="death", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="death", repr=False, init=False
+    )
 
 
 class DoseEra(Base):
@@ -3862,11 +3892,13 @@ class DoseEra(Base):
     """
 
     drug_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[drug_concept_id], init=False
+        "Concept", foreign_keys=[drug_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="dose_eras", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="dose_eras", repr=False, init=False
+    )
     unit_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[unit_concept_id], init=False
+        "Concept", foreign_keys=[unit_concept_id], repr=False, init=False
     )
 
 
@@ -4004,8 +4036,10 @@ class DrugEra(Base):
     non-stockpiling.
     """
 
-    drug_concept: Mapped["Concept"] = relationship("Concept", init=False)
-    person: Mapped["Person"] = relationship("Person", back_populates="drug_eras", init=False)
+    drug_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="drug_eras", repr=False, init=False
+    )
 
 
 class Episode(Base):
@@ -4273,23 +4307,25 @@ class Episode(Base):
     """
 
     episode_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[episode_concept_id], init=False
+        "Concept", foreign_keys=[episode_concept_id], repr=False, init=False
     )
     episode_object_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[episode_object_concept_id], init=False
+        "Concept", foreign_keys=[episode_object_concept_id], repr=False, init=False
     )
     episode_parent: Mapped[Optional["Episode"]] = relationship(
-        "Episode", remote_side=[episode_id], init=False
+        "Episode", remote_side=[episode_id], repr=False, init=False
     )
     episode_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[episode_source_concept_id], init=False
+        "Concept", foreign_keys=[episode_source_concept_id], repr=False, init=False
     )
     episode_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[episode_type_concept_id], init=False
+        "Concept", foreign_keys=[episode_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="episodes", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="episodes", repr=False, init=False
+    )
     episode_events: Mapped[list["EpisodeEvent"]] = relationship(
-        "EpisodeEvent", back_populates="episode", default_factory=list
+        "EpisodeEvent", back_populates="episode", repr=False, default_factory=list
     )
 
 
@@ -4485,9 +4521,9 @@ class ObservationPeriod(Base):
         [vocabulary wiki](https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT).
     """
 
-    period_type_concept: Mapped["Concept"] = relationship("Concept", init=False)
+    period_type_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
     person: Mapped["Person"] = relationship(
-        "Person", back_populates="observation_periods", init=False
+        "Person", back_populates="observation_periods", repr=False, init=False
     )
 
 
@@ -4806,31 +4842,31 @@ class PayerPlanPeriod(Base):
     """
 
     payer_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[payer_concept_id], init=False
+        "Concept", foreign_keys=[payer_concept_id], repr=False, init=False
     )
     payer_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[payer_source_concept_id], init=False
+        "Concept", foreign_keys=[payer_source_concept_id], repr=False, init=False
     )
     person: Mapped["Person"] = relationship(
-        "Person", back_populates="payer_plan_periods", init=False
+        "Person", back_populates="payer_plan_periods", repr=False, init=False
     )
     plan_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[plan_concept_id], init=False
+        "Concept", foreign_keys=[plan_concept_id], repr=False, init=False
     )
     plan_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[plan_source_concept_id], init=False
+        "Concept", foreign_keys=[plan_source_concept_id], repr=False, init=False
     )
     sponsor_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[sponsor_concept_id], init=False
+        "Concept", foreign_keys=[sponsor_concept_id], repr=False, init=False
     )
     sponsor_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[sponsor_source_concept_id], init=False
+        "Concept", foreign_keys=[sponsor_source_concept_id], repr=False, init=False
     )
     stop_reason_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[stop_reason_concept_id], init=False
+        "Concept", foreign_keys=[stop_reason_concept_id], repr=False, init=False
     )
     stop_reason_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[stop_reason_source_concept_id], init=False
+        "Concept", foreign_keys=[stop_reason_source_concept_id], repr=False, init=False
     )
 
 
@@ -5013,20 +5049,22 @@ class Specimen(Base):
     disease_status_source_value: Mapped[Optional[str]] = mapped_column(String(50), default=None)
 
     anatomic_site_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[anatomic_site_concept_id], init=False
+        "Concept", foreign_keys=[anatomic_site_concept_id], repr=False, init=False
     )
     disease_status_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[disease_status_concept_id], init=False
+        "Concept", foreign_keys=[disease_status_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="specimens", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="specimens", repr=False, init=False
+    )
     specimen_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[specimen_concept_id], init=False
+        "Concept", foreign_keys=[specimen_concept_id], repr=False, init=False
     )
     specimen_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[specimen_type_concept_id], init=False
+        "Concept", foreign_keys=[specimen_type_concept_id], repr=False, init=False
     )
     unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_concept_id], init=False
+        "Concept", foreign_keys=[unit_concept_id], repr=False, init=False
     )
 
 
@@ -5582,55 +5620,55 @@ class VisitOccurrence(Base):
     """
 
     admitted_from_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[admitted_from_concept_id], init=False
+        "Concept", foreign_keys=[admitted_from_concept_id], repr=False, init=False
     )
     care_site: Mapped[Optional["CareSite"]] = relationship(
-        "CareSite", back_populates="visit_occurrences", init=False
+        "CareSite", back_populates="visit_occurrences", repr=False, init=False
     )
     discharged_to_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[discharged_to_concept_id], init=False
+        "Concept", foreign_keys=[discharged_to_concept_id], repr=False, init=False
     )
     person: Mapped["Person"] = relationship(
-        "Person", back_populates="visit_occurrences", init=False
+        "Person", back_populates="visit_occurrences", repr=False, init=False
     )
     preceding_visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", remote_side=[visit_occurrence_id], init=False
+        "VisitOccurrence", remote_side=[visit_occurrence_id], repr=False, init=False
     )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="visit_occurrences", init=False
+        "Provider", back_populates="visit_occurrences", repr=False, init=False
     )
     visit_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[visit_concept_id], init=False
+        "Concept", foreign_keys=[visit_concept_id], repr=False, init=False
     )
     visit_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[visit_source_concept_id], init=False
+        "Concept", foreign_keys=[visit_source_concept_id], repr=False, init=False
     )
     visit_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[visit_type_concept_id], init=False
+        "Concept", foreign_keys=[visit_type_concept_id], repr=False, init=False
     )
     visit_details: Mapped[list["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="visit_occurrence", default_factory=list
+        "VisitDetail", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     condition_occurrences: Mapped[list["ConditionOccurrence"]] = relationship(
-        "ConditionOccurrence", back_populates="visit_occurrence", default_factory=list
+        "ConditionOccurrence", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     device_exposures: Mapped[list["DeviceExposure"]] = relationship(
-        "DeviceExposure", back_populates="visit_occurrence", default_factory=list
+        "DeviceExposure", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     drug_exposures: Mapped[list["DrugExposure"]] = relationship(
-        "DrugExposure", back_populates="visit_occurrence", default_factory=list
+        "DrugExposure", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     measurements: Mapped[list["Measurement"]] = relationship(
-        "Measurement", back_populates="visit_occurrence", default_factory=list
+        "Measurement", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     notes: Mapped[list["Note"]] = relationship(
-        "Note", back_populates="visit_occurrence", default_factory=list
+        "Note", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     observations: Mapped[list["Observation"]] = relationship(
-        "Observation", back_populates="visit_occurrence", default_factory=list
+        "Observation", back_populates="visit_occurrence", repr=False, default_factory=list
     )
     procedure_occurrences: Mapped[list["ProcedureOccurrence"]] = relationship(
-        "ProcedureOccurrence", back_populates="visit_occurrence", default_factory=list
+        "ProcedureOccurrence", back_populates="visit_occurrence", repr=False, default_factory=list
     )
 
 
@@ -5727,9 +5765,9 @@ class EpisodeEvent(Base):
         [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?vocabulary=CDM&conceptClass=Field&page=1&pageSize=15&query=)
     """
 
-    episode_event_field_concept: Mapped["Concept"] = relationship("Concept", init=False)
+    episode_event_field_concept: Mapped["Concept"] = relationship("Concept", repr=False, init=False)
     episode: Mapped["Episode"] = relationship(
-        "Episode", back_populates="episode_events", init=False
+        "Episode", back_populates="episode_events", repr=False, init=False
     )
 
 
@@ -6244,62 +6282,66 @@ class VisitDetail(Base):
     """
 
     admitted_from_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[admitted_from_concept_id], init=False
+        "Concept", foreign_keys=[admitted_from_concept_id], repr=False, init=False
     )
     care_site: Mapped[Optional["CareSite"]] = relationship(
-        "CareSite", back_populates="visit_details", init=False
+        "CareSite", back_populates="visit_details", repr=False, init=False
     )
     discharged_to_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[discharged_to_concept_id], init=False
+        "Concept", foreign_keys=[discharged_to_concept_id], repr=False, init=False
     )
     parent_visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
         "VisitDetail",
         remote_side=[visit_detail_id],
         foreign_keys=[parent_visit_detail_id],
+        repr=False,
         init=False,
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="visit_details", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="visit_details", repr=False, init=False
+    )
     preceding_visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
         "VisitDetail",
         remote_side=[visit_detail_id],
         foreign_keys=[preceding_visit_detail_id],
+        repr=False,
         init=False,
     )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="visit_details", init=False
+        "Provider", back_populates="visit_details", repr=False, init=False
     )
     visit_detail_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[visit_detail_concept_id], init=False
+        "Concept", foreign_keys=[visit_detail_concept_id], repr=False, init=False
     )
     visit_detail_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[visit_detail_source_concept_id], init=False
+        "Concept", foreign_keys=[visit_detail_source_concept_id], repr=False, init=False
     )
     visit_detail_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[visit_detail_type_concept_id], init=False
+        "Concept", foreign_keys=[visit_detail_type_concept_id], repr=False, init=False
     )
     visit_occurrence: Mapped["VisitOccurrence"] = relationship(
-        "VisitOccurrence", back_populates="visit_details", init=False
+        "VisitOccurrence", back_populates="visit_details", repr=False, init=False
     )
     condition_occurrences: Mapped[list["ConditionOccurrence"]] = relationship(
-        "ConditionOccurrence", back_populates="visit_detail", default_factory=list
+        "ConditionOccurrence", back_populates="visit_detail", repr=False, default_factory=list
     )
     device_exposures: Mapped[list["DeviceExposure"]] = relationship(
-        "DeviceExposure", back_populates="visit_detail", default_factory=list
+        "DeviceExposure", back_populates="visit_detail", repr=False, default_factory=list
     )
     drug_exposures: Mapped[list["DrugExposure"]] = relationship(
-        "DrugExposure", back_populates="visit_detail", default_factory=list
+        "DrugExposure", back_populates="visit_detail", repr=False, default_factory=list
     )
     measurements: Mapped[list["Measurement"]] = relationship(
-        "Measurement", back_populates="visit_detail", default_factory=list
+        "Measurement", back_populates="visit_detail", repr=False, default_factory=list
     )
     notes: Mapped[list["Note"]] = relationship(
-        "Note", back_populates="visit_detail", default_factory=list
+        "Note", back_populates="visit_detail", repr=False, default_factory=list
     )
     observations: Mapped[list["Observation"]] = relationship(
-        "Observation", back_populates="visit_detail", default_factory=list
+        "Observation", back_populates="visit_detail", repr=False, default_factory=list
     )
     procedure_occurrences: Mapped[list["ProcedureOccurrence"]] = relationship(
-        "ProcedureOccurrence", back_populates="visit_detail", default_factory=list
+        "ProcedureOccurrence", back_populates="visit_detail", repr=False, default_factory=list
     )
 
 
@@ -6744,28 +6786,28 @@ class ConditionOccurrence(Base):
     """
 
     condition_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[condition_concept_id], init=False
+        "Concept", foreign_keys=[condition_concept_id], repr=False, init=False
     )
     condition_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[condition_source_concept_id], init=False
+        "Concept", foreign_keys=[condition_source_concept_id], repr=False, init=False
     )
     condition_status_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[condition_status_concept_id], init=False
+        "Concept", foreign_keys=[condition_status_concept_id], repr=False, init=False
     )
     condition_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[condition_type_concept_id], init=False
+        "Concept", foreign_keys=[condition_type_concept_id], repr=False, init=False
     )
     person: Mapped["Person"] = relationship(
-        "Person", back_populates="condition_occurrences", init=False
+        "Person", back_populates="condition_occurrences", repr=False, init=False
     )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="condition_occurrences", init=False
+        "Provider", back_populates="condition_occurrences", repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="condition_occurrences", init=False
+        "VisitDetail", back_populates="condition_occurrences", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="condition_occurrences", init=False
+        "VisitOccurrence", back_populates="condition_occurrences", repr=False, init=False
     )
 
 
@@ -7178,29 +7220,31 @@ class DeviceExposure(Base):
     """
 
     device_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[device_concept_id], init=False
+        "Concept", foreign_keys=[device_concept_id], repr=False, init=False
     )
     device_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[device_source_concept_id], init=False
+        "Concept", foreign_keys=[device_source_concept_id], repr=False, init=False
     )
     device_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[device_type_concept_id], init=False
+        "Concept", foreign_keys=[device_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="device_exposures", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="device_exposures", repr=False, init=False
+    )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="device_exposures", init=False
+        "Provider", back_populates="device_exposures", repr=False, init=False
     )
     unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_concept_id], init=False
+        "Concept", foreign_keys=[unit_concept_id], repr=False, init=False
     )
     unit_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_source_concept_id], init=False
+        "Concept", foreign_keys=[unit_source_concept_id], repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="device_exposures", init=False
+        "VisitDetail", back_populates="device_exposures", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="device_exposures", init=False
+        "VisitOccurrence", back_populates="device_exposures", repr=False, init=False
     )
 
 
@@ -7795,26 +7839,28 @@ class DrugExposure(Base):
     """
 
     drug_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[drug_concept_id], init=False
+        "Concept", foreign_keys=[drug_concept_id], repr=False, init=False
     )
     drug_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[drug_source_concept_id], init=False
+        "Concept", foreign_keys=[drug_source_concept_id], repr=False, init=False
     )
     drug_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[drug_type_concept_id], init=False
+        "Concept", foreign_keys=[drug_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="drug_exposures", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="drug_exposures", repr=False, init=False
+    )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="drug_exposures", init=False
+        "Provider", back_populates="drug_exposures", repr=False, init=False
     )
     route_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[route_concept_id], init=False
+        "Concept", foreign_keys=[route_concept_id], repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="drug_exposures", init=False
+        "VisitDetail", back_populates="drug_exposures", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="drug_exposures", init=False
+        "VisitOccurrence", back_populates="drug_exposures", repr=False, init=False
     )
 
 
@@ -8451,38 +8497,40 @@ class Measurement(Base):
     """
 
     meas_event_field_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[meas_event_field_concept_id], init=False
+        "Concept", foreign_keys=[meas_event_field_concept_id], repr=False, init=False
     )
     measurement_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[measurement_concept_id], init=False
+        "Concept", foreign_keys=[measurement_concept_id], repr=False, init=False
     )
     measurement_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[measurement_source_concept_id], init=False
+        "Concept", foreign_keys=[measurement_source_concept_id], repr=False, init=False
     )
     measurement_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[measurement_type_concept_id], init=False
+        "Concept", foreign_keys=[measurement_type_concept_id], repr=False, init=False
     )
     operator_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[operator_concept_id], init=False
+        "Concept", foreign_keys=[operator_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="measurements", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="measurements", repr=False, init=False
+    )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="measurements", init=False
+        "Provider", back_populates="measurements", repr=False, init=False
     )
     unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_concept_id], init=False
+        "Concept", foreign_keys=[unit_concept_id], repr=False, init=False
     )
     unit_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_source_concept_id], init=False
+        "Concept", foreign_keys=[unit_source_concept_id], repr=False, init=False
     )
     value_as_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[value_as_concept_id], init=False
+        "Concept", foreign_keys=[value_as_concept_id], repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="measurements", init=False
+        "VisitDetail", back_populates="measurements", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="measurements", init=False
+        "VisitOccurrence", back_populates="measurements", repr=False, init=False
     )
 
 
@@ -8766,32 +8814,34 @@ class Note(Base):
     """
 
     encoding_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[encoding_concept_id], init=False
+        "Concept", foreign_keys=[encoding_concept_id], repr=False, init=False
     )
     language_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[language_concept_id], init=False
+        "Concept", foreign_keys=[language_concept_id], repr=False, init=False
     )
     note_class_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[note_class_concept_id], init=False
+        "Concept", foreign_keys=[note_class_concept_id], repr=False, init=False
     )
     note_event_field_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[note_event_field_concept_id], init=False
+        "Concept", foreign_keys=[note_event_field_concept_id], repr=False, init=False
     )
     note_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[note_type_concept_id], init=False
+        "Concept", foreign_keys=[note_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="notes", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="notes", repr=False, init=False
+    )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="notes", init=False
+        "Provider", back_populates="notes", repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="notes", init=False
+        "VisitDetail", back_populates="notes", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="notes", init=False
+        "VisitOccurrence", back_populates="notes", repr=False, init=False
     )
     note_nlps: Mapped[list["NoteNlp"]] = relationship(
-        "NoteNlp", back_populates="note", default_factory=list
+        "NoteNlp", back_populates="note", repr=False, default_factory=list
     )
 
 
@@ -9374,35 +9424,37 @@ class Observation(Base):
     """
 
     obs_event_field_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[obs_event_field_concept_id], init=False
+        "Concept", foreign_keys=[obs_event_field_concept_id], repr=False, init=False
     )
     observation_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[observation_concept_id], init=False
+        "Concept", foreign_keys=[observation_concept_id], repr=False, init=False
     )
     observation_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[observation_source_concept_id], init=False
+        "Concept", foreign_keys=[observation_source_concept_id], repr=False, init=False
     )
     observation_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[observation_type_concept_id], init=False
+        "Concept", foreign_keys=[observation_type_concept_id], repr=False, init=False
     )
-    person: Mapped["Person"] = relationship("Person", back_populates="observations", init=False)
+    person: Mapped["Person"] = relationship(
+        "Person", back_populates="observations", repr=False, init=False
+    )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="observations", init=False
+        "Provider", back_populates="observations", repr=False, init=False
     )
     qualifier_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[qualifier_concept_id], init=False
+        "Concept", foreign_keys=[qualifier_concept_id], repr=False, init=False
     )
     unit_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[unit_concept_id], init=False
+        "Concept", foreign_keys=[unit_concept_id], repr=False, init=False
     )
     value_as_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[value_as_concept_id], init=False
+        "Concept", foreign_keys=[value_as_concept_id], repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="observations", init=False
+        "VisitDetail", back_populates="observations", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="observations", init=False
+        "VisitOccurrence", back_populates="observations", repr=False, init=False
     )
 
 
@@ -9825,28 +9877,28 @@ class ProcedureOccurrence(Base):
     """
 
     modifier_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[modifier_concept_id], init=False
+        "Concept", foreign_keys=[modifier_concept_id], repr=False, init=False
     )
     person: Mapped["Person"] = relationship(
-        "Person", back_populates="procedure_occurrences", init=False
+        "Person", back_populates="procedure_occurrences", repr=False, init=False
     )
     procedure_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[procedure_concept_id], init=False
+        "Concept", foreign_keys=[procedure_concept_id], repr=False, init=False
     )
     procedure_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[procedure_source_concept_id], init=False
+        "Concept", foreign_keys=[procedure_source_concept_id], repr=False, init=False
     )
     procedure_type_concept: Mapped["Concept"] = relationship(
-        "Concept", foreign_keys=[procedure_type_concept_id], init=False
+        "Concept", foreign_keys=[procedure_type_concept_id], repr=False, init=False
     )
     provider: Mapped[Optional["Provider"]] = relationship(
-        "Provider", back_populates="procedure_occurrences", init=False
+        "Provider", back_populates="procedure_occurrences", repr=False, init=False
     )
     visit_detail: Mapped[Optional["VisitDetail"]] = relationship(
-        "VisitDetail", back_populates="procedure_occurrences", init=False
+        "VisitDetail", back_populates="procedure_occurrences", repr=False, init=False
     )
     visit_occurrence: Mapped[Optional["VisitOccurrence"]] = relationship(
-        "VisitOccurrence", back_populates="procedure_occurrences", init=False
+        "VisitOccurrence", back_populates="procedure_occurrences", repr=False, init=False
     )
 
 
@@ -10025,13 +10077,13 @@ class NoteNlp(Base):
       one string. Lab values will be saved as one of the modifiers.
     """
 
-    note: Mapped["Note"] = relationship("Note", back_populates="note_nlps", init=False)
+    note: Mapped["Note"] = relationship("Note", back_populates="note_nlps", repr=False, init=False)
     note_nlp_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[note_nlp_concept_id], init=False
+        "Concept", foreign_keys=[note_nlp_concept_id], repr=False, init=False
     )
     note_nlp_source_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[note_nlp_source_concept_id], init=False
+        "Concept", foreign_keys=[note_nlp_source_concept_id], repr=False, init=False
     )
     section_concept: Mapped[Optional["Concept"]] = relationship(
-        "Concept", foreign_keys=[section_concept_id], init=False
+        "Concept", foreign_keys=[section_concept_id], repr=False, init=False
     )

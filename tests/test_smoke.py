@@ -86,3 +86,11 @@ def test_bare_package_import_needs_no_extras():
 )
 def test_import_without_extras(module, bug):
     run_check("import_without_extras", module, known_bug=bug)
+
+
+@pytest.mark.parametrize(
+    ("module", "bug"),
+    params("dataclass_repr", [m for m in MODULES if flavor_of(m) == "dataclasses"]),
+)
+def test_dataclass_repr(module, bug):
+    run_check("dataclass_repr", module, known_bug=bug)

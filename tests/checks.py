@@ -247,6 +247,29 @@ def check_bare_package_import() -> None:
     assert not loaded, f"`import omopmodel` imported optional dependencies {loaded}"
 
 
+def check_dataclass_repr(name: str) -> None:
+    """``repr()`` of a dataclass shows the columns and loads no relationship, so it also
+    works on a detached object."""
+    from sqlalchemy import event, select
+    from sqlalchemy.orm import Session
+
+    module = import_model(name)
+    engine = sqlite_engine()
+    module.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add(module.Person(**PERSON))
+        session.commit()
+    queries: list[str] = []
+    event.listen(engine, "before_cursor_execute", lambda *args: queries.append(args[2]))
+    with Session(engine) as session:
+        person = session.scalars(select(module.Person)).one()
+        queries.clear()
+        text = repr(person)
+        assert not queries, queries
+    assert "person_id=1234" in text and "care_site=" not in text, text
+    repr(person)  # detached
+
+
 def check_import_without_extras(name: str) -> None:
     """A non-SQLModel model module must import with only the core dependencies."""
     for module in EXTRAS_MODULES:
@@ -282,6 +305,7 @@ CHECKS = {
     "package_import": check_package_import_keeps_global_metadata_clean,
     "bare_package_import": check_bare_package_import,
     "import_without_extras": check_import_without_extras,
+    "dataclass_repr": check_dataclass_repr,
     "loader_without_extras": check_loader_without_extras,
 }
 
