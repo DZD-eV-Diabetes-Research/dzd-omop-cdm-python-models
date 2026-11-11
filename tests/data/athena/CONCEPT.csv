@@ -1,0 +1,36 @@
+concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
+0	No matching concept	Metadata	None	Undefined		No matching concept	19700101	20991231	
+2	Gender	Metadata	Domain	Domain		OMOP generated	19700101	20991231	
+7	Metadata	Metadata	Domain	Domain		OMOP generated	19700101	20991231	
+13	Drug	Metadata	Domain	Domain		OMOP generated	19700101	20991231	
+16	Unit	Metadata	Domain	Domain		OMOP generated	19700101	20991231	
+44819096	OMOP Standardized Vocabularies	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819232	OMOP Vocabulary	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819233	OMOP Domain	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819234	OMOP Concept Class	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819235	OMOP Relationship	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819108	OMOP Gender	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819104	RxNorm (NLM)	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+44819107	UCUM	Metadata	Vocabulary	Vocabulary		OMOP generated	19700101	20991231	
+900001	Undefined	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900002	Domain	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900003	Vocabulary	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900004	Concept Class	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900005	Relationship	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900006	Gender	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900007	Ingredient	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900008	Clinical Drug	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900009	Unit	Metadata	Concept Class	Concept Class		OMOP generated	19700101	20991231	
+900101	Maps to	Metadata	Relationship	Relationship		OMOP generated	19700101	20991231	
+900102	Mapped from	Metadata	Relationship	Relationship		OMOP generated	19700101	20991231	
+900103	Is a	Metadata	Relationship	Relationship		OMOP generated	19700101	20991231	
+900104	Subsumes	Metadata	Relationship	Relationship		OMOP generated	19700101	20991231	
+4180186	English language	Metadata	None	Undefined		4180186	19700101	20991231	
+8507	MALE	Gender	Gender	Gender	S	M	19700101	20991231	
+8532	"Female"	Gender	Gender	Gender	S	F	19700101	20991231	
+8551	"Unknown gender	Gender	Gender	Gender		U	19700101	20991231	
+8521	Other "gender	Gender	Gender	Gender		O	19700101	20991231	
+8576	milligram	Unit	UCUM	Unit	S	mg	19700101	20991231	
+1125315	acetaminophen	Drug	RxNorm	Ingredient	S	161	19700101	20991231	
+1127433	acetaminophen 325 MG Oral Tablet	Drug	RxNorm	Clinical Drug	S	313782	19700101	20991231	
+1127078	acetaminophen 500 MG Oral Tablet [Tylenol]	Drug	RxNorm	Clinical Drug		209459	19700101	20200131	D

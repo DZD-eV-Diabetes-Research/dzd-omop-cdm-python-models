@@ -17,8 +17,8 @@ from types import ModuleType
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BASELINE_DIR = REPO_ROOT / "tests" / "baseline"
 
-# Dependencies that only come with an extra (`dzdomop[sqlmodel,pg8000,progress]`).
-EXTRAS_MODULES = ("sqlmodel", "pg8000", "tqdm")
+# Dependencies that only come with an extra (`dzdomop[sqlmodel,pg8000,postgres,progress]`).
+EXTRAS_MODULES = ("sqlmodel", "pg8000", "psycopg", "psycopg2", "tqdm")
 
 
 def import_model(name: str) -> ModuleType:
@@ -254,6 +254,23 @@ def check_import_without_extras(name: str) -> None:
     import_model(name)
 
 
+def check_loader_without_extras(athena_dir: str) -> None:
+    """The loader imports and loads into SQLite with only the core dependencies."""
+    for module in EXTRAS_MODULES:
+        sys.modules[module] = None
+    from omopmodel import OMOP_5_4_declarative as omop
+    from omopmodel import VocabulariesLoader
+
+    engine = sqlite_engine()
+    omop.metadata.create_all(engine)
+    # show_progress_bar=True without tqdm: a warning, no error
+    VocabulariesLoader(athena_dir, engine, omop_module=omop).load_all()
+    with engine.connect() as conn:
+        assert conn.exec_driver_sql("SELECT count(*) FROM concept").scalar() > 0
+    loaded = [m for m in EXTRAS_MODULES if sys.modules.get(m) is not None]
+    assert not loaded, f"the loader imported optional dependencies {loaded}"
+
+
 CHECKS = {
     "create_all": check_create_all,
     "insert_person": check_insert_person,
@@ -265,6 +282,7 @@ CHECKS = {
     "package_import": check_package_import_keeps_global_metadata_clean,
     "bare_package_import": check_bare_package_import,
     "import_without_extras": check_import_without_extras,
+    "loader_without_extras": check_loader_without_extras,
 }
 
 
