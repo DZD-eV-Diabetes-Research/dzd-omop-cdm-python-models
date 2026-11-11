@@ -36,6 +36,10 @@ The models are regenerated with sqlacodegen 4 and the new generator.
 
 - **`tables` flavor imports again**. The OMOP `metadata` table overwrote the
   `metadata` object. Its variable is now `metadata_table`; all other tables keep their names.
+- **`tables` flavor: no made-up primary keys.** Tables without a primary key upstream (e.g.
+  `death`, `concept_ancestor`, `concept_relationship`) got one named
+  `tmp_pk_candiate_key_<table>` in `create_all()`. Now they have none, like the official DDL
+  and the other flavors; the columns stay NOT NULL.
 - **SQLModel flavor: NOT NULL columns are NOT NULL**. `create_all()` made them
   nullable. If you created tables with an older version, your database still has nullable
   columns; new tables get `NOT NULL`.
@@ -106,7 +110,8 @@ Changed:
   `TRUNCATE ... CASCADE`, which also emptied every table with a foreign key to a vocabulary
   table (`person`, `measurement`, ...) when constraints were kept. Like the OMOP load
   instructions, it now truncates each table on its own; if other tables still point at it,
-  you get a `VocabularyLoaderError`.
+  you get a `VocabularyLoaderError` that says how to let the loader drop their foreign keys
+  first (in Python and on the command line).
 - **`CONCEPT_CPT4.csv` is skipped** (with a hint). Its concepts have no names until you run
   Athena's `cpt4.jar`, which adds them to `CONCEPT.csv`. Loading it failed either way:
   without names (`concept_name` is NOT NULL) or as duplicates. To load it anyway, set
@@ -139,6 +144,11 @@ Added:
 - `skip_invalid_foreign_keys=True`: if an export misses concepts that other rows point at
   (e.g. a download without SNOMED, whose synonyms use SNOMED language concepts), log a
   warning and leave that foreign key out instead of raising `ConstraintRecreateError`.
+- **SQLite: foreign keys are checked after a load.** Before, a partial export loaded without
+  a word. Now you get the same `ConstraintRecreateError` as on Postgres, or with
+  `skip_invalid_foreign_keys=True` a warning. The check also covers rows in other tables
+  (`person`, `measurement`, ...) that point at concepts missing from the new export. A test run with `max_rows_pers_csv` (CLI:
+  `--max-rows`) breaks foreign keys too, so add `skip_invalid_foreign_keys=True`.
 - A command line tool:
 
   ```bash
@@ -158,8 +168,9 @@ Added:
       --url postgresql+psycopg://user:pw@localhost/omop --cdm-version 5.5
   ```
 
-  A download goes to `dzdomop` in the system's temp folder. It is deleted after a
-  successful load. After a failed load it stays, and the next run uses it instead of
+  A download goes to `dzdomop` in your cache folder (`~/.cache/dzdomop` on Linux,
+  `~/Library/Caches/dzdomop` on macOS, `%LOCALAPPDATA%\dzdomop` on Windows), not to the
+  temp folder, which is often in RAM. It is deleted after a successful load. After a failed load it stays, and the next run uses it instead of
   downloading again. A damaged download is deleted, so the next run downloads it again.
 
   | Setting | Parameter | CLI flag | Environment variable |

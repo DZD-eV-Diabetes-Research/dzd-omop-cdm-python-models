@@ -14,22 +14,22 @@ and a changelog line.
 
 ## Tasks
 
-- [ ] **`tables` flavor keys** (per answer 1). Code: `generator/src/omop_codegen/enrich.py:90`.
+- [x] **`tables` flavor keys** (per answer 1). Code: `generator/src/omop_codegen/enrich.py:90`.
       Regenerate the models (`docs/generator/03-run-locally.md`), add the change to
       `ALLOWED_DIFFERENCES` in `tests/test_against_baseline.py` with the reason, update
       `docs/models/03-pick-a-flavor.md` and `docs/models/faq.md`, changelog.
-- [ ] **Download folder default** (per answer 2). Code: `_shared_temp_dir()` in
+- [x] **Download folder default** (per answer 2). Code: `_shared_temp_dir()` in
       `packages/dzdomop/src/omopmodel/vocab/download.py` (plus the owner check, the module
       docstring table, `cli.py` help). Docs: `docs/models/06-vocabulary.md` (the tmpfs note),
       changelog. Record the new decision in `README.md` (D12).
-- [ ] **CLI hint:** the "Can't empty table" message (`vocab/loader.py:436`) names the Python
+- [x] **CLI hint:** the "Can't empty table" message (`vocab/loader.py:436`) names the Python
       parameter `drop_constraints_and_indexes_before_insert=True`. Name both: the parameter, and
       for the CLI "without `--keep-constraints`". Then simplify the note in
       `docs/models/06b-vocabulary-troubleshooting.md`.
-- [ ] **SQLite foreign keys after a load** (per answer 3). Code: `vocab/constraints.py` /
+- [x] **SQLite foreign keys after a load** (per answer 3). Code: `vocab/constraints.py` /
       `loader.py`. Test with the fake export minus one file. Docs: `06b`, `07-postgres.md` only if
       it compares, changelog.
-- [ ] **Log line counts** (cosmetic, same code): "Dropped N keys, M indexes and K foreign keys"
+- [x] **Log line counts** (cosmetic, same code): "Dropped N keys, M indexes and K foreign keys"
       (`constraints.py:118`) and "Recreating N ..." (`:155`) count the scope, not what was
       actually dropped or created. Count real actions.
 
