@@ -9,7 +9,9 @@ dependencies = ["dzdomop[sqlmodel,pg8000,postgres,progress]", "omop-codegen"]
 dev = [
     "pytest>=8",
     "ruff>=0.17",
-    "pre-commit>=4",
+    # Python 3.11+ only: on 3.10 it pulls filelock 4.1.0, which has open advisories and no
+    # patched release for 3.10. CI does not run pre-commit.
+    "pre-commit>=4; python_version >= '3.11'",
     # Loader tests also cover psycopg2 (not an extra: users bring their own)
     "psycopg2-binary>=2.9.2",
 ]
