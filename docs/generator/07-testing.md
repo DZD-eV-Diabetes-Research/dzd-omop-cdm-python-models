@@ -112,7 +112,7 @@ uv run --group docs zensical serve                     # live preview
 | `test.yaml`, `test-lowest` | Python 3.10 with the oldest allowed dependencies of `dzdomop` (`uv pip install --resolution lowest-direct`), `pytest tests` only. The generator isn't installed there. |
 | `docs.yml`, `build` | `zensical build --strict --clean`. On `main` it also publishes the site to GitHub Pages. |
 
-[checks]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/tests/checks.py
-[snapshot]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/tools/snapshot_models.py
-[baseline-test]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/tests/test_against_baseline.py
-[docs-test]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/tests/test_docs.py
+[checks]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/tests/checks.py
+[snapshot]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/tools/snapshot_models.py
+[baseline-test]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/tests/test_against_baseline.py
+[docs-test]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/tests/test_docs.py

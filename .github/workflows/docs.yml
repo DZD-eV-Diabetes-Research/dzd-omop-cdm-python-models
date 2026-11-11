@@ -1,8 +1,9 @@
 name: Docs
 
 # Builds the docs site (zensical.toml) on every push and pull request, so broken links fail
-# early. Publishes it to GitHub Pages from main only.
-# Needs once: repo Settings → Pages → Source "GitHub Actions".
+# early. Publishes it to GitHub Pages from main, and from beta until the next release.
+# Needs once: repo Settings → Pages → Source "GitHub Actions", and every deploying branch
+# allowed in Settings → Environments → github-pages.
 
 on:
   push:
@@ -22,13 +23,13 @@ jobs:
       - run: uv sync --locked --only-group docs
       - run: uv run --no-sync zensical build --strict --clean
       - uses: actions/upload-pages-artifact@v5
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta')
         with:
           path: site
 
   deploy:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta')
     runs-on: ubuntu-latest
     permissions:
       pages: write

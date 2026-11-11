@@ -1,5 +1,14 @@
 # Install
 
+> [!WARNING]
+> **Beta docs.** They describe the next release, which isn't on PyPI yet:
+> `pip install dzdomop` still installs 0.4.0. To try the new version, install it from the
+> `beta` branch:
+>
+> ```bash
+> pip install "dzdomop[sqlmodel,postgres,progress] @ git+https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models@beta#subdirectory=packages/dzdomop"
+> ```
+
 ```bash
 pip install dzdomop
 ```

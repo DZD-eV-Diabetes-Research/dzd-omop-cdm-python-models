@@ -122,10 +122,10 @@ git grep -nE "5\.5|5_5|All three" -- ':!packages/dzdomop/src/omopmodel/OMOP_*' '
 | `docs/generator/04-configuration.md` | defaults of `OMOP_CDM_RELEASE_TAG` and `CDM_VERSIONS` |
 | `CHANGELOG.md` | the new modules, and every upstream change to the old versions |
 
-[versions]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/cdm_versions.py
-[config]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/config.py
-[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/omop_policy.py
-[enrich]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/src/omop_codegen/enrich.py
-[tests]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/generator/tests/test_codegen.py
-[vocab-cli]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/packages/dzdomop/src/omopmodel/vocab/cli.py
-[checks]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/tests/checks.py
+[versions]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/cdm_versions.py
+[config]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/config.py
+[policy]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/omop_policy.py
+[enrich]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/src/omop_codegen/enrich.py
+[tests]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/generator/tests/test_codegen.py
+[vocab-cli]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/packages/dzdomop/src/omopmodel/vocab/cli.py
+[checks]: https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/tests/checks.py

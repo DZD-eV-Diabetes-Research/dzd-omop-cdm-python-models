@@ -60,7 +60,7 @@ dzdomop load-vocab athena-export.zip --url sqlite:///omop.db --cdm-version 5.4 -
 
 - [User guide](https://dzd-ev-diabetes-research.github.io/dzd-omop-cdm-python-models/): flavors,
   relationships, validation, vocabularies, PostgreSQL, FAQ
-- [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/CHANGELOG.md)
 - [Source code and issues](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models)
 
 Maintainer: Tim Bleimehl · License: MIT

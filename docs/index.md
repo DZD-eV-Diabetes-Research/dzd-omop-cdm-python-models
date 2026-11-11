@@ -8,6 +8,15 @@ plus a loader for the standardized vocabularies from [Athena](https://athena.ohd
 pip install dzdomop
 ```
 
+> [!WARNING]
+> **Beta docs.** They describe the next release, which isn't on PyPI yet:
+> `pip install dzdomop` still installs 0.4.0. To try the new version, install it from the
+> `beta` branch:
+>
+> ```bash
+> pip install "dzdomop[sqlmodel,postgres,progress] @ git+https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models@beta#subdirectory=packages/dzdomop"
+> ```
+
 ## Which guide do I need?
 
 | You want to | Read |
@@ -30,5 +39,5 @@ Tested on SQLite and PostgreSQL, with Python 3.10 to 3.14.
 ## Links
 
 - [Source code and issues](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models)
-- [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md)
+- [Changelog](https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/CHANGELOG.md)
 - [OMOP CDM documentation](https://ohdsi.github.io/CommonDataModel/)

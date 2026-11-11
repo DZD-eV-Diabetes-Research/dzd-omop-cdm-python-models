@@ -16,6 +16,11 @@
       run the quickstart
 - [ ] Draft a GitHub release, which triggers trusted publishing to PyPI
 - [ ] Remove the `refresh-plan/` folder, or mark it as done
+- [ ] Beta docs site (set up in S08): until the release, Pages deploys from branch `beta`. At
+      release: merge into `main`, remove the beta warning in `docs/index.md` and
+      `docs/models/01-install.md`, switch `blob/beta/` links back to `blob/main/`
+      (`git grep -l blob/beta`), drop `beta` from the deploy condition in `docs.yml` and from
+      Settings → Environments → github-pages, delete the `beta` branch.
 
 ## Done when
 

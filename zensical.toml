@@ -37,7 +37,7 @@ nav = [
     "generator/06-new-cdm-version.md",
     "generator/07-testing.md",
   ] },
-  { "Changelog" = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/main/CHANGELOG.md" },
+  { "Changelog" = "https://github.com/DZD-eV-Diabetes-Research/dzd-omop-cdm-python-models/blob/beta/CHANGELOG.md" },
 ]
 
 [project.theme]

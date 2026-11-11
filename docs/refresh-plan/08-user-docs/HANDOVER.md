@@ -23,12 +23,12 @@
 
 | Task | Why | Goes to |
 | ---- | --- | ------- |
-| Turn on GitHub Pages (Settings → Pages → Source "GitHub Actions") | Repo setting, Tim's | S09, before the PyPI release: the PyPI README links to the site |
-| `blob/main/...` links in the generator guide | Valid only after the merge to `main` | S09 (check after merge) |
+| Switch the site from `beta` back to `main` | Only at the release | S09 (task in its plan) |
 
 ## Decisions made this session
 
 - Tim: Zensical site now; own snippet test file; two short READMEs, `README_codegen.md`, `examples/` and the screenshot go; quickstart uses the declarative flavor.
+- Tim: **beta docs site from branch `beta`** until the release (Pages exists once per repo). `docs.yml` deploys from `main` and `beta`, the start and install pages carry a warning with the git install command, GitHub links point at `blob/beta/` (`main` has no `CHANGELOG.md` yet). Tim turned on Pages (source: GitHub Actions); `beta` must also be allowed under Settings → Environments → `github-pages` → Deployment branches, otherwise the deploy job fails.
 - Tim: SQLAlchemy lower bound raised from 2.0.4 (Feb 2023) to **2.0.14** (May 2023), the version the lowest-deps job actually tests (sqlmodel 0.0.22 needs it). Package and generator.
 - CDM 5.4 in all examples, READMEs included, because it's the default of `VocabulariesLoader` and `dzdomop load-vocab`. *(my call)*
 - Repo links use the canonical name `dzd-omop-cdm-python-models` (the `dzd-omop-cdm-sqlmodel` remote is a GitHub redirect). *(my call)*
