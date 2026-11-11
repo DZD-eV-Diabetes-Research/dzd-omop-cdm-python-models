@@ -66,9 +66,9 @@
 - Tests: `DZDOMOP_TEST_POSTGRES_URL=postgresql://omop:omop@127.0.0.1:55433/omop uv run pytest` → `223 passed` (Python 3.14.7, SQLAlchemy 2.1.8). Without the env var: Postgres tests skipped. Lowest deps (Python 3.10.20, SQLAlchemy 2.0.14, psycopg 3.1, pg8000 1.30.1, psycopg2-binary 2.9.2, `tests/` only, with Postgres): `164 passed`. No xfails.
 - Baseline diff: no model changes this session.
 - Examples `sqlite_create_omop_schema_and_load_vocab.py` and `postgresql_create_omop_schema_and_load_vocab.py` run unchanged (path and URL swapped in a copy) against the small export. The Postgres one ends with the expected FK error (export without SNOMED).
-- ruff + pre-commit: clean. CI with the new Postgres service: not run yet (runs on push).
+- ruff + pre-commit: clean. CI: all 7 jobs green with the new Postgres service (lint, 3.10 to 3.14, lowest), run 42993222563 on `7a15b91`.
 - Local container `dzdomop-vocab-test-pg` (postgres:16, port 55433, user/password `omop`) still runs, with database `athena_big` holding the full export. Remove with `docker rm -f dzdomop-vocab-test-pg`.
-- Pushed: see the end of this session (asked Tim).
+- Pushed: yes (`7a15b91`). This handover update is a local commit on top.
 
 ## For later (out of scope)
 
