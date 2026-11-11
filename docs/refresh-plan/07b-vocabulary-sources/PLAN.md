@@ -25,36 +25,37 @@ dzdomop load-vocab https://… --url postgresql+psycopg://… --cdm-version 5.5
 
 ## Tasks
 
-- [ ] **Source abstraction** in `csv_source.py`: a `Source` with `files()` that yields
+- [x] **Source abstraction** in `csv_source.py`: a `Source` with `files()` that yields
       `(name, opener)`; implementations `DirectorySource`, `ZipSource`. `CsvFile` reads via
       the opener instead of `open(path)`.
-- [ ] **Zip:** read members with `zipfile.ZipFile.open()` + `io.TextIOWrapper(encoding="utf-8-sig",
+- [x] **Zip:** read members with `zipfile.ZipFile.open()` + `io.TextIOWrapper(encoding="utf-8-sig",
       newline="")`. No extraction to disk. Match members by base name (also works if a zip
       has a top folder). Only `*.csv` members are read, so path traversal and zip bombs don't apply.
-- [ ] **Row count for zips:** counting lines costs one extra decompression pass per member
+- [x] **Row count for zips:** counting lines costs one extra decompression pass per member
       (estimate: tens of seconds for the 2 GB `CONCEPT_RELATIONSHIP.csv`). Measure it on the
       big export. If too slow, use the zip header (size + CRC32) as the state key for zips and
       count while loading. Must stay compatible with the existing state table.
-- [ ] **URL:** download with `urllib` (no new dependency) to a cache folder, stream to disk
+      *Measured: 18 s for all 4.9 GB, so the state key stays (name, rows).*
+- [x] **URL:** download with `urllib` (no new dependency) to a cache folder, stream to disk
       with a progress bar, then use `ZipSource`. Keep the file, so an interrupted *load* doesn't
       download again. Resume an interrupted *download* with an HTTP `Range` request if the
       server supports it. Check `Content-Length`.
-- [ ] `vocabulary_directory` keeps its name and accepts all three (detect: `http://`/`https://`
+- [x] `vocabulary_directory` keeps its name and accepts all three (detect: `http://`/`https://`
       prefix, else zip file, else folder). New optional parameter for the cache folder.
-- [ ] CLI: the positional argument accepts all three; `--download-dir`.
-- [ ] `CONCEPT_CPT4.csv` stays skipped. The hint for zips: extract, run `cpt.sh`, load the folder.
-- [ ] Tests: zip built from `tests/data/athena` at test time; a zip with a top folder; URL via a
+- [x] CLI: the positional argument accepts all three; `--download-dir`.
+- [x] `CONCEPT_CPT4.csv` stays skipped. The hint for zips: extract, run `cpt.sh`, load the folder.
+- [x] Tests: zip built from `tests/data/athena` at test time; a zip with a top folder; URL via a
       local `http.server` in a thread (download, cache hit, interrupted download resumes);
       load from zip and folder give the same rows.
-- [ ] Changelog, README example.
+- [x] Changelog, README example.
 
-## Open questions (ask Tim)
+## Open questions (answered by Tim, see D12 in the README)
 
-| Question | Proposal |
-| -------- | -------- |
-| Where does the URL cache live, and who deletes it? | `~/.cache/dzdomop/` (or `$XDG_CACHE_HOME`), file named after the URL hash. Keep it after a successful load, so a rerun doesn't download again. Log where it is. |
-| Do Athena download links need a login or token? | Check with a real link from the Athena e-mail before building auth support. |
-| Verify the zip (CRC check of every member) before loading? | No: `zipfile` checks CRC while reading each member anyway, and a full pre-check doubles the read time. |
+| Question | Answer |
+| -------- | ------ |
+| Where does the URL cache live, and who deletes it? | `<temp>/dzdomop`, changeable by parameter, CLI flag and env var. Deleted after a successful load, kept after a failed one; option to always keep it. |
+| Do Athena download links need a login or token? | No (checked with a real link: plain GET, `Content-Length` sent, no `Range` support). |
+| Verify the zip (CRC check of every member) before loading? | No pre-check. |
 
 ## Done when
 

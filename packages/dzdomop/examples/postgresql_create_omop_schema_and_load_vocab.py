@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 # Define the connection to our running postgresql database
 engine = create_engine("postgresql+pg8000://ps:ps@localhost/ps")
 
-# Define the directory where our athena vocabularies csv files are stored.
+# The Athena export: the zip file, the unzipped folder or the download link from Athena's e-mail.
 authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
 
 # Create the OMOP Schema on our database

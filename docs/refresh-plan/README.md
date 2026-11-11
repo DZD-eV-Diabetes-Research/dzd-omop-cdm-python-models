@@ -142,6 +142,7 @@ one class and one test parametrization, so we keep all four and fix `tables` (B1
 | D9 | Truncate | **Mirror upstream:** per table, no `CASCADE` (CDM v5.3.1 VocabImport script). If FKs still point at the table, a clear error. *(Tim, S07)* |
 | D10 | FKs the data breaks (partial exports) | **Error by default** (`ConstraintRecreateError` with orphan counts), `skip_invalid_foreign_keys=True` / `--skip-invalid-foreign-keys` turns it into a warning. *(Tim, S07)* |
 | D11 | Zip files and URLs as loader sources | **Yes**, in its own session 07b. *(Tim, S07)* |
+| D12 | Downloads (URL sources) | Into `<temp>/dzdomop`; folder and keeping set by parameter, CLI flag or env var (`DZDOMOP_DOWNLOAD_DIR`, `DZDOMOP_KEEP_DOWNLOAD`). Deleted after a successful load, kept after a failed one. Resume with `Range` where the server supports it. No zip pre-check. *(Tim, S07b)* |
 
 ### The one breaking change we can't avoid (B4)
 
@@ -180,8 +181,8 @@ Order matters: **S01 builds the safety net that every later session diffs agains
 | 05 | Model usability ([plan](05-model-usability/PLAN.md), [handover](05-model-usability/HANDOVER.md)) | Docstrings, formatting, flavor fixes (B2–B4, B1 done in S04) | ✅ done |
 | 06 | CDM 5.5 & version update ([plan](06-cdm-versions/PLAN.md), [handover](06-cdm-versions/HANDOVER.md)) | 5.3 / 5.4.x / 5.5 models | ✅ done |
 | 07 | Vocabulary loader refresh ([plan](07-vocabulary-loader/PLAN.md), [handover](07-vocabulary-loader/HANDOVER.md)) | Bug fixes, psycopg 3, tests, CLI | ✅ done |
-| 07b | [Vocabulary sources](07b-vocabulary-sources/PLAN.md) | Load from zip files and http(s) URLs | ⏳ next |
-| 08 | [User documentation](08-user-docs/PLAN.md) | `docs/models/` and `docs/generator/` | – |
+| 07b | Vocabulary sources ([plan](07b-vocabulary-sources/PLAN.md), [handover](07b-vocabulary-sources/HANDOVER.md)) | Load from zip files and http(s) URLs | ✅ done |
+| 08 | [User documentation](08-user-docs/PLAN.md) | `docs/models/` and `docs/generator/` | ⏳ next |
 | 09 | [Release](09-release/PLAN.md) | Changelog, migration notes, PyPI | – |
 
 Each session folder gets its `HANDOVER.md` at the end of that session.

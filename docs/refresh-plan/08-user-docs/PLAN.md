@@ -21,7 +21,7 @@ docs/
 │   ├── 03-pick-a-flavor.md     # sqlmodel vs declarative (vs dataclasses): one table
 │   ├── 04-relationships.md     # person.care_site, care_site.persons, concept lookups
 │   ├── 05-validation.md        # what is and isn't checked, model_validate
-│   ├── 06-vocabulary.md        # load an Athena export, resume, speed tips
+│   ├── 06-vocabulary.md        # load an Athena export (folder, zip, URL), resume, speed tips
 │   ├── 07-postgres.md          # schemas, drivers, performance
 │   └── faq.md
 └── generator/

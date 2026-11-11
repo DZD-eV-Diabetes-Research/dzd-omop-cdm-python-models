@@ -144,6 +144,29 @@ Added:
 
   `dzdomop load-vocab --help` lists the options. The URL can also come from
   `DZDOMOP_DATABASE_URL`.
+- **Load straight from the zip file or the download link.** The first argument of
+  `VocabulariesLoader` (and of `dzdomop load-vocab`) takes the unzipped folder as before, the
+  zip file Athena sends (read without unpacking it), or the http(s) download link from
+  Athena's e-mail:
+
+  ```bash
+  dzdomop load-vocab https://athena.ohdsi.org/api/v1/vocabularies/zip/... \
+      --url postgresql+psycopg://user:pw@localhost/omop --cdm-version 5.5
+  ```
+
+  A download goes to `dzdomop` in the system's temp folder. It is deleted after a
+  successful load. After a failed load it stays, and the next run uses it instead of
+  downloading again. A damaged download is deleted, so the next run downloads it again.
+
+  | Setting | Parameter | CLI flag | Environment variable |
+  | ------- | --------- | -------- | -------------------- |
+  | Download folder | `download_dir` | `--download-dir` | `DZDOMOP_DOWNLOAD_DIR` |
+  | Keep the zip after a successful load | `keep_download=True` | `--keep-download` | `DZDOMOP_KEEP_DOWNLOAD=1` |
+
+  An interrupted download continues where it stopped if the server supports it (Athena
+  doesn't, there it starts over). Errors with the source raise `VocabularySourceError`
+  (`DownloadError` for downloads). For CPT4 concepts you still need the unzipped folder:
+  Athena's `cpt.sh` adds their names to the files there.
 
 ### Changed (models)
 

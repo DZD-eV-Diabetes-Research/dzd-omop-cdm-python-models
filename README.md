@@ -111,7 +111,7 @@ with Session(engine) as session:
 ### Example2: Create OMOP CDM Schema V5.4 and Standardized Vocabulary on Postresql
 
 
-This assumes you have a [https://athena.ohdsi.org/vocabulary/list](https://athena.ohdsi.org/vocabulary/list) export downloaded and unzipped to `/home/me/Downloads/AthenaUnzipped`  
+This assumes you have a [https://athena.ohdsi.org/vocabulary/list](https://athena.ohdsi.org/vocabulary/list) export. The loader takes the zip file Athena sends, the unzipped folder, or the download link from Athena's e-mail.
 
 
 ```python
@@ -128,18 +128,18 @@ engine = create_engine(
 # Create the OMOP Schema on our database
 omop54.metadata.create_all(engine)
 
-# Define the directory where our athena vocabularies csv files are stored.
+# The Athena export: the zip file, the unzipped folder or the download link.
 # You can define and download the vocabulary from https://athena.ohdsi.org/vocabulary/list
-authena_export_directory = "/home/me/Downloads/AthenaUnzipped"
+athena_export = "/home/me/Downloads/vocabulary_download_v5_{...}.zip"
 
 # Initialize the vocabulary loader.
 v = VocabulariesLoader(
-    authena_export_directory,
+    athena_export,
     database_engine=engine,
     omop_module=omop54,  # <- optional. default is OMOP CDM V5.4
     truncate_vocabulary_tables_before_insert=True,  # <- optional. Will delete existing vocabularies from the DB
 )
-# Load the vocaablary from the CSV files into the database.
+# Load the vocabulary from the CSV files into the database.
 # This will take some time, you will see some progress bars.
 # Take your time make a coffe
 v.load_all()
